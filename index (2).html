@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Miqnas ERP – TEST</title>
+<style>body{margin:0;font-family:system-ui,sans-serif;background:#F3F7F6;color:#56706B;display:grid;place-items:center;min-height:100vh}</style>
+</head>
+<body>
+<div id="ld">Loading...</div>
+<script>
+// بيجيب آخر نسخة من السيستم في كل مرة، من غير كاش
+fetch('app.html?v=' + Date.now(), { cache: 'no-store' })
+  .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+  .then(function (html) { document.open(); document.write(html); document.close(); })
+  .catch(function () { document.getElementById('ld').textContent = 'مشكلة في التحميل. اعمل ريفريش.'; });
+</script>
+</body>
+</html>
