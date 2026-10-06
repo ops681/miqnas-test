@@ -172,7 +172,18 @@ tr.clk{cursor:pointer} tr.clk:hover td{background:#F4F8F7}
 /* timeline */
 .tl{position:relative;height:14px;border-radius:5px;background:#EEF2F1;overflow:hidden;min-width:160px}
 .tl i{position:absolute;top:0;bottom:0}
-.tl i.on{background:#7DD3A8}.tl i.off{background:#F4A27A}.tl i.gap{background:#C5CBD3}
+.tl i.on{background:#7DD3A8}.tl i.off{background:#F4A27A}.tl i.gap{background:#C5CBD3}.tl i.brk{background:#B9C7F0}
+/* deadlines + revisions */
+.tdl{width:auto;padding:6px 8px;font-size:12.5px;border-radius:9px}
+.tdl.late{border-color:var(--bad);color:var(--bad);background:var(--badbg)}
+.tdue{font-size:12.5px;color:var(--muted);white-space:nowrap}.tdue.late{color:var(--bad);font-weight:700}
+.tnbtn{border:0;background:none;color:var(--brand2);font-size:12.5px;font-weight:600;cursor:pointer;padding:0;text-align:left}
+.tnotes{display:grid;gap:6px;background:#F7FAF9;border:1px dashed var(--line);border-radius:10px;padding:10px 12px;max-width:640px}
+.tnote{font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}.tnote span{color:var(--muted);font-size:12px}
+.tnadd{display:flex;gap:8px;flex-wrap:wrap}.tnadd input{flex:1;min-width:200px;padding:7px 10px;font-size:13px}
+.dupwarn{color:var(--bad);font-size:12.5px;margin-top:6px}
+.brkbox{margin-top:16px;padding:12px 14px;border-radius:10px;background:var(--bluebg);color:var(--blue);font-size:14px}
+.btn.brk{background:#fff;border-color:var(--blue);color:var(--blue)}
 
 /* clock page */
 .clock{max-width:560px;margin:0 auto;text-align:center;padding:30px 24px}
@@ -1187,7 +1198,7 @@ function renderSideClock(){
   el.classList.remove('hidden');
   const st=S.status||{};
   el.innerHTML = st.clockedIn
-    ? `<small>Clocked in since ${esc(st.inT)}</small><b id="sideElapsed">--:--:--</b><span class="sh${S.sharing?'':' off'}"><i></i>${S.sharing?'Screen sharing on':'Sharing stopped'}</span>`
+    ? `<small>Clocked in since ${esc(st.inT)}</small><b id="sideElapsed">--:--:--</b>${st.onBreak?`<span class="sh off"><i></i>On break</span>`:`<span class="sh${S.sharing?'':' off'}"><i></i>${S.sharing?'Screen sharing on':'Sharing stopped'}</span>`}`
     : `<small>Time Clock</small><b>Not clocked in</b><span class="sh off"><i></i>Clock in to start</span>`;
   tickAll();
 }
@@ -1250,7 +1261,7 @@ function tickAll(){
   document.querySelectorAll('[data-live]').forEach(el=>{ const base=+el.dataset.total||0, since=+el.dataset.since||0; el.textContent=fmtDur(base+(since? now-S.skew-since : 0)); });
   const st=S.status;
   if(st && st.clockedIn){
-    const v=fmtDur(now-(st._off||0)-st.inTs);
+    const v=fmtDur(now-(st._off||0)-st.inTs-(st.breakMs||0)-(st.onBreak?now-(st._off||0)-st.breakSince:0));
     const a=$('sideElapsed'); if(a) a.textContent=v;
     const b=$('elapsed'); if(b) b.textContent=v;
   }
@@ -1320,8 +1331,8 @@ function renderDash(r,keep){
     </div>
     ${showPeople?`<div class="card flush">
       <div class="chead"><h2>Team today</h2><span class="spacer"></span><span class="muted" style="font-size:13px">${k.clockedIn} of ${k.clockers} clocked in</span></div>
-      ${r.team.map(m=>{ const c={in:'#12B76A',out:'#98A2B3',absent:'#D0D5DD',stale:'#F79009'}[m.state];
-        const line = m.state==='in' ? (m.now? 'Timer · '+m.now : 'Clocked in '+m.since+' · no timer running') : m.state==='out' ? 'Clocked out' : m.state==='stale' ? 'Forgot to clock out' : 'Not clocked in';
+      ${r.team.map(m=>{ const c={in:'#12B76A',break:'#5B7BD5',out:'#98A2B3',absent:'#D0D5DD',stale:'#F79009'}[m.state];
+        const line = m.state==='break' ? 'On break' : m.state==='in' ? (m.now? 'Timer · '+m.now : 'Clocked in '+m.since+' · no timer running') : m.state==='out' ? 'Clocked out' : m.state==='stale' ? 'Forgot to clock out' : 'Not clocked in';
         return `<div class="tm"><div class="av">${esc(initials(m.name))}<i style="background:${c}"></i></div><div class="tx"><b>${esc(m.name)}</b> <span class="muted" style="font-size:12px">· ${esc(m.job)}</span><div>${bd(line)}</div></div><div class="nums"><b>${m.open} open</b>${m.hours} h today</div></div>`; }).join('') || '<div class="empty">No employees clock in yet.</div>'}
     </div>`:''}
   </div>
@@ -1362,7 +1373,10 @@ function viewClock(){
     <div>${inn?`<span class="pill p-in">Clocked in</span> <span class="muted">since ${esc(st.inT)}</span>`:'<span class="pill p-out">Not clocked in</span>'}</div>
     <div class="big-time" id="elapsed">${inn?'00:00:00':'--:--'}</div>
     <div class="muted">Today's hours: <b>${(st.closedHoursToday||0).toFixed(2)}</b></div>
-    ${inn ? `<button class="btn out" id="outBtn">Clock Out</button><div id="shareBox"></div>` : `<button class="btn primary" id="inBtn">Clock In</button>`}
+    ${inn ? (st.onBreak
+        ? `<div class="brkbox" dir="auto">On break since <b>${new Date(st.breakSince).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</b> · ${esc(st.breakReason)}</div><button class="btn primary" id="resumeBrk">Resume Work</button> <button class="btn out" id="outBtn">Clock Out</button>`
+        : `<button class="btn brk" id="brkBtn">Break</button> <button class="btn out" id="outBtn">Clock Out</button><div id="shareBox"></div>`)
+      : `<button class="btn primary" id="inBtn">Clock In</button>`}
     <div class="notice" dir="rtl">
       • أول ما تدوس بصمة دخول، هيطلعلك شباك تختار منه تشارك: <b>تاب</b> أو <b>ويندو</b> أو <b>الشاشة كلها</b>.<br>
       • السيستم بياخد سكرين شوت كل ${S.cfg.shotMinutes} دقايق لحد ما تبصم خروج.<br>
@@ -1371,7 +1385,7 @@ function viewClock(){
     </div>
   </div>
   <div class="card" style="margin-top:18px"><h3>This Month</h3><div id="myMonth">${LOADING}</div></div>`;
-  if(inn){ $('outBtn').onclick=clockOut; renderShareBox(); }
+  if(inn){ $('outBtn').onclick=clockOut; if($('brkBtn')) $('brkBtn').onclick=breakForm; if($('resumeBrk')) $('resumeBrk').onclick=breakEnd; renderShareBox(); }
   else $('inBtn').onclick=clockIn;
   tickAll();
   loadMyMonth();
@@ -1460,6 +1474,36 @@ function showAlarm(afterReload){
   };
   $('alarmOut').onclick=()=>{ $('modalRoot').innerHTML=''; document.title='Miqnas ERP'; clockOut(); };
 }
+function breakForm(){
+  $('modalRoot').innerHTML=`<div class="modal"><div class="card">
+    <h2>Take a Break</h2>
+    <p class="muted" dir="rtl" style="text-align:right">السكرين شوتس هتقف، وأي تايمر شغال على تاسك هيقف لوحده لحد ما ترجع.</p>
+    <label for="brkR">Reason</label><input id="brkR" dir="auto" placeholder="مثال: صلاة، غدا، مشوار سريع" maxlength="200">
+    <div class="err" id="brkE"></div>
+    <div class="mfoot"><button class="btn primary" id="brkS">Start Break</button><button class="btn" onclick="closeModal()">Cancel</button></div>
+  </div></div>`;
+  $('brkR').focus();
+  $('brkS').onclick=async()=>{
+    const reason=$('brkR').value.trim();
+    if(!reason){ $('brkE').textContent='اكتب سبب البريك'; return; }
+    $('brkS').disabled=true;
+    try{
+      const st=await call('breakStart',{reason});
+      setStatus(st); closeModal();
+      toast(st.timersStopped?'بدأ البريك ✓ ووقفنا '+st.timersStopped+' تايمر':'بدأ البريك ✓');
+      S.cache.my=null; renderSideClock(); if(S.view==='clock') viewClock();
+    }catch(e){ $('brkE').textContent=e.message; $('brkS').disabled=false; }
+  };
+}
+async function breakEnd(){
+  const b=$('resumeBrk'); if(b){ b.disabled=true; b.textContent='Saving...'; }
+  try{
+    setStatus(await call('breakEnd'));
+    toast('رجعت من البريك ✓');
+    if(S.sharing) startShotLoop(true);
+    renderSideClock(); if(S.view==='clock') viewClock();
+  }catch(e){ alert(e.message); if(b){ b.disabled=false; b.textContent='Resume Work'; } }
+}
 async function clockIn(){
   const b=$('inBtn'); b.disabled=true; b.textContent='Choose what to share...';
   try{
@@ -1508,6 +1552,7 @@ async function grabCanvas(maxW){
 }
 async function takeShot(){
   if(!S.sharing) return;
+  if(S.status && S.status.onBreak) return;
   const shot=await grabCanvas(1600);
   shot.mode=S.mode;
   S.lastShot=Date.now();
@@ -1529,7 +1574,7 @@ function viewToday(){
 }
 function renderToday(r,keep){
   const L=r.list;
-  const inN=L.filter(x=>x.state==='in').length, came=L.filter(x=>x.state!=='absent').length;
+  const inN=L.filter(x=>x.state==='in'||x.state==='break').length, came=L.filter(x=>x.state!=='absent').length;
   const alerts=L.filter(x=>x.alert||x.staleOpen).length;
   setTop('Attendance','Today · '+r.today+' · updated '+r.now);
   $('main').innerHTML=`
@@ -1543,7 +1588,7 @@ function renderToday(r,keep){
     <tr><th>Name</th><th>Job</th><th>Status</th><th>In</th><th>Out</th><th>Sharing</th><th>Last screenshot</th><th>Stops</th><th>Hours today</th></tr>
     ${L.map(x=>`<tr>
       <td><b>${esc(x.name)}</b></td><td class="muted">${esc(x.job)}</td>
-      <td>${x.staleOpen?'<span class="pill p-bad">Forgot clock-out</span>':x.alert?'<span class="pill p-bad">No screenshots</span>':x.state==='in'?'<span class="pill p-in">Working</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>':'<span class="pill p-absent">Absent</span>'}</td>
+      <td>${x.staleOpen?'<span class="pill p-bad">Forgot clock-out</span>':x.alert?'<span class="pill p-bad">No screenshots</span>':x.state==='break'?`<span class="pill p-prog">On Break</span><div class="sub2" dir="auto">${esc(x.breakSince)} · ${esc(x.breakReason)}</div>`:x.state==='in'?'<span class="pill p-in">Working</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>':'<span class="pill p-absent">Absent</span>'}</td>
       <td>${esc(x.inT)||'—'}</td><td>${esc(x.outT)||'—'}</td><td>${esc(x.mode)||'—'}</td>
       <td>${esc(x.lastShot)||'—'}</td><td>${x.stops?`<span class="pill p-bad">${x.stops}</span>`:'0'}</td><td>${x.hoursToday}</td></tr>`).join('')}
   </table></div>`;
@@ -1627,7 +1672,7 @@ function renderScreen(r,keep){
       <td><span class="pill ${h[1]}">${h[0]}</span></td>
       <td>${x.folder?`<a class="btn small" href="${esc(x.folder)}" target="_blank" rel="noopener">Open in Drive</a>`:'<span class="muted" style="font-size:12px">No folder</span>'}</td></tr>`; }).join('')}
   </table></div></div>
-  <div class="legend" style="margin-top:12px"><span><i style="width:12px;height:12px;border-radius:3px;background:#7DD3A8;display:inline-block"></i>Sharing</span><span><i style="width:12px;height:12px;border-radius:3px;background:#F4A27A;display:inline-block"></i>Stopped sharing</span><span><i style="width:12px;height:12px;border-radius:3px;background:#C5CBD3;display:inline-block"></i>No screenshots (page closed / laptop asleep)</span></div>`;
+  <div class="legend" style="margin-top:12px"><span><i style="width:12px;height:12px;border-radius:3px;background:#7DD3A8;display:inline-block"></i>Sharing</span><span><i style="width:12px;height:12px;border-radius:3px;background:#F4A27A;display:inline-block"></i>Stopped sharing</span><span><i style="width:12px;height:12px;border-radius:3px;background:#B9C7F0;display:inline-block"></i>Break</span><span><i style="width:12px;height:12px;border-radius:3px;background:#C5CBD3;display:inline-block"></i>No screenshots (page closed / laptop asleep)</span></div>`;
 }
 
 /* ============ Employees ============ */
@@ -1755,7 +1800,8 @@ const SET_GROUPS=[
     ['off_min','Alert after time not shared','Total minutes without sharing in one day','minutes'],
     ['keep_days','Keep screenshots for','Older screenshots are deleted from Drive automatically','days']]],
   ['Attendance','Clock-in and clock-out alerts',[
-    ['forgot_h','Forgot to clock out','Alert when someone is still clocked in after','hours']]]
+    ['forgot_h','Forgot to clock out','Alert when someone is still clocked in after','hours'],
+    ['break_max','Long break','Alert when a break runs longer than','minutes']]]
 ];
 function viewSettings(){
   setTop('Settings','Admins only · changes apply to the whole team', `<button class="btn primary" id="setSave">Save changes</button>`);
@@ -2067,6 +2113,13 @@ function taskRowHTML(t,pid,me,isAdmin){
     timer = t.running ? `<button class="tb pause" onclick="tAct(${P},'pause')">⏸ Stop Timer</button>` : `<button class="tb play" onclick="tAct(${P},'start')">▶ Start Timer</button>`;
   }
   const time = (t.liveMs||t.running) ? liveSpan(t) : (mine&&!blocked&&t.status!=='Done'?`<span class="ttime">00:00:00</span>`:'');
+  const dl = mine && t.status!=='Done'
+    ? `<input type="date" class="tdl${t.late?' late':''}" value="${esc(t.deadline)}" title="Deadline" aria-label="Deadline" onchange="tAct(${P},'deadline',{deadline:this.value})">`
+    : (t.deadline?`<span class="tdue${t.late?' late':''}">${t.late?'Overdue · ':'Due '}${fmtDay(t.deadline)}</span>`:'');
+  const nk=pid+'|'+t.key, nOpen=S.openNotes.has(nk), nid='nt_'+(pid+'_'+t.key).replace(/[^a-z0-9_]/gi,'_');
+  const notes = `<button class="tnbtn" onclick="toggleNotes('${esc(nk)}')">${nOpen?'▾':'▸'} Revisions${t.notes.length?' ('+t.notes.length+')':''}</button>`+
+    (nOpen?`<div class="tnotes">${t.notes.length?t.notes.map(n=>`<div class="tnote" dir="auto"><span>${bd(n.by)} · ${new Date(n.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span><br>${esc(n.text)}</div>`).join(''):'<div class="muted" style="font-size:12.5px">No revisions yet.</div>'}
+      <div class="tnadd"><input id="${nid}" dir="auto" maxlength="1000" placeholder="اكتب التعديل المطلوب أو اللي اتعمل"><button class="tb ghost" onclick="addNote(${P},'${nid}')">Add</button></div></div>`:'');
   const wl=t.waiting.slice(0,3).map(w=>esc(w.title)+(w.name?' ('+bd(w.name)+')':'')).join(', ')+(t.waiting.length>3?` +${t.waiting.length-3} more`:'');
   const wait = t.locked ? `<div class="twait">Waiting for: ${wl}</div>` : '';
   const who = (t.assignees||[]).length>1 ? `<div class="twait">${bd(t.assigneeName)}</div>` : '';
@@ -2078,10 +2131,13 @@ function taskRowHTML(t,pid,me,isAdmin){
       : `<div class="tlink"><span>${esc(t.linkLabel)}</span>${t.link?`<a href="${esc(t.link)}" target="_blank" rel="noopener">${esc(t.link)}</a>`:'<span class="muted">Not yet</span>'}</div>`;
   }
   return `<div class="trow${t.locked?' locked':''}${t.running?' running':''}${t.status==='Done'?' done':''}">
-    <div class="tmain"><div class="tt">${esc(t.title)}</div>${who}${wait}${link}</div>
-    <div class="tside">${lock}${status}<span class="tsep"></span>${time}${timer}</div></div>`;
+    <div class="tmain"><div class="tt">${esc(t.title)}</div>${who}${wait}${link}${notes}</div>
+    <div class="tside">${lock}${dl}${status}<span class="tsep"></span>${time}${timer}</div></div>`;
 }
 
+S.openNotes=new Set();
+function toggleNotes(k){ S.openNotes.has(k)?S.openNotes.delete(k):S.openNotes.add(k); rerender(); }
+function addNote(pid,key,id){ const el=$(id); const v=el?el.value.trim():''; if(!v) return; el.value=''; tAct(pid,key,'note',{text:v}); }
 async function projDelete(id){
   if(!confirm('هيتمسح المشروع '+id+' نهائي، ومعاه كل تاسكاته والوقت المتسجل عليه. متأكد؟')) return;
   try{ await call('projDelete',{id}); toast('اتمسح المشروع ✓'); viewProjects(); }catch(e){ alert(e.message); }
@@ -2103,7 +2159,8 @@ function findTask(d,pid,key){
 function applyLocal(t,action,extra){
   const now=Date.now()-S.skew;
   const stop=()=>{ if(t.running){ t.totalMs=(t.totalMs||0)+(now-t.runningSince); t.running=false; t.runningSince=0; t.liveMs=t.totalMs; } };
-  if(action==='start'){ if(!t.running){ t.running=true; t.runningSince=now; } }
+  if(action==='start'){ if(!t.running){ t.running=true; t.runningSince=now; } if(t.status!=='In Progress') t.status='In Progress'; }
+  else if(action==='deadline'){ t.deadline=extra.deadline; }
   else if(action==='pause') stop();
   else if(action==='status'||action==='force'){ t.status=extra.status; if(extra.status!=='In Progress') stop(); }
   else if(action==='link') t.link=extra.link;
@@ -2119,6 +2176,7 @@ async function tAct(pid,key,action,extra){
     const r=await call('taskAct',Object.assign({project:pid,key,act:action,ret:mode},extra));
     S.pending--;
     if(action==='link') toast('Link saved ✓');
+    if(action==='note') toast('اتضاف التعديل ✓');
     if(r && typeof r==='object'){
       S.skew=Date.now()-r.now;
       if(mode==='my') S.cache.my=r; else S.cache['p:'+pid]=r;
@@ -2198,7 +2256,7 @@ async function projForm(id){
       </div>
       <h3>Project Info</h3>
       <div class="pfgrid">
-        <div><label>Client *</label><input id="pf_client" value="${esc(d.client)}"></div>
+        <div><label>Client *</label><input id="pf_client" value="${esc(d.client)}"><div class="dupwarn hidden" id="pf_dup"></div></div>
         <div><label>Project Type *</label><select id="pf_type">${opt(meta.types,d.type,'Select...')}</select></div>
         <div><label>Brand Identity</label><select id="pf_identity">${opt(meta.identities,d.identity)}</select></div>
         <div><label>Status</label><select id="pf_status">${opt(meta.statuses,d.status)}</select></div>
@@ -2228,11 +2286,16 @@ async function projForm(id){
       document.querySelectorAll('.m-fe').forEach(e=>e.classList.toggle('hidden',m!=='Front End'));
       document.querySelectorAll('.m-joker').forEach(e=>e.classList.toggle('hidden',m!=='Joker')); };
     $('pf_build_mode').onchange=mode; mode();
+    const normName=v=>String(v||'').toLowerCase().replace(/[\s\-_–—.]+/g,'');
+    const dupCheck=()=>{ const v=normName($('pf_client').value), list=(S.cache.plist&&S.cache.plist.projects)||[];
+      const hit=v&&list.find(p=>p.id!==(id||'')&&normName(p.client)===v);
+      $('pf_dup').textContent=hit?'فيه مشروع بنفس الاسم ده بالفعل ('+hit.id+'). اختار اسم تاني':''; $('pf_dup').classList.toggle('hidden',!hit); };
+    $('pf_client').addEventListener('input',dupCheck);
     $('pf_start_date').oninput=()=>{ $('pf_tl').textContent=fmtDay(calcLaunch($('pf_start_date').value)); };
     $('pf_brief_id').onchange=()=>{
       const b=meta.briefs.find(x=>x.id===$('pf_brief_id').value); if(!b) return;
       const set=(k,v)=>{ if(v) $('pf_'+k).value=v; };
-      set('client',b.store); set('type',typeMap(b.f.project_type)); set('cur_platform',platMap(b.f.current_platform)); set('target_platform',platMap(b.f.target_platform));
+      set('client',b.store); dupCheck(); set('type',typeMap(b.f.project_type)); set('cur_platform',platMap(b.f.current_platform)); set('target_platform',platMap(b.f.target_platform));
       set('store_url',b.f.store_url); set('store_id',b.f.zid_id);
       if(b.f.logo_plan) $('pf_identity').value = b.f.logo_plan==='لوجو جديد' ? 'هوية جديدة' : 'هوية موجودة';
       if($('pf_am')){ const a=meta.ams.find(x=>x.u===b.owner); if(a) $('pf_am').value=a.u; }
