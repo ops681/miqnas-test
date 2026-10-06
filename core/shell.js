@@ -1,0 +1,151 @@
+/* ============ الشكل العام ============ */
+const IC = {
+  dash:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  tasks:'<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
+  folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  brief:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  monitor:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.7 3 2.5 3.5 5.2"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+  out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+  flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  warn:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>'
+};
+const ico=(k,s)=>`<svg width="${s||18}" height="${s||18}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
+const initials = n => { n=String(n||'').trim(); const p=n.split(/\s+/); return (p.length>1? p[0][0]+p[1][0] : n.slice(0,2)).toUpperCase(); };
+
+function navFor(u){
+  const r=u.role, N=[];
+  const add=(id,label,icon,sec)=>N.push({id,label,icon,sec});
+  if(r!=='team') add('dash','Dashboard','dash','Workspace');
+  if(u.clocks) add('clock','Time Clock','clock','Workspace');
+  if(r==='team') add('mytasks','My Tasks','tasks','Workspace');
+  if(r!=='team') add('projects','Projects','folder','Workspace');
+  if(r==='admin'||r==='am') add('blockers','Blockers','flag','Workspace');
+  if(r!=='hr') add('briefs','Briefs','brief','Workspace');
+  if(r==='admin'||r==='hr'){ add('today','Attendance','cal','People'); add('monthly','Monthly Report','chart','People'); add('screen','Screen Report','monitor','People'); add('users','Employees','users','People'); }
+  if(r==='admin') add('settings','Settings','gear','System');
+  return N;
+}
+function renderSide(){
+  const N=navFor(S.user);
+  let sec='', h='';
+  N.forEach(n=>{ if(n.sec!==sec){ sec=n.sec; h+=`<div class="nsec">${sec}</div>`; } h+=`<button class="nav${S.view===n.id?' on':''}" data-v="${n.id}">${ico(n.icon)}<span>${n.label}</span>${n.id==='mytasks'&&S.myBadge?`<span class="nb">${S.myBadge}</span>`:''}</button>`; });
+  $('nav').innerHTML=h;
+  $('nav').querySelectorAll('.nav').forEach(b=>b.onclick=()=>go(b.dataset.v));
+  $('sUser').innerHTML=`<div class="av">${esc(initials(S.user.name))}</div><div class="nm"><b>${esc(S.user.name)}</b><small>${esc(S.user.roleName)}${S.user.job&&S.user.job!==S.user.roleName?' · '+esc(S.user.job):''}</small></div><button class="iconbtn" onclick="logout()" aria-label="Logout" title="Logout">${ico('out',17)}</button>`;
+  renderSideClock();
+}
+function renderSideClock(){
+  const el=$('sClock');
+  if(!S.user||!S.user.clocks){ el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  const st=S.status||{};
+  el.innerHTML = st.clockedIn
+    ? `<small>Clocked in since ${esc(st.inT)}</small><b id="sideElapsed">--:--:--</b>${st.onBreak?`<span class="sh off"><i></i>On break</span>`:`<span class="sh${S.sharing?'':' off'}"><i></i>${S.sharing?'Screen sharing on':'Sharing stopped'}</span>`}`
+    : `<small>Time Clock</small><b>Not clocked in</b><span class="sh off"><i></i>Clock in to start</span>`;
+  tickAll();
+}
+function setTop(title, sub, actions){
+  $('pgTitle').textContent=title||''; $('pgSub').textContent=sub||''; $('topActions').innerHTML=actions||'';
+}
+
+function startApp(){
+  $('loginView').classList.add('hidden'); $('appView').classList.remove('hidden');
+  loadCache();
+  renderSide();
+  renderBell();
+  const deep=briefFromHash();
+  const N=navFor(S.user);
+  if(deep && N.some(n=>n.id==='briefs')) go('briefs',{id:deep});
+  else if(!S.view || !N.some(n=>n.id===S.view)) go(N[0].id==='clock' && S.user.role==='team' && S.status && S.status.clockedIn ? 'mytasks' : N[0].id);
+  else go(S.view);
+  startBellPolling();
+  setTimeout(prefetch, 1200);
+}
+
+function briefFromHash(){ const m=(location.hash||'').match(/^#brief=(b[a-z0-9]{6,30})$/); return m? m[1] : null; }
+window.addEventListener('hashchange',()=>{ const id=briefFromHash(); if(id && S.user && navFor(S.user).some(n=>n.id==='briefs') && S.view!=='briefs') go('briefs',{id}); });
+
+function go(v,opts){
+  if(S.view==='briefs' && v!=='briefs' && window.BriefModule) BriefModule.leave();
+  S.view=v; S.vt++; S.proj=null;
+  clearInterval(S.viewTimer);
+  closeBell();
+  $('nav').querySelectorAll('.nav').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  window.scrollTo(0,0);
+  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers};
+  (map[v]||viewDash)();
+}
+function viewBriefs(opts){
+  setTop('Briefs','');
+  document.documentElement.style.setProperty('--hdr', ($('top').offsetHeight||0)+'px');
+  $('main').innerHTML='<div class="bapp"><div class="wrap" id="bwrap"></div></div>';
+  BriefModule.enter($('bwrap'), S.user, opts||{});
+}
+
+// تحميل مسبق في الخلفية، عشان الصفحات التانية تفتح على طول
+async function prefetch(){
+  const r=S.user.role, list=[];
+  if(r!=='team') list.push(['dash','dash',{}],['plist','projList',{}]);
+  if(r==='team') list.push(['my','myTasks',{}]);
+  if(r==='admin'||r==='hr') list.push(['board','board',{}],['users','users',{}]);
+  for(const [k,a,p] of list){
+    if(S.fetched[k] && Date.now()-S.fetched[k]<60000) continue;
+    try{ const d=await call(a,p); S.cache[k]=d; S.fetched[k]=Date.now(); if(k==='dash') renderBell(); }catch(e){ break; }
+  }
+  saveCache();
+}
+
+/* ============ مؤقت واحد لكل العدادات ============ */
+function setStatus(st){ if(st) st._off=Date.now()-(st.serverNow||Date.now()); S.status=st; }
+function fmtDur(ms){ ms=Math.max(0,ms); const h=Math.floor(ms/36e5), m=Math.floor(ms%36e5/6e4), s=Math.floor(ms%6e4/1e3); return [h,m,s].map(x=>String(x).padStart(2,'0')).join(':'); }
+function tickAll(){
+  const now=Date.now();
+  document.querySelectorAll('[data-live]').forEach(el=>{ const base=+el.dataset.total||0, since=+el.dataset.since||0; el.textContent=fmtDur(base+(since? now-S.skew-since : 0)); });
+  const st=S.status;
+  if(st && st.clockedIn){
+    const v=fmtDur(now-(st._off||0)-st.inTs-(st.breakMs||0)-(st.onBreak?now-(st._off||0)-st.breakSince:0));
+    const a=$('sideElapsed'); if(a) a.textContent=v;
+    const b=$('elapsed'); if(b) b.textContent=v;
+  }
+}
+setInterval(tickAll,1000);
+
+/* ============ التنبيهات (الجرس) ============ */
+function alertsList(){ const d=S.cache.dash; return d&&d.alerts? d.alerts : []; }
+function renderBell(){
+  const n=alertsList().length;
+  $('bell').innerHTML=ico('bell',20)+(n?`<span class="cnt">${n>99?'99+':n}</span>`:'');
+  $('bell').setAttribute('aria-label','Notifications'+(n?', '+n:''));
+  if(!$('bellPanel').classList.contains('hidden')) openBell();
+}
+function alertHTML(a,i){
+  return `<button class="al sev-${a.sev}" onclick="goAlert(${i})"><span class="dot"></span><span class="tx"><b>${bd(a.title)}</b><span>${bd(a.detail)}</span></span><span class="tg">${esc(a.tag)}</span></button>`;
+}
+function openBell(){
+  const L=alertsList();
+  $('bellPanel').innerHTML=`<div class="bh">Notifications<span class="spacer"></span>${S.user.role!=='team'?`<button class="btn ghost small" onclick="go('dash')">Open dashboard</button>`:''}</div>`+
+    (L.length? L.slice(0,40).map(alertHTML).join('') : `<div class="empty"><b>All clear</b>No alerts right now.</div>`);
+  $('bellPanel').classList.remove('hidden');
+}
+function closeBell(){ $('bellPanel').classList.add('hidden'); }
+$('bell').onclick=e=>{ e.stopPropagation(); if($('bellPanel').classList.contains('hidden')){ openBell(); refreshDash(); } else closeBell(); };
+document.addEventListener('click',e=>{ if(!$('bellPanel').contains(e.target) && e.target!==$('bell')) closeBell(); });
+function goAlert(i){
+  const a=alertsList()[i]; if(!a||!a.go) return;
+  closeBell();
+  if(a.go.view==='project'){ if(S.user.role==='team'){ go('mytasks'); setTimeout(()=>viewProject(a.go.id),0); } else { go('projects'); viewProject(a.go.id); } }
+  else go(a.go.view);
+}
+async function refreshDash(){
+  try{ const d=await call('dash'); S.cache.dash=d; S.fetched.dash=Date.now(); saveCache(); renderBell(); if(S.view==='dash' && !busyTyping()) renderDash(d,true); }catch(e){}
+}
+function startBellPolling(){
+  clearInterval(S.bellT);
+  S.bellT=setInterval(()=>{ if(document.visibilityState==='visible' && S.token) refreshDash(); },120000);
+}

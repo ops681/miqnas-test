@@ -1,20 +1,71 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Miqnas ERP – TEST</title>
-<style>body{margin:0;font-family:system-ui,sans-serif;background:#F3F7F6;color:#56706B;display:grid;place-items:center;min-height:100vh}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Readex+Pro:wght@500;600&display=swap" rel="stylesheet">
+<style>#ld{position:fixed;inset:0;display:grid;place-items:center;font-family:system-ui,sans-serif;color:#56706B;background:#F3F6F5}</style>
 </head>
 <body>
 <div id="ld">Loading...</div>
+<div id="loginView" class="login-wrap hidden">
+  <form class="login" id="loginForm">
+    <div class="logo"><i>M</i>Miqnas <span>ERP</span></div>
+    <p>Sign in with your username and password</p>
+    <label for="lu">Username</label>
+    <input id="lu" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+    <label for="lp">Password</label>
+    <input id="lp" type="password" autocomplete="current-password" required>
+    <button class="btn primary full" id="lbtn">Sign in</button>
+    <div class="err" id="lerr"></div>
+  </form>
+</div>
+
+<div id="appView" class="hidden">
+  <aside id="side">
+    <div class="logo"><i>M</i>Miqnas <span>ERP</span></div>
+    <nav id="nav" aria-label="Main"></nav>
+    <div class="spacer"></div>
+    <button class="sclock hidden" id="sClock" onclick="go('clock')"></button>
+    <div class="suser" id="sUser"></div>
+  </aside>
+  <div id="shell">
+    <header id="top">
+      <div><h1 id="pgTitle"></h1><div id="pgSub"></div></div>
+      <div class="spacer"></div>
+      <div id="topActions"></div>
+      <button id="bell" type="button" aria-label="Notifications"></button>
+      <div id="bellPanel" class="hidden"></div>
+    </header>
+    <main id="main"></main>
+  </div>
+</div>
+
+<video id="cap" muted playsinline></video>
+<div id="modalRoot"></div>
+
+<div style="position:fixed;bottom:12px;right:12px;z-index:99999;background:#E8753D;color:#fff;font:700 12px system-ui,sans-serif;padding:5px 12px;border-radius:999px;pointer-events:none;letter-spacing:.5px">TEST VERSION</div>
+
 <script>
-// بيجيب آخر نسخة من السيستم في كل مرة، من غير كاش
-fetch('app.html?v=' + Date.now(), { cache: 'no-store' })
-  .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
-  .then(function (html) { document.open(); document.write(html); document.close(); })
-  .catch(function () { document.getElementById('ld').textContent = 'مشكلة في التحميل. اعمل ريفريش.'; });
+/* ============ تحميل ملفات السيستم ============
+   الترتيب مهم: core الأول، بعدها الموديولات، وآخر حاجة start.js.
+   version.json بيتقرا من غير كاش، فأول ما رقم النسخة يتغير كل الملفات بتتحمّل جديدة. */
+(function () {
+  var CSS = ["core/styles.css", "modules/briefs/briefs.css"];
+  var JS = [ "core/config.js", "core/api.js", "core/auth.js", "core/shell.js", "modules/dashboard/dashboard.js", "modules/attendance/clock.js", "modules/attendance/reports.js", "modules/people/employees.js", "modules/settings/settings.js", "modules/blockers/blockers.js", "modules/projects/projects.js", "modules/briefs/briefs.js", "core/start.js" ];
+  function fail() { var d = document.getElementById('ld'); if (d) d.textContent = 'مشكلة في التحميل. اعمل ريفريش.'; }
+  fetch('version.json?ts=' + Date.now(), { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .catch(function () { return { v: String(Date.now()) }; })
+    .then(function (m) {
+      var v = encodeURIComponent(m.v);
+      CSS.forEach(function (href) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href + '?v=' + v; document.head.appendChild(l); });
+      JS.forEach(function (src) { var s = document.createElement('script'); s.src = src + '?v=' + v; s.async = false; s.onerror = fail; document.body.appendChild(s); });
+    });
+})();
 </script>
 </body>
 </html>

@@ -1,0 +1,40 @@
+/* ============ Settings ============ */
+const SET_GROUPS=[
+  ['Project alerts','When a project shows up as At risk, Behind or Overdue',[
+    ['risk_days','Warn before Target Launch','Behind-schedule projects turn red this many days before the deadline','days'],
+    ['risk_gap','Behind schedule by','Done % vs expected % (based on working days passed)','%'],
+    ['proj_days','Project length','Working days from start date to Target Launch (Friday off). Applies to new and edited projects','days']]],
+  ['Task alerts','Catch tasks that are stuck',[
+    ['idle_days','Ready but not started','Task is unlocked and nobody started it for','days'],
+    ['block_days','Waiting on a teammate','Someone has nothing to do because they wait for a handover for','days'],
+    ['stale_days','In Progress with no activity','Status is In Progress but nothing changed for','days']]],
+  ['Screen sharing','Screenshots go straight to Google Drive; only the summary shows in the system',[
+    ['shot_min','Screenshot every','How often a screenshot is taken while clocked in','minutes'],
+    ['stop_count','Alert after sharing stops','Number of stops in one day before you get an alert','times'],
+    ['off_min','Alert after time not shared','Total minutes without sharing in one day','minutes'],
+    ['keep_days','Keep screenshots for','Older screenshots are deleted from Drive automatically','days']]],
+  ['Attendance','Clock-in and clock-out alerts',[
+    ['forgot_h','Forgot to clock out','Alert when someone is still clocked in after','hours'],
+    ['break_max','Long break','Alert when a break runs longer than','minutes']]]
+];
+function viewSettings(){
+  setTop('Settings','Admins only · changes apply to the whole team', `<button class="btn primary" id="setSave">Save changes</button>`);
+  $('setSave').onclick=saveSettings;
+  swr('settings','settingsGet',{},renderSettings);
+}
+function renderSettings(v){
+  $('main').innerHTML=`<div style="max-width:900px;display:grid;gap:18px">
+  ${SET_GROUPS.map(g=>`<div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>${g[0]}</h2><div class="muted" style="font-size:13px">${g[1]}</div></div>
+    ${g[2].map(it=>`<div class="set"><div class="tx"><label for="st_${it[0]}">${it[1]}</label><div>${it[2]}</div></div><input type="number" min="1" id="st_${it[0]}" value="${esc(v[it[0]])}"><span class="u">${it[3]}</span></div>`).join('')}</div>`).join('')}
+  <div class="card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><div style="flex:1 1 320px"><h2 style="margin:0 0 4px">Work hours</h2><div class="muted" style="font-size:13px">Off for now, since the team's hours vary. Late-arrival alerts will use this later.</div></div>
+    <label class="check" style="margin:0"><input type="checkbox" id="st_late_on" ${v.late_on?'checked':''} disabled>Late-arrival alerts</label></div>
+  </div>`;
+}
+async function saveSettings(){
+  const v=Object.assign({}, S.cache.settings||{});
+  SET_GROUPS.forEach(g=>g[2].forEach(it=>{ const el=$('st_'+it[0]); if(el) v[it[0]]=Number(el.value); }));
+  const b=$('setSave'); b.disabled=true; b.textContent='Saving...';
+  try{ const r=await call('settingsSave',{settings:v}); S.cache.settings=r; saveCache(); S.cfg.shotMinutes=r.shot_min; toast('اتحفظت الإعدادات ✓'); refreshDash(); }
+  catch(e){ alert(e.message); }
+  b.disabled=false; b.textContent='Save changes';
+}
