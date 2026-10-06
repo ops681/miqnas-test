@@ -1050,9 +1050,21 @@ function call(action, params){
         .withFailureHandler(e=>rej(new Error(e.message||'مشكلة في الاتصال'))).api(action, params);
     });
   }
-  return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action},params))})
-    .then(r=>r.json()).then(done)
-    .catch(e=>{ throw e.message? e : new Error('مشكلة في الاتصال'); });
+  // كل طلب ليه رقم مميز ثابت في كل المحاولات، عشان السيرفر مايسجلهوش مرتين
+  params.rid = params.rid || (Date.now().toString(36) + Math.random().toString(36).slice(2,10));
+  const body = JSON.stringify(Object.assign({action},params));
+  const WAITS = [1000, 3000, 7000];
+  const attempt = n => fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body})
+    .then(r=>r.text())
+    .then(t=>{ let r; try{ r=JSON.parse(t); }catch(e){ const err=new Error('BAD_REPLY'); err.transient=true; throw err; } return r; },
+          e=>{ const err=new Error('NET'); err.transient=true; throw err; })
+    .catch(e=>{
+      if(!e.transient || n>=WAITS.length) throw e;
+      const wait = WAITS[n] + Math.floor(Math.random()*500);
+      return new Promise(res=>setTimeout(res, wait)).then(()=>attempt(n+1));
+    });
+  return attempt(0).then(done)
+    .catch(e=>{ if(e && e.transient) throw new Error('مشكلة في الاتصال بالسيرفر. جرّب تاني بعد شوية'); throw e.message? e : new Error('مشكلة في الاتصال'); });
 }
 function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),msg.length>40?6000:3200); }
 window.erpCall = call;
