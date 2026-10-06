@@ -294,7 +294,7 @@ async function projForm(id){
       document.querySelectorAll('.m-fe').forEach(e=>e.classList.toggle('hidden',m!=='Front End'));
       document.querySelectorAll('.m-joker').forEach(e=>e.classList.toggle('hidden',m!=='Joker')); };
     $('pf_build_mode').onchange=mode; mode();
-    const normName=v=>String(v||'').toLowerCase().replace(/[\s\-_–—.]+/g,'');
+    const normName=v=>String(v||'').toLowerCase().replace(/[\u064B-\u065F\u0670\u0640\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g,'').replace(/[\s\-_–—.]+/g,'');
     const dupCheck=()=>{ const v=normName($('pf_client').value), list=(S.cache.plist&&S.cache.plist.projects)||[];
       const hit=v&&list.find(p=>p.id!==(id||'')&&normName(p.client)===v);
       $('pf_dup').textContent=hit?'فيه مشروع بنفس الاسم ده بالفعل ('+hit.id+'). اختار اسم تاني':''; $('pf_dup').classList.toggle('hidden',!hit); };
