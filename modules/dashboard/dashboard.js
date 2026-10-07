@@ -27,8 +27,8 @@ function renderDash(r,keep){
     </div>
     ${showPeople?`<div class="card flush">
       <div class="chead"><h2>Team today</h2><span class="spacer"></span><span class="muted" style="font-size:13px">${k.clockedIn} of ${k.clockers} clocked in</span></div>
-      ${r.team.map(m=>{ const c={in:'#12B76A',break:'#5B7BD5',out:'#98A2B3',absent:'#D0D5DD',stale:'#F79009'}[m.state];
-        const line = m.state==='break' ? 'On break' : m.state==='in' ? (m.now? 'Timer · '+m.now : 'Clocked in '+m.since+' · no timer running') : m.state==='out' ? 'Clocked out' : m.state==='stale' ? 'Forgot to clock out' : 'Not clocked in';
+      ${r.team.map(m=>{ const c={in:'#12B76A',break:'#5B7BD5',out:'#98A2B3',absent:'#D0D5DD',stale:'#F79009',leave:'#1849A9'}[m.state];
+        const line = m.state==='break' ? 'On break' : m.state==='in' ? (m.now? 'Timer · '+m.now : 'Clocked in '+m.since+' · no timer running') : m.state==='out' ? 'Clocked out' : m.state==='stale' ? 'Forgot to clock out' : m.state==='leave' ? 'On leave' : 'Not clocked in';
         return `<div class="tm"><div class="av">${esc(initials(m.name))}<i style="background:${c}"></i></div><div class="tx"><b>${esc(m.name)}</b> <span class="muted" style="font-size:12px">· ${esc(m.job)}</span><div>${bd(line)}</div></div><div class="nums"><b>${m.open} open</b>${m.hours} h today</div></div>`; }).join('') || '<div class="empty">No employees clock in yet.</div>'}
     </div>`:''}
   </div>

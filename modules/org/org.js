@@ -18,8 +18,9 @@ function renderOrg(){
   const permBoxes=(pfx,i,cur)=>`<div class="pfgrid" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px 16px">${o.permissions.map(p=>
     `<label class="check" style="margin:6px 0;align-items:flex-start" title="${esc(p.desc)}"><input type="checkbox" data-perm="${pfx}|${i}|${esc(p.code)}"${cur.indexOf(p.code)>=0?' checked':''}${ro}><span><b style="font-size:13px">${esc(p.name)}</b><br><span class="muted" style="font-size:12px">${esc(p.desc)}</span></span></label>`).join('')}</div>`;
   let body='';
-  if(T==='DEPTS') body=`<div class="tbl-wrap"><table style="min-width:560px"><tr><th>Code</th><th>Name</th><th>Business line</th><th></th></tr>
-    ${o.depts.map((d,i)=>`<tr><td><input data-f="depts|${i}|id" value="${esc(d.id)}"${ro} dir="ltr"></td><td><input data-f="depts|${i}|name" value="${esc(d.name)}"${ro}></td><td><input data-f="depts|${i}|line" value="${esc(d.line)}"${ro} placeholder="Line 1"></td><td>${ed?`<button class="btn small ghost danger" onclick="orgDel('depts',${i})">Remove</button>`:''}</td></tr>`).join('')}</table></div>`;
+  if(T==='DEPTS') body=`<div class="tbl-wrap"><table style="min-width:700px"><tr><th>Code</th><th>Name</th><th>Business line</th><th>Department head</th><th></th></tr>
+    ${o.depts.map((d,i)=>`<tr><td><input data-f="depts|${i}|id" value="${esc(d.id)}"${ro} dir="ltr"></td><td><input data-f="depts|${i}|name" value="${esc(d.name)}"${ro}></td><td><input data-f="depts|${i}|line" value="${esc(d.line)}"${ro} placeholder="Line 1"></td><td>${orgSelect(`dh_${i}`,users,d.head,'— none —')}</td><td>${ed?`<button class="btn small ghost danger" onclick="orgDel('depts',${i})">Remove</button>`:''}</td></tr>`).join('')}</table></div>
+    <p class="muted" style="font-size:13px">The department head approves leave and permission requests first, then HR. No head means requests go straight to HR.</p>`;
   if(T==='JOBS') body=`<div class="tbl-wrap"><table style="min-width:760px"><tr><th>Job title</th><th>Department</th><th>Project tasks</th><th>Sees brief access</th><th></th></tr>
     ${o.jobs.map((j,i)=>`<tr><td><input data-f="jobs|${i}|name" value="${esc(j.name)}"${ro}></td><td>${orgSelect(`jd_${i}`,depts,j.dept,'—')}</td><td>${orgSelect(`js_${i}`,Object.keys(SLOT_NAMES).filter(k=>k).map(k=>[k,SLOT_NAMES[k]]),j.slot,SLOT_NAMES[''])}</td><td><input type="checkbox" data-b="jobs|${i}|access"${j.access?' checked':''}${ro}></td><td>${ed?`<button class="btn small ghost danger" onclick="orgDel('jobs',${i})">Remove</button>`:''}</td></tr>`).join('')}</table></div>
     <p class="muted" style="font-size:13px">"Project tasks" decides which slot of a project this job can fill. "Sees brief access" is the default for new employees with this job.</p>`;
@@ -48,6 +49,7 @@ function orgCollect(){
   const o=S.orgDraft;
   document.querySelectorAll('#main [data-f]').forEach(el=>{ const [k,i,f]=el.dataset.f.split('|'); if(o[k][i]) o[k][i][f]=el.type==='number'?Number(el.value):el.value.trim(); });
   document.querySelectorAll('#main [data-b]').forEach(el=>{ const [k,i,f]=el.dataset.b.split('|'); if(o[k][i]) o[k][i][f]=el.checked; });
+  o.depts.forEach((d,i)=>{ if($('dh_'+i)) d.head=$('dh_'+i).value; });
   o.jobs.forEach((j,i)=>{ if($('jd_'+i)) j.dept=$('jd_'+i).value; if($('js_'+i)) j.slot=$('js_'+i).value; });
   o.seats.forEach((s,i)=>{ if($('sd_'+i)) s.dept=$('sd_'+i).value; if($('sh_'+i)) s.holder=$('sh_'+i).value; });
   ['roles','groups'].forEach(k=>o[k].forEach((r,i)=>{ const boxes=[...document.querySelectorAll(`#main [data-perm^="${k}|${i}|"]`)]; if(boxes.length) r.perms=boxes.filter(b=>b.checked).map(b=>b.dataset.perm.split('|')[2]); }));
@@ -56,7 +58,7 @@ function orgCollect(){
 function orgTab(t){ if(S.orgDraft.canEdit) orgCollect(); S.orgTab=t; renderOrg(); }
 function orgAdd(k){
   orgCollect();
-  const blank={depts:{id:'',name:'',line:''},jobs:{name:'',dept:'',slot:'',access:false},roles:{id:'',name:'',level:1,perms:[]},seats:{id:'',title:'',dept:'',holder:''},groups:{id:'',name:'',members:[],perms:[]}}[k];
+  const blank={depts:{id:'',name:'',line:'',head:''},jobs:{name:'',dept:'',slot:'',access:false},roles:{id:'',name:'',level:1,perms:[]},seats:{id:'',title:'',dept:'',holder:''},groups:{id:'',name:'',members:[],perms:[]}}[k];
   S.orgDraft[k].push(blank); renderOrg();
 }
 function orgDel(k,i){ orgCollect(); S.orgDraft[k].splice(i,1); renderOrg(); }

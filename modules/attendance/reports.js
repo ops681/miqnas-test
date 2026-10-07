@@ -6,7 +6,7 @@ function viewToday(){
 }
 function renderToday(r,keep){
   const L=r.list;
-  const inN=L.filter(x=>x.state==='in'||x.state==='break').length, came=L.filter(x=>x.state!=='absent').length;
+  const inN=L.filter(x=>x.state==='in'||x.state==='break').length, came=L.filter(x=>x.state!=='absent'&&x.state!=='leave').length;
   const alerts=L.filter(x=>x.alert||x.staleOpen).length;
   setTop('Attendance','Today · '+r.today+' · updated '+r.now);
   $('main').innerHTML=`
@@ -20,7 +20,7 @@ function renderToday(r,keep){
     <tr><th>Name</th><th>Job</th><th>Status</th><th>In</th><th>Out</th><th>Sharing</th><th>Last screenshot</th><th>Stops</th><th>Hours today</th></tr>
     ${L.map(x=>`<tr>
       <td><b>${esc(x.name)}</b></td><td class="muted">${esc(x.job)}</td>
-      <td>${x.staleOpen?'<span class="pill p-bad">Forgot clock-out</span>':x.alert?'<span class="pill p-bad">No screenshots</span>':x.state==='break'?`<span class="pill p-prog">On Break</span><div class="sub2" dir="auto">${esc(x.breakSince)} · ${esc(x.breakReason)}</div>`:x.state==='in'?'<span class="pill p-in">Working</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>':'<span class="pill p-absent">Absent</span>'}</td>
+      <td>${x.staleOpen?'<span class="pill p-bad">Forgot clock-out</span>':x.alert?'<span class="pill p-bad">No screenshots</span>':x.state==='break'?`<span class="pill p-prog">On Break</span><div class="sub2" dir="auto">${esc(x.breakSince)} · ${esc(x.breakReason)}</div>`:x.state==='in'?'<span class="pill p-in">Working</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>':x.state==='leave'?'<span class="pill" style="background:var(--bluebg);color:var(--blue)">On leave</span>':'<span class="pill p-absent">Absent</span>'}</td>
       <td>${esc(x.inT)||'—'}</td><td>${esc(x.outT)||'—'}</td><td>${esc(x.mode)||'—'}</td>
       <td>${esc(x.lastShot)||'—'}</td><td>${x.stops?`<span class="pill p-bad">${x.stops}</span>`:'0'}</td><td>${x.hoursToday}</td></tr>`).join('')}
   </table></div>`;

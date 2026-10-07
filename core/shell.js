@@ -35,6 +35,7 @@ function navFor(u){
   if(can('tasks.mine')) add('mytasks','My Tasks','tasks','Workspace');
   add('tasks','Tasks','todo','Workspace');
   add('meetings','Meetings','meet','Workspace');
+  add('requests','Leave & Requests','cal','Workspace');
   if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) add('projects','Projects','folder','Workspace');
   if(can('blockers.manage')) add('blockers','Blockers','flag','Workspace');
   if(can('briefs.use')) add('briefs','Briefs','brief','Workspace');
@@ -64,6 +65,7 @@ function renderSide(){
 function navBadge(id){
   if(id==='mytasks') return S.myBadge||0;
   if(id==='devices') return alertsList().filter(a=>a.tag==='DEVICE').length;
+  if(id==='requests') return (S.cache.dash&&S.cache.dash.approvals)||0;
   return 0;
 }
 function updateNavBadges(){
@@ -115,7 +117,7 @@ function go(v,opts){
   window.scrollTo(0,0);
   if(gated() && v!=='clock'){ S.lockShown=true; viewLocked(v); return; }
   S.lockShown=false;
-  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,tasks:()=>viewTasks(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
+  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
   (map[v]||viewDash)();
 }
 function viewLocked(v){
@@ -197,6 +199,7 @@ function goAlert(i){
 function goTo(g){
   if(!g) return;
   if((g.view==='tasks'||g.view==='meetings') && g.id){ go(g.view,{id:g.id}); return; }
+  if(g.view==='requests'){ go('requests',{tab:g.tab}); return; }
   const a={go:g};
   if(a.go.view==='project'){ if(!canAny(['projects.view_all','projects.manage_all','projects.manage_own'])){ go('mytasks'); setTimeout(()=>viewProject(a.go.id),0); } else { go('projects'); viewProject(a.go.id); } }
   else go(a.go.view);

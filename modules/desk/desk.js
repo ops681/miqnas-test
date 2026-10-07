@@ -1,6 +1,6 @@
 /* ============ My Desk ============
    الصفحة الشخصية لكل واحد: تاسكاتي، الإشعارات، الموافقات المستنياني، وحالتي النهارده. */
-const NOTIF_IC={project:'folder',note:'brief',ready:'tasks',blocker:'flag',brief:'brief',pulse:'chart',task:'todo',review:'todo',returned:'warn',done:'todo',comment:'brief',meeting:'meet'};
+const NOTIF_IC={approval:'cal',request:'cal',leave:'cal',project:'folder',note:'brief',ready:'tasks',blocker:'flag',brief:'brief',pulse:'chart',task:'todo',review:'todo',returned:'warn',done:'todo',comment:'brief',meeting:'meet'};
 function viewDesk(){
   const h=new Date().getHours();
   setTop('أرحب بـ المقناص', String(S.user.name||'')+' · '+new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}));
@@ -26,6 +26,8 @@ function renderDesk(D){
   const TP=can('tasks.mine')?'mytasks':'tasks';
   if(T){ tiles.push(tile('Open tasks',T.open,T.ready+' ready to work on',null,TP)); tiles.push(tile('Late',T.late,'Past your deadline',T.late?'var(--bad)':null,TP)); tiles.push(tile('Due today',T.dueToday,'By your deadlines',T.dueToday?'var(--warn)':null,TP)); }
   if(D.toReview) tiles.push(tile('To review',D.toReview,'Tasks waiting for your approval','var(--warn)','tasks'));
+  if(D.requests) tiles.push(tile('Requests to approve',D.requests,'Leave, permissions, overtime','var(--warn)','requests'));
+  if(D.leaveLeft!=null) tiles.push(tile('Annual leave left',D.leaveLeft,'Days this year',null,'requests'));
   if(D.approvals!=null) tiles.push(tile('Approvals waiting',D.approvals,'Device requests',D.approvals?'var(--warn)':null,'devices'));
   if(D.myProjects!=null) tiles.push(tile('My projects',D.myProjects,'Active, you are the AM',null,'projects'));
   if(D.pulseStale!=null) tiles.push(tile('Commercial Pulse',D.pulseStale?'Not entered':'Up to date','This month',D.pulseStale?'var(--warn)':'var(--ok)','pulse'));
