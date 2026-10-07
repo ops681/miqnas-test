@@ -1,9 +1,10 @@
 /* ============ الاتصال بالسيرفر ============ */
 function call(action, params){
-  params = Object.assign({}, params||{}, {token:S.token});
+  params = Object.assign({}, params||{}, {token:S.token, dev:deviceId()});
   const done = r => {
     if(r && r.ok) return r.data;
     if(r && r.error==='AUTH'){ forceLogin(); throw new Error('انتهت الجلسة، سجّل دخول تاني'); }
+    if(r && r.error==='KICKED'){ forceLogin('اتعمل دخول بحسابك من جهاز تاني، فالجلسة دي اتقفلت', true); throw new Error('اتعمل دخول من جهاز تاني'); }
     throw new Error((r&&r.error)||'حصل خطأ');
   };
   if(IN_GAS){

@@ -22,3 +22,15 @@ const bd = s => esc(s).replace(/[\u0600-\u06FF](?:[\u0600-\u06FF\s\d.,،:()\-\/]
 const KP = 'test_';
 function store(k,v){ try{ v==null? localStorage.removeItem(KP+k) : localStorage.setItem(KP+k,v);}catch(e){} }
 function load(k){ try{ return localStorage.getItem(KP+k);}catch(e){ return null; } }
+// رقم الجهاز: بيتعمل مرة واحدة ويفضل في البراوزر حتى بعد الخروج
+function deviceId(){
+  let d=load('erp_dev');
+  if(!/^[a-f0-9]{32}$/.test(d||'')){ d=Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join(''); store('erp_dev',d); }
+  return d;
+}
+function deviceLabel(){
+  const ua=navigator.userAgent;
+  const b=/Edg\//.test(ua)?'Edge':/OPR\//.test(ua)?'Opera':/Firefox\//.test(ua)?'Firefox':/Chrome\//.test(ua)?'Chrome':/Safari\//.test(ua)?'Safari':'Browser';
+  const o=/iPhone|iPad/.test(ua)?'iPhone/iPad':/Android/.test(ua)?'Android':/Mac OS X/.test(ua)?'Mac':/Windows/.test(ua)?'Windows':/Linux/.test(ua)?'Linux':'Unknown';
+  return b+' · '+o;
+}

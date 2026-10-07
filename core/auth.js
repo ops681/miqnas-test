@@ -3,7 +3,7 @@ $('loginForm').addEventListener('submit', async e=>{
   e.preventDefault();
   $('lerr').textContent=''; $('lbtn').disabled=true; $('lbtn').textContent='Signing in...';
   try{
-    const r = await call('login',{username:$('lu').value,password:$('lp').value});
+    const r = await call('login',{username:$('lu').value,password:$('lp').value,device:deviceId(),deviceLabel:deviceLabel()});
     S.token=r.token; store('erp_token',r.token);
     S.user=r.user; S.cfg=r.cfg; store('erp_user',JSON.stringify(r.user));
     startApp();
@@ -12,8 +12,10 @@ $('loginForm').addEventListener('submit', async e=>{
   $('lbtn').disabled=false; $('lbtn').textContent='Sign in';
 });
 
-function forceLogin(){
-  if(S.sharing) return;
+function forceLogin(msg, hard){
+  if(S.sharing && !hard) return;
+  if(hard && S.sharing){ try{ stopStream(); }catch(e){} }
+  if(msg) $('lerr').textContent=msg;
   S.token=null; store('erp_token',null); store('erp_user',null);
   $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden');
 }
@@ -31,6 +33,8 @@ async function logout(){
 function boot(){
   S.token=load('erp_token');
   let u=null; try{ u=JSON.parse(load('erp_user')||'null'); }catch(e){}
+  // بيانات متخزنة من نسخة قديمة (من غير صلاحيات): نجيب الجديدة من السيرفر الأول
+  if(u && !Array.isArray(u.perms)) u=null;
   if(!S.token){ $('loginView').classList.remove('hidden'); return; }
   if(u){ S.user=u; startApp(); refreshMe(); }
   else refreshMe(true);
