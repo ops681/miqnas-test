@@ -283,3 +283,7 @@ tr.clk{cursor:pointer} tr.clk:hover td{background:#F4F8F7}
 #netBar{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:9999;padding:7px 16px;border-radius:0 0 10px 10px;font:600 13px 'IBM Plex Sans Arabic',system-ui,sans-serif;direction:rtl;box-shadow:0 4px 14px rgba(0,0,0,.12)}
 #netBar.off{background:#B42318;color:#fff}
 #netBar.sync{background:#FEF3C7;color:#7A4D00}
+.al.unread{background:#F1F8F6}
+.al.unread .tx b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--brand2);margin-right:7px;vertical-align:middle}
+button.kpi{font:inherit;color:inherit}
+button.kpi:hover{border-color:#B8C9C4}

@@ -16,6 +16,9 @@ const IC = {
   org:'<rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/>',
   device:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M10 17h4"/><path d="M9 8l2 2 4-4"/>',
   pulse:'<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+  home:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  crown:'<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/>',
+  trend:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
   warn:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>'
 };
 const ico=(k,s)=>`<svg width="${s||18}" height="${s||18}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
@@ -24,12 +27,15 @@ const initials = n => { n=String(n||'').trim(); const p=n.split(/\s+/); return (
 function navFor(u){
   const N=[];
   const add=(id,label,icon,sec)=>N.push({id,label,icon,sec});
+  add('desk','My Desk','home','Workspace');
   if(can('dashboard.view')) add('dash','Dashboard','dash','Workspace');
   if(u.clocks) add('clock','Time Clock','clock','Workspace');
   if(can('tasks.mine')) add('mytasks','My Tasks','tasks','Workspace');
   if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) add('projects','Projects','folder','Workspace');
   if(can('blockers.manage')) add('blockers','Blockers','flag','Workspace');
   if(can('briefs.use')) add('briefs','Briefs','brief','Workspace');
+  if(can('executive.view')) add('exec','Executive','crown','Leadership');
+  if(canAny(['commercial.metrics.manage','executive.view'])) add('pulse','Commercial Pulse','trend','Leadership');
   if(can('attendance.view_all')){ add('today','Attendance','cal','People'); add('monthly','Monthly Report','chart','People'); add('screen','Screen Report','monitor','People'); }
   if(can('people.manage')) add('users','Employees','users','People');
   if(can('people.manage')) add('devices','Devices','device','People');
@@ -103,7 +109,7 @@ function go(v,opts){
   window.scrollTo(0,0);
   if(gated() && v!=='clock'){ S.lockShown=true; viewLocked(v); return; }
   S.lockShown=false;
-  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth};
+  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,exec:viewExec,pulse:viewPulse};
   (map[v]||viewDash)();
 }
 function viewLocked(v){
@@ -156,7 +162,7 @@ setInterval(tickAll,1000);
 /* ============ التنبيهات (الجرس) ============ */
 function alertsList(){ const d=S.cache.dash; return d&&d.alerts? d.alerts : []; }
 function renderBell(){
-  const n=alertsList().length;
+  const n=alertsList().length+(S.unread||0);
   $('bell').innerHTML=ico('bell',20)+(n?`<span class="cnt">${n>99?'99+':n}</span>`:'');
   $('bell').setAttribute('aria-label','Notifications'+(n?', '+n:''));
   if(!$('bellPanel').classList.contains('hidden')) openBell();
@@ -165,24 +171,32 @@ function renderBell(){
 function alertHTML(a,i){
   return `<button class="al sev-${a.sev}" onclick="goAlert(${i})"><span class="dot"></span><span class="tx"><b>${bd(a.title)}</b><span>${bd(a.detail)}</span></span><span class="tg">${esc(a.tag)}</span></button>`;
 }
+// الجرس: "For you" (إشعارات شخصية) + "Alerts" (تنبيهات محسوبة)
 function openBell(){
-  const L=alertsList();
-  $('bellPanel').innerHTML=`<div class="bh">Notifications<span class="spacer"></span>${can('dashboard.view')?`<button class="btn ghost small" onclick="go('dash')">Open dashboard</button>`:''}</div>`+
-    (L.length? L.slice(0,40).map(alertHTML).join('') : `<div class="empty"><b>All clear</b>No alerts right now.</div>`);
+  const L=alertsList(), N=S.notifs||[];
+  $('bellPanel').innerHTML=`<div class="bh">For you${S.unread?` <span class="pill p-bad" style="margin-left:8px">${S.unread} new</span>`:''}<span class="spacer"></span>${S.unread?`<button class="btn ghost small" onclick="event.stopPropagation();readAll()">Mark all read</button>`:''}<button class="btn ghost small" onclick="go('desk')">My Desk</button></div>`+
+    (N.length? N.slice(0,10).map((n,i)=>notifHTML(n,i,'bell')).join('') : `<div class="empty" style="padding:16px"><b>All caught up</b>Nothing new for you.</div>`)+
+    `<div class="bh" style="border-top:1px solid var(--line)">Alerts<span class="spacer"></span>${can('dashboard.view')?`<button class="btn ghost small" onclick="go('dash')">Open dashboard</button>`:''}</div>`+
+    (L.length? L.slice(0,40).map(alertHTML).join('') : `<div class="empty" style="padding:16px"><b>All clear</b>No alerts right now.</div>`);
   $('bellPanel').classList.remove('hidden');
 }
+function loadNotifs(){ if(gated()) return; call('notifList').then(r=>{ S.notifs=r.list; S.unread=r.unread; renderBell(); }).catch(()=>{}); }
 function closeBell(){ $('bellPanel').classList.add('hidden'); }
-$('bell').onclick=e=>{ e.stopPropagation(); if($('bellPanel').classList.contains('hidden')){ openBell(); refreshDash(); } else closeBell(); };
+$('bell').onclick=e=>{ e.stopPropagation(); if($('bellPanel').classList.contains('hidden')){ openBell(); refreshDash(); loadNotifs(); } else closeBell(); };
 document.addEventListener('click',e=>{ if(!$('bellPanel').contains(e.target) && e.target!==$('bell')) closeBell(); });
 function goAlert(i){
   const a=alertsList()[i]; if(!a||!a.go) return;
-  closeBell();
+  closeBell(); goTo(a.go);
+}
+function goTo(g){
+  if(!g) return;
+  const a={go:g};
   if(a.go.view==='project'){ if(!canAny(['projects.view_all','projects.manage_all','projects.manage_own'])){ go('mytasks'); setTimeout(()=>viewProject(a.go.id),0); } else { go('projects'); viewProject(a.go.id); } }
   else go(a.go.view);
 }
 async function refreshDash(){
   if(gated()) return;
-  try{ const d=await call('dash'); S.cache.dash=d; S.fetched.dash=Date.now(); saveCache(); renderBell(); if(S.view==='dash' && !busyTyping()) renderDash(d,true); }catch(e){}
+  try{ const d=await call('dash'); S.cache.dash=d; S.fetched.dash=Date.now(); saveCache(); if(d.unread!=null) S.unread=d.unread; renderBell(); if(S.view==='dash' && !busyTyping()) renderDash(d,true); }catch(e){}
 }
 function startBellPolling(){
   clearTimeout(S.bellT);
