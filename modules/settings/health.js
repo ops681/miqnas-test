@@ -11,6 +11,7 @@ function fmtMs(ms){ return ms>=1000? (Math.round(ms/100)/10)+' s' : Math.round(m
 function fmtN(n){ return Number(n||0).toLocaleString('en-US'); }
 function renderHealth(H){
   const k=H.kpis, ov=HLV[H.overall]||HLV.green;
+  const SL=(H.slow3&&S.hWin!==24)?H.slow3:H.slow;
   const msg={green:'Google Sheets is handling the load fine. No need to move to a database.',
     yellow:'Getting close to a limit. Keep an eye on it and start planning the database move.',
     red:'A limit has been passed. Time to plan the move to a database.',
@@ -47,9 +48,9 @@ function renderHealth(H){
   </div>
 
   <div class="two" style="margin:0">
-    <div class="card flush"><div class="chead"><h2>Slowest operations</h2></div>
-      ${H.slow.length?`<div class="tbl-wrap" style="border:0"><table><tr><th>Operation</th><th>Requests</th><th>p95</th><th>Slowest</th><th>Errors</th></tr>
-      ${H.slow.map(s=>`<tr><td><code>${esc(s.act)}</code></td><td>${fmtN(s.n)}</td><td>${fmtMs(s.p95)} ${s.p95>=H.limits.p95[0]?hPill(lvlP(s.p95)):''}</td><td class="muted">${fmtMs(s.max)}</td><td>${s.e||'—'}</td></tr>`).join('')}</table></div>`
+    <div class="card flush"><div class="chead"><h2>Slowest operations</h2>${H.slow3?`<div class="seg" style="display:flex;gap:6px"><button class="btn small ${S.hWin===24?'':'primary'}" onclick="S.hWin=3;renderHealth(S.cache.health)">Last 3 hours</button><button class="btn small ${S.hWin===24?'primary':''}" onclick="S.hWin=24;renderHealth(S.cache.health)">Last 24 hours</button></div>`:''}</div>
+      ${SL.length?`<div class="tbl-wrap" style="border:0"><table><tr><th>Operation</th><th>Requests</th><th>p95</th><th>Slowest</th><th>Errors</th></tr>
+      ${SL.map(s=>`<tr><td><code>${esc(s.act)}</code></td><td>${fmtN(s.n)}</td><td>${fmtMs(s.p95)} ${s.p95>=H.limits.p95[0]?hPill(lvlP(s.p95)):''}</td><td class="muted">${fmtMs(s.max)}</td><td>${s.e||'—'}</td></tr>`).join('')}</table></div>`
       :`<div class="empty" style="padding:22px"><b>No data yet</b>Numbers show up as the team uses the system.</div>`}</div>
 
     <div class="card flush"><div class="chead"><h2>Sheet size</h2><span class="muted" style="font-size:13px">Google limit: 10 million cells per sheet</span></div>

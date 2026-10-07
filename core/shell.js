@@ -104,7 +104,7 @@ function startApp(){
   else if(!S.view || !N.some(n=>n.id===S.view)) go(N[0].id==='clock' && can('tasks.mine') && S.status && S.status.clockedIn ? 'mytasks' : N[0].id);
   else go(S.view);
   startBellPolling();
-  setTimeout(prefetch, 1200);
+  setTimeout(prefetch, 2500);
 }
 
 function briefFromHash(){ const m=(location.hash||'').match(/^#brief=(b[a-z0-9]{6,30})$/); return m? m[1] : null; }
@@ -140,16 +140,24 @@ function viewBriefs(opts){
 
 // تحميل مسبق في الخلفية، عشان الصفحات التانية تفتح على طول
 async function prefetch(){
-  if(gated()) return;
+  if(gated() || document.visibilityState==='hidden') return;
   const list=[];
-  if(can('dashboard.view')) list.push(['dash','dash',{}]);
-  if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) list.push(['plist','projList',{}]);
-  if(can('tasks.mine')) list.push(['my','myTasks',{}]);
-  if(can('attendance.view_all')) list.push(['board','board',{}]);
-  if(can('people.manage')) list.push(['users','users',{}]);
-  for(const [k,a,p] of list){
-    if(S.fetched[k] && Date.now()-S.fetched[k]<60000) continue;
-    try{ const d=await call(a,p); S.cache[k]=d; S.fetched[k]=Date.now(); if(k==='dash') renderBell(); }catch(e){ break; }
+  if(can('dashboard.view')) list.push(['dash','dash']);
+  if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) list.push(['plist','projList']);
+  if(can('tasks.mine')) list.push(['my','myTasks']);
+  if(can('attendance.view_all')) list.push(['board','board']);
+  if(can('people.manage')) list.push(['users','users']);
+  const need=list.filter(([k])=>!(S.fetched[k] && Date.now()-S.fetched[k]<60000));
+  if(!need.length) return;
+  // كله في طلب واحد بدل طلب لكل صفحة
+  try{
+    const r=await call('bundle',{items:need.map(x=>x[1])});
+    need.forEach(([k,a])=>{ const x=r[a]; if(x && x.ok){ S.cache[k]=x.data; S.fetched[k]=Date.now(); if(k==='dash'){ if(x.data.unread!=null) S.unread=x.data.unread; renderBell(); } } });
+  }catch(e){
+    if(!/غير معروفة/.test(e.message||'')) return;
+    for(const [k,a] of need){
+      try{ const d=await call(a,{}); S.cache[k]=d; S.fetched[k]=Date.now(); if(k==='dash') renderBell(); }catch(e2){ break; }
+    }
   }
   saveCache();
 }

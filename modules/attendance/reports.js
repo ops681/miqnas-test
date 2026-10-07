@@ -2,7 +2,7 @@
 function viewToday(){
   setTop('Attendance','Today · refreshes every minute');
   swr('board','board',{},renderToday);
-  S.viewTimer=setInterval(()=>{ if(S.view==='today') call('board').then(r=>{ S.cache.board=r; if(S.view==='today') renderToday(r,true); }).catch(()=>{}); },60000);
+  S.viewTimer=setInterval(()=>{ if(S.view==='today' && document.visibilityState==='visible') call('board').then(r=>{ S.cache.board=r; if(S.view==='today') renderToday(r,true); }).catch(()=>{}); },60000);
 }
 function renderToday(r,keep){
   const L=r.list;
