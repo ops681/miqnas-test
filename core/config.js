@@ -15,6 +15,8 @@ const LOADING = '<div class="loading">Loading...</div>';
 // الصلاحيات جاية من السيرفر مع بيانات المستخدم
 const can = p => !!(S.user && S.user.perms && S.user.perms.indexOf(p) >= 0);
 const canAny = list => list.some(can);
+// اللي بيبصم: كل الصفحات مقفولة لحد بصمة الدخول (ماعدا Time Clock)
+const gated = () => !!(S.user && S.user.clocks && S.cfg && S.cfg.clockFirst && S.status && !S.status.clockedIn);
 // بيعرض الأسامي العربي صح جوه الجمل الإنجليزي
 const bd = s => esc(s).replace(/[\u0600-\u06FF](?:[\u0600-\u06FF\s\d.,،:()\-\/]*[\u0600-\u06FF])?/g, m=>'<bdi>'+m+'</bdi>');
 

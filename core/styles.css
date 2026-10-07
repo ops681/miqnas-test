@@ -54,6 +54,7 @@ input[type=checkbox]{width:18px;height:18px;padding:0;accent-color:var(--brand2)
 .nav:hover{background:rgba(255,255,255,.06);color:#fff}
 .nav.on{background:rgba(255,255,255,.12);color:#fff}
 .nav svg{flex:none}
+.nav.locked{opacity:.45}
 .nav .nb{margin-left:auto;background:#D92D20;color:#fff;font-size:11px;font-weight:700;border-radius:99px;padding:1px 7px}
 .sclock{margin-top:14px;background:rgba(255,255,255,.07);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;cursor:pointer;border:0;color:#fff;text-align:left;width:100%}
 .sclock:hover{background:rgba(255,255,255,.11)}

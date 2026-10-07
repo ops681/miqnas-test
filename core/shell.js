@@ -39,11 +39,26 @@ function navFor(u){
 function renderSide(){
   const N=navFor(S.user);
   let sec='', h='';
-  N.forEach(n=>{ if(n.sec!==sec){ sec=n.sec; h+=`<div class="nsec">${sec}</div>`; } h+=`<button class="nav${S.view===n.id?' on':''}" data-v="${n.id}">${ico(n.icon)}<span>${n.label}</span>${n.id==='mytasks'&&S.myBadge?`<span class="nb">${S.myBadge}</span>`:''}</button>`; });
+  const lock=gated();
+  N.forEach(n=>{ if(n.sec!==sec){ sec=n.sec; h+=`<div class="nsec">${sec}</div>`; } const b=navBadge(n.id); h+=`<button class="nav${S.view===n.id?' on':''}${lock&&n.id!=='clock'?' locked':''}" data-v="${n.id}">${ico(n.icon)}<span>${n.label}</span>${b?`<span class="nb">${b}</span>`:''}</button>`; });
   $('nav').innerHTML=h;
   $('nav').querySelectorAll('.nav').forEach(b=>b.onclick=()=>go(b.dataset.v));
   $('sUser').innerHTML=`<div class="av">${esc(initials(S.user.name))}</div><div class="nm"><b>${esc(S.user.name)}</b><small>${esc(S.user.roleName)}${S.user.job&&S.user.job!==S.user.roleName?' · '+esc(S.user.job):''}</small></div><button class="iconbtn" onclick="logout()" aria-label="Logout" title="Logout">${ico('out',17)}</button>`;
   renderSideClock();
+}
+// الأرقام اللي على القايمة
+function navBadge(id){
+  if(id==='mytasks') return S.myBadge||0;
+  if(id==='devices') return alertsList().filter(a=>a.tag==='DEVICE').length;
+  return 0;
+}
+function updateNavBadges(){
+  document.querySelectorAll('#nav .nav').forEach(el=>{
+    const n=navBadge(el.dataset.v); let s=el.querySelector('.nb');
+    if(!n){ if(s) s.remove(); return; }
+    if(!s){ s=document.createElement('span'); s.className='nb'; el.appendChild(s); }
+    s.textContent=n>99?'99+':n;
+  });
 }
 function renderSideClock(){
   const el=$('sClock');
@@ -67,6 +82,7 @@ function startApp(){
   const deep=briefFromHash();
   const N=navFor(S.user);
   if(deep && N.some(n=>n.id==='briefs')) go('briefs',{id:deep});
+  else if(gated()) go('clock');
   else if(!S.view || !N.some(n=>n.id===S.view)) go(N[0].id==='clock' && can('tasks.mine') && S.status && S.status.clockedIn ? 'mytasks' : N[0].id);
   else go(S.view);
   startBellPolling();
@@ -83,8 +99,19 @@ function go(v,opts){
   closeBell();
   $('nav').querySelectorAll('.nav').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   window.scrollTo(0,0);
+  if(gated() && v!=='clock'){ S.lockShown=true; viewLocked(v); return; }
+  S.lockShown=false;
   const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices};
   (map[v]||viewDash)();
+}
+function viewLocked(v){
+  const n=navFor(S.user).find(x=>x.id===v);
+  setTop(n?n.label:'','');
+  $('main').innerHTML=`<div class="card" style="max-width:560px;margin:40px auto;text-align:center;padding:36px 28px">
+    <div style="color:var(--muted,#56706B);margin-bottom:10px">${ico('clock',34)}</div>
+    <h2 style="margin:0 0 8px">اعمل بصمة دخول الأول</h2>
+    <p class="muted" style="margin:0 0 20px">الصفحة دي هتفتح أول ما تبصم دخول.</p>
+    <button class="btn primary" onclick="go('clock')">روح لـ Time Clock</button></div>`;
 }
 function viewBriefs(opts){
   setTop('Briefs','');
@@ -95,6 +122,7 @@ function viewBriefs(opts){
 
 // تحميل مسبق في الخلفية، عشان الصفحات التانية تفتح على طول
 async function prefetch(){
+  if(gated()) return;
   const list=[];
   if(can('dashboard.view')) list.push(['dash','dash',{}]);
   if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) list.push(['plist','projList',{}]);
@@ -130,6 +158,7 @@ function renderBell(){
   $('bell').innerHTML=ico('bell',20)+(n?`<span class="cnt">${n>99?'99+':n}</span>`:'');
   $('bell').setAttribute('aria-label','Notifications'+(n?', '+n:''));
   if(!$('bellPanel').classList.contains('hidden')) openBell();
+  updateNavBadges();
 }
 function alertHTML(a,i){
   return `<button class="al sev-${a.sev}" onclick="goAlert(${i})"><span class="dot"></span><span class="tx"><b>${bd(a.title)}</b><span>${bd(a.detail)}</span></span><span class="tg">${esc(a.tag)}</span></button>`;
@@ -150,6 +179,7 @@ function goAlert(i){
   else go(a.go.view);
 }
 async function refreshDash(){
+  if(gated()) return;
   try{ const d=await call('dash'); S.cache.dash=d; S.fetched.dash=Date.now(); saveCache(); renderBell(); if(S.view==='dash' && !busyTyping()) renderDash(d,true); }catch(e){}
 }
 function startBellPolling(){

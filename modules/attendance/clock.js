@@ -148,8 +148,9 @@ async function clockIn(){
     setStatus(await call('clockIn',{mode}));
     toast('اتسجلت بصمة الدخول ✓');
     startShotLoop(true);
-    renderSideClock();
-    viewClock();
+    renderSide();
+    if(can('tasks.mine')) go('mytasks'); else viewClock();
+    setTimeout(prefetch, 800);
   }catch(e){ stopStream(); alert(e.message); b.disabled=false; b.textContent='Clock In'; }
 }
 async function clockOut(){
@@ -161,8 +162,8 @@ async function clockOut(){
     setStatus(await call('clockOut'));
     toast('اتسجلت بصمة الخروج ✓');
     document.title='Miqnas ERP';
-    renderSideClock();
-    if(S.view==='clock') viewClock();
+    renderSide();
+    if(S.view==='clock' || gated()) go('clock');
   }catch(e){ alert(e.message); if(b){ b.disabled=false; b.textContent='Clock Out'; } }
 }
 function startShotLoop(now){

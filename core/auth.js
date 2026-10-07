@@ -5,7 +5,7 @@ $('loginForm').addEventListener('submit', async e=>{
   try{
     const r = await call('login',{username:$('lu').value,password:$('lp').value,device:deviceId(),deviceLabel:deviceLabel()});
     S.token=r.token; store('erp_token',r.token);
-    S.user=r.user; S.cfg=r.cfg; store('erp_user',JSON.stringify(r.user));
+    S.user=r.user; S.cfg=r.cfg; if(r.status) setStatus(r.status); store('erp_user',JSON.stringify(r.user));
     startApp();
     refreshMe();
   }catch(err){ $('lerr').textContent=err.message; }
@@ -44,7 +44,7 @@ async function refreshMe(first){
     const r=await call('me');
     const changed=!S.user || String(S.user.perms)!==String(r.user.perms) || S.user.clocks!==r.user.clocks || S.user.seeAccess!==r.user.seeAccess;
     S.user=r.user; S.cfg=r.cfg; setStatus(r.status); store('erp_user',JSON.stringify(r.user));
-    if(first||changed) startApp(); else { renderSide(); if(S.view==='clock') viewClock(); }
+    if(first||changed) startApp(); else { renderSide(); if(S.view==='clock') viewClock(); else if(gated() && S.view!=='clock') go('clock'); else if(S.lockShown && !gated()) go(S.view); }
     if(S.status && S.status.clockedIn && !S.sharing) showAlarm(true);
   }catch(e){ if(first){ $('loginView').classList.remove('hidden'); } }
 }
