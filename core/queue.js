@@ -40,12 +40,16 @@ async function flushQueue(){
   } finally { flushing=false; renderNet(); }
 }
 
+// الشريط مايظهرش غير بعد طلبين فاشلين ورا بعض (طلب واحد ممكن يفشل وقت الـ Deploy)
 function setOnline(on){
   const was=!S.offline;
-  S.offline=!on;
+  S.netFails = on ? 0 : (S.netFails||0)+1;
+  S.offline = !on && S.netFails>=2;
   if(on && (!was || queueSize())) setTimeout(flushQueue, 300 + Math.random()*1500);
   renderNet();
 }
+// وهو أوفلاين: بيجرّب يكلّم السيرفر كل 20 ثانية تقريبًا، وأول ما يرد الشريط يختفي
+setInterval(()=>{ if(S.offline && S.token && document.visibilityState==='visible') call('me').catch(()=>{}); }, 18000 + Math.floor(Math.random()*5000));
 window.addEventListener('online', ()=>setTimeout(flushQueue, 500 + Math.random()*2000));
 setInterval(()=>{ if(queueSize() && document.visibilityState==='visible') flushQueue(); }, 30000 + Math.floor(Math.random()*10000));
 
@@ -57,6 +61,7 @@ function renderNet(){
   if(!el){ el=document.createElement('div'); el.id='netBar'; document.body.appendChild(el); }
   el.className=S.offline?'off':'sync';
   el.textContent = S.offline
-    ? 'انت أوفلاين'+(n?' · '+n+(n===1?' حاجة مستنية':' حاجات مستنية')+' تتبعت لما النت يرجع':' · البصمة والتايمر محتاجين نت')
+    ? (n ? 'انت أوفلاين · '+n+(n===1?' حاجة مستنية':' حاجات مستنية')+' تتبعت لما النت يرجع'
+         : (S.user && S.user.clocks ? 'انت أوفلاين · البصمة والتايمر محتاجين نت' : 'مفيش اتصال بالسيرفر دلوقتي · بيحاول تاني لوحده'))
     : 'بيبعت '+n+(n===1?' حاجة كانت مستنية...':' حاجات كانت مستنية...');
 }
