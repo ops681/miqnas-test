@@ -184,7 +184,7 @@ function field(it,a){
   switch(it.type){
     case "textarea": return `<textarea id="${id}" data-k="${it.id}" rows="2">${esc(v)}</textarea>`;
     case "url": return `<input type="url" dir="ltr" id="${id}" data-k="${it.id}" value="${esc(v)}" placeholder="https://">`;
-    case "cred": { const o=v||{}; return `<div class="credf">${it.named?`<input type="text" data-cred="${it.id}" data-part="n" value="${esc(o.n)}" placeholder="اسم المنصة" aria-label="اسم المنصة">`:""}<input type="text" dir="ltr" id="${id}" data-cred="${it.id}" data-part="u" value="${esc(o.u)}" placeholder="الإيميل أو اليوزر" aria-label="${esc(it.label)}: الإيميل أو اليوزر" autocomplete="off"><input type="text" dir="ltr" data-cred="${it.id}" data-part="p" value="${esc(o.p)}" placeholder="الباسورد" aria-label="${esc(it.label)}: الباسورد" autocomplete="off" spellcheck="false">${it.withLink?`<input type="url" dir="ltr" data-cred="${it.id}" data-part="l" value="${esc(o.l)}" placeholder="لينك منصة الدومين (اختياري)" aria-label="لينك منصة الدومين" style="grid-column:1/-1">`:""}</div>`; }
+    case "cred": { const o=v||{}; return `<div class="credf">${it.named?`<input type="text" data-cred="${it.id}" data-part="n" value="${esc(o.n)}" placeholder="اسم المنصة" aria-label="اسم المنصة">`:""}<input type="text" dir="ltr" id="${id}" data-cred="${it.id}" data-part="u" value="${esc(o.u)}" placeholder="الإيميل أو اليوزر" aria-label="${esc(it.label)}: الإيميل أو اليوزر" autocomplete="off"><input type="text" dir="ltr" data-cred="${it.id}" data-part="p" value="${esc(o.p)}" placeholder="${o.pSet?"محفوظ · اكتب باسورد جديد لو عاوز تغيّره":"الباسورد"}" aria-label="${esc(it.label)}: الباسورد" autocomplete="off" spellcheck="false">${it.withLink?`<input type="url" dir="ltr" data-cred="${it.id}" data-part="l" value="${esc(o.l)}" placeholder="لينك منصة الدومين (اختياري)" aria-label="لينك منصة الدومين" style="grid-column:1/-1">`:""}</div>`; }
     case "select": { const opts=[...it.options]; if(filled(v)&&!opts.includes(v)) opts.push(v);
       return `<select id="${id}" data-k="${it.id}"><option value=""${filled(v)?"":" selected"}>اختار...</option>${opts.map(o=>`<option value="${esc(o)}"${v===o?" selected":""}>${esc(o)}</option>`).join("")}</select>`; }
     case "number": return `<input type="number" min="0" inputmode="numeric" id="${id}" data-k="${it.id}" value="${esc(v)}">`;
@@ -293,7 +293,7 @@ async function flush(force, d=draft){
   catch(e){ const sv=$("#saved"); if(sv) sv.textContent="ماتحفظش. "+(e.message||"اتأكد من النت وجرّب تكتب تاني"); }
   finally{ saving=false; if(again){const n=again; again=false; flush(false, n);} }
 }
-const credStr = o => { o=o||{}; const parts=[]; if(o.n) parts.push(o.n); if(o.l) parts.push("لينك: "+o.l); parts.push("يوزر: "+(o.u||"—")); parts.push("باسورد: "+(o.p||"—")); return parts.join(" | "); };
+const credStr = o => { o=o||{}; const parts=[]; if(o.n) parts.push(o.n); if(o.l) parts.push("لينك: "+o.l); parts.push("يوزر: "+(o.u||"—")); parts.push("باسورد: "+(o.p||(o.pSet?"(محفوظ في السيستم)":"—"))); return parts.join(" | "); };
 function linkify(text){
   const t=String(text??""), re=/(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi; let out="", last=0, m;
   while((m=re.exec(t))){
@@ -315,21 +315,23 @@ function accLink(l,pdf){
   const href=/^https?:\/\//i.test(l)?l:"https://"+l.replace(/^\/+/,"");
   return `<div class="acc-f"><span class="acc-k">${ICO.link}لينك تسجيل الدخول</span><div class="acc-v" dir="ltr"><a class="credv" href="${esc(href)}" target="_blank" rel="noopener" style="color:var(--accent)">${esc(l)}</a>${pdf?"":`<button type="button" class="ib" data-copyv="${esc(l)}" aria-label="نسخ" title="نسخ">${ICO.copy}</button>`}</div></div>`;
 }
-function accField(kind,v,pdf){
+// الباسورد مش بييجي مع البريف: بيتجاب من السيرفر لما حد يدوس إظهار أو نسخ (وبيتسجل)
+function accField(kind,v,pdf,key){
   const secret=kind==="p";
-  const val=pdf||!secret?`<span class="credv sel" dir="ltr">${esc(v)}</span>`:`<span class="credv" dir="ltr" data-secret="${esc(v)}">••••••••••</span>`;
-  const btns=pdf?"":`${secret?`<button type="button" class="ib" data-reveal aria-label="إظهار الباسورد" title="إظهار">${ICO.eye}</button>`:""}<button type="button" class="ib" data-copyv="${esc(v)}" aria-label="نسخ" title="نسخ">${ICO.copy}</button>`;
+  const val=pdf||!secret?`<span class="credv sel" dir="ltr">${esc(secret&&!v?"(محفوظ في السيستم)":v)}</span>`:`<span class="credv" dir="ltr" data-secret="${esc(v)}" data-akey="${esc(key||"")}">••••••••••</span>`;
+  const btns=pdf?"":`${secret?`<button type="button" class="ib" data-reveal aria-label="إظهار الباسورد" title="إظهار">${ICO.eye}</button>`:""}<button type="button" class="ib" ${secret?`data-copyk="${esc(key||"")}"`:`data-copyv="${esc(v)}"`} aria-label="نسخ" title="نسخ">${ICO.copy}</button>`;
   return `<div class="acc-f"><span class="acc-k">${secret?ICO.lock:ICO.user}${secret?"الباسورد":"اليوزر"}</span><div class="acc-v" dir="ltr">${val}${btns}</div></div>`;
 }
 function accessHTML(s,a,pdf){
   const cards=s.items.filter(it=>filled(a[it.id])).map(it=>{const o=a[it.id]||{}; const name=it.named&&o.n?o.n:it.label;
     return `<div class="acc"><div class="acc-h"><b>${esc(name)}</b></div>
-      ${it.withLink&&o.l?accLink(o.l,pdf):""}${o.u?accField("u",o.u,pdf):""}${o.p?accField("p",o.p,pdf):""}</div>`;}).join("");
+      ${it.withLink&&o.l?accLink(o.l,pdf):""}${o.u?accField("u",o.u,pdf):""}${o.p||o.pSet?accField("p",o.p||"",pdf,it.id):""}</div>`;}).join("");
   return `<section class="sec vsec" id="v_access"><div class="sec-h"><h2>${esc(s.title)}</h2></div><div class="card">${cards?`<div class="accgrid">${cards}</div>`:`<div class="vq"><dd class="none">مافيش أكسيس متسجّل</dd></div>`}</div></section>`;
 }
-function credHTML(o,pdf){ o=o||{};
-  const row=(k,v,secret)=>`<div class="credr"><span class="credk">${k}</span>${!v?`<span class="none">—</span>`:(secret&&!pdf?`<span class="credv" dir="ltr" data-secret="${esc(v)}">••••••••</span><button type="button" class="mini" data-reveal>إظهار</button><button type="button" class="mini" data-copyv="${esc(v)}">نسخ</button>`:`<span class="credv sel" dir="ltr">${esc(v)}</span>${pdf?"":`<button type="button" class="mini" data-copyv="${esc(v)}">نسخ</button>`}`)}</div>`;
-  return `<div class="cred">${o.n?`<div class="credr"><span class="credk">المنصة</span><span>${esc(o.n)}</span></div>`:""}${row("يوزر",o.u,false)}${row("باسورد",o.p,true)}</div>`; }
+function credHTML(o,pdf,key){ o=o||{};
+  const row=(k,v,secret,has)=>`<div class="credr"><span class="credk">${k}</span>${!v&&!has?`<span class="none">—</span>`:(secret&&!pdf?`<span class="credv" dir="ltr" data-secret="${esc(v)}" data-akey="${esc(key||"")}">••••••••</span><button type="button" class="mini" data-reveal>إظهار</button><button type="button" class="mini" data-copyk="${esc(key||"")}">نسخ</button>`:`<span class="credv sel" dir="ltr">${esc(v||"(محفوظ في السيستم)")}</span>${pdf?"":`<button type="button" class="mini" data-copyv="${esc(v)}">نسخ</button>`}`)}</div>`;
+  return `<div class="cred">${o.n?`<div class="credr"><span class="credk">المنصة</span><span>${esc(o.n)}</span></div>`:""}${row("يوزر",o.u,false)}${row("باسورد",o.p,true,o.pSet)}</div>`; }
+async function secretOf(key){ const r=await window.erpCall('accessReveal',{brief:route.id,key}); return r.p||""; }
 function briefText(b){
   const a=b.answers||{}; const lines=[`بريف: ${b.store||""}`,`العميل: ${b.client||""}`,`الأكاونت مانجر: ${amOf(b)||"—"}`, ""];
   for(const s of SECTIONS){ if(s.id==="access"&&!canSeeAccess()) continue; lines.push(`■ ${s.group?s.group+" / ":""}${s.title}`);
@@ -354,7 +356,7 @@ function sectionsHTML(a,pdf){let prevGroup=null;return `${SECTIONS.map(s=>{const
   if(s.id==="access") return canSeeAccess()?accessHTML(s,a,pdf):"";
   return `${band?`<div class="grp-band"><span>${esc(s.group)}</span></div>`:""}<section class="sec vsec${s.group?" sub":""}${band?" after-group":""}"><div class="sec-h">${s.group?`<span class="grp">${esc(s.group)}</span>`:""}<h2>${esc(s.title)}</h2></div><div class="card"><dl>
     ${s.items.filter(it=>visible(it,a)&&!it.headerOnly).map(it=>{const v=a[it.id];
-      if(it.type==="cred") return `<div class="vq"><dt>${esc(it.label)}</dt><dd>${filled(v)?credHTML(v,pdf):`<span class="none">—</span>`}</dd></div>`;
+      if(it.type==="cred") return `<div class="vq"><dt>${esc(it.label)}</dt><dd>${filled(v)?credHTML(v,pdf,it.id):`<span class="none">—</span>`}</dd></div>`;
       if(it.type==="checks") return `<div class="vq"><dt>${esc(it.label)}</dt><dd><div class="tags">${it.options.map(o=>`<span class="tag${(v||[]).includes(o)?"":" off"}">${esc(o)}</span>`).join("")}</div></dd></div>`;
       const shown=Array.isArray(v)?v.join("، "):(it.type==="date"&&v?fmtDate(v):v);
       const isLink=it.type==="url"&&/^https?:\/\//i.test(v||"");
@@ -384,8 +386,11 @@ ${headHTML(b)}
   const ed=$("#edit"); if(ed) ed.onclick=()=>editBrief(src.id);
   $("#copytxt").onclick=()=>copy(briefText(b));
   const pb=$("#pdf"); if(pb) pb.onclick=()=>exportPDF(b,pb);
-  app.querySelectorAll("[data-reveal]").forEach(btn=>btn.onclick=()=>{const sp=btn.parentElement.querySelector("[data-secret]"); const hidden=sp.textContent.startsWith("••"); sp.textContent=hidden?sp.dataset.secret:"••••••••••"; btn.classList.toggle("on",hidden); btn.setAttribute("aria-label",hidden?"إخفاء الباسورد":"إظهار الباسورد");});
+  app.querySelectorAll("[data-reveal]").forEach(btn=>btn.onclick=async()=>{const sp=btn.parentElement.querySelector("[data-secret]"); const hidden=sp.textContent.startsWith("••");
+    if(hidden&&!sp.dataset.secret&&sp.dataset.akey){ try{ sp.dataset.secret=await secretOf(sp.dataset.akey); }catch(e){ toast(e.message); return; } }
+    sp.textContent=hidden?sp.dataset.secret:"••••••••••"; btn.classList.toggle("on",hidden); btn.setAttribute("aria-label",hidden?"إخفاء الباسورد":"إظهار الباسورد");});
   app.querySelectorAll("[data-copyv]").forEach(btn=>btn.onclick=()=>copy(btn.dataset.copyv));
+  app.querySelectorAll("[data-copyk]").forEach(btn=>btn.onclick=async()=>{const sp=btn.parentElement.querySelector("[data-secret]"); try{ if(!sp.dataset.secret) sp.dataset.secret=await secretOf(btn.dataset.copyk); copy(sp.dataset.secret); }catch(e){ toast(e.message); }});
   const cl=$("#copylink"); if(cl) cl.onclick=()=>copy(briefLink(src.id));
   bindAssign(src);
   const dl=$("#del"); if(dl) dl.onclick=()=>{confirmDel=true;renderView();};

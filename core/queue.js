@@ -2,7 +2,7 @@
    حاجات بتتضاف بس ومفيهاش تعارض (أحداث مشاركة الشاشة، نوتس التاسكات، السكرين شوتس) بتستنى هنا وتتبعت لوحدها لما النت يرجع.
    البصمة والتايمر وحالة التاسك مش بيستنوا: لازم يتسجلوا بوقت السيرفر. */
 S.shotQ = [];                 // السكرين شوتس (في الذاكرة بس لأنها كبيرة)
-const QUEUE_OK = { shareEvent:1, taskAct:1 };
+const QUEUE_OK = { shareEvent:1, taskAct:1, locPing:1 };
 function loadQ(){ try{ return JSON.parse(load('erp_q')||'[]')||[]; }catch(e){ return []; } }
 function saveQ(q){ store('erp_q', q.length? JSON.stringify(q.slice(-50)) : null); }
 function queueSize(){ return loadQ().length + (S.shotQ? S.shotQ.length : 0); }

@@ -144,8 +144,11 @@ async function clockIn(){
   const b=$('inBtn'); b.disabled=true; b.textContent='Choose what to share...';
   try{
     const mode=await startShare();
+    let loc=null;
+    if(S.cfg.locationOn){ b.textContent='Allow location...'; loc=await getLoc(true); }
     b.textContent='Saving...';
-    setStatus(await call('clockIn',{mode}));
+    setStatus(await call('clockIn',{mode,loc}));
+    S.lastLoc=Date.now(); store('erp_lastloc',String(S.lastLoc));
     toast('اتسجلت بصمة الدخول ✓');
     startShotLoop(true);
     renderSide();
@@ -214,3 +217,33 @@ async function flushShots(){
   } finally { S.flushingShots=false; renderNet(); }
 }
 window.addEventListener('beforeunload',e=>{ if(S.status&&S.status.clockedIn){ e.preventDefault(); e.returnValue=''; } });
+
+/* ============ اللوكيشن وقت الشيفت ============
+   مطلوب عند البصمة، وبعدها كل locMin دقيقة طول ما الموظف عامل بصمة. */
+function getLoc(strict){
+  return new Promise((res,rej)=>{
+    if(!navigator.geolocation){ rej(new Error('البراوزر ده مش بيدعم اللوكيشن. استخدم كروم أو إيدج')); return; }
+    navigator.geolocation.getCurrentPosition(
+      p=>res({lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy}),
+      e=>{ const err=new Error(e.code===1?'لازم توافق على اللوكيشن عشان تقدر تبصم. اضغط على علامة القفل جنب اللينك فوق وخلّي Location على Allow، وجرّب تاني':'مش قادر أحدد مكانك دلوقتي. اتأكد إن اللوكيشن شغال على الجهاز وجرّب تاني'); err.denied=e.code===1; rej(err); },
+      {enableHighAccuracy:false,timeout:20000,maximumAge:60000});
+  });
+}
+S.lastLoc=Number(load('erp_lastloc'))||0;
+setInterval(async()=>{
+  const st=S.status;
+  if(!S.token||!S.user||!S.user.clocks||!S.cfg.locationOn||!st||!st.clockedIn) return;
+  const gap=(S.cfg.locMin||30)*60000;
+  if(Date.now()-S.lastLoc < gap) return;
+  S.lastLoc=Date.now(); store('erp_lastloc',String(S.lastLoc));
+  try{ const loc=await getLoc(); callOrQueue('locPing',{loc}).catch(()=>{}); if($('locAlarm')) closeModal(); }
+  catch(e){ if(e.denied){ callOrQueue('locPing',{denied:true}).catch(()=>{}); showLocAlarm(); } }
+}, 55000+Math.floor(Math.random()*10000));
+function showLocAlarm(){
+  if($('modalRoot').querySelector('.alarm')) return;
+  $('modalRoot').innerHTML=`<div class="alarm" id="locAlarm"><div class="card" dir="rtl"><h2>اللوكيشن مقفول</h2>
+    <p>انت لسه عامل بصمة دخول، واللوكيشن لازم يفضل شغال طول الشيفت. ده متسجل عند الإدارة.</p>
+    <p class="muted" style="font-size:13px">اضغط على علامة القفل جنب اللينك فوق ← Location ← Allow، وبعدين دوس "تمام".</p>
+    <div class="mfoot" style="justify-content:center"><button class="btn primary" onclick="retryLoc()">تمام، رجّعته</button></div></div></div>`;
+}
+async function retryLoc(){ try{ const loc=await getLoc(); callOrQueue('locPing',{loc}).catch(()=>{}); S.lastLoc=Date.now(); store('erp_lastloc',String(S.lastLoc)); $('modalRoot').innerHTML=''; toast('اللوكيشن رجع ✓'); }catch(e){ toast(e.message); } }

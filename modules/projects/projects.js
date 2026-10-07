@@ -94,6 +94,7 @@ function renderProject(r,keep){
       <div style="display:flex;align-items:center;gap:10px">${pbar(r.progress)}<b style="font-size:14px">${r.progress}%</b><span class="muted" style="font-size:13px">${r.done}/${r.total} tasks · ${r.hours} h</span></div>
       <div class="pteam">${ROLE_ORDER.map(k=>`<span><b>${ROLE_T[k]}</b>${bd(r.team[k]||'—')}</span>`).join('')}<span class="pill p-prog">${esc(r.build_mode)}</span></div>
     </div>
+    ${projAccessHTML(r)}
     ${projBlockersHTML(r)}
     ${links.length?`<div class="card" style="margin-top:14px"><h3>Deliverables</h3><div class="links">${links.map(t=>`<a href="${esc(t.link)}" target="_blank" rel="noopener" class="lnk"><b>${esc(t.linkLabel||t.title)}</b><span>${bd(t.assigneeName)}</span></a>`).join('')}</div></div>`:''}
     ${groups.map(g=>{ const a=g.tasks.find(t=>t.assigneeName); const live=g.tasks.filter(t=>!t.na); const dn=live.filter(t=>t.status==='Done').length;
@@ -323,4 +324,24 @@ async function projForm(id){
       catch(e){ $('pf_err').textContent=e.message; $('pf_save').disabled=false; }
     };
   }catch(e){ $('main').innerHTML=`<div class="card err">${esc(e.message)}</div>`; }
+}
+
+/* ----- أكسيس العميل في صفحة المشروع (للي مسموحله بس) ----- */
+// الباسورد بيتجاب من السيرفر لما حد يدوس Show أو Copy، وكل مرة بتتسجل
+function projAccessHTML(r){
+  if(!r.access) return '';
+  return `<div class="card flush" style="margin-bottom:20px"><div class="chead"><span style="color:var(--brand2)">${ico('device',18)}</span><h2>Client access</h2><span class="muted" style="font-size:12.5px">Every password you reveal is logged</span></div>
+    ${r.access.length?`<div class="tbl-wrap" style="border:0"><table style="min-width:640px"><tr><th>Account</th><th>Username / email</th><th>Password</th></tr>
+    ${r.access.map(a=>`<tr><td><b>${esc(a.label)}</b>${a.l?`<div class="sub2"><a href="${esc(/^https?:/i.test(a.l)?a.l:'https://'+a.l)}" target="_blank" rel="noopener" dir="ltr">${esc(a.l)}</a></div>`:''}</td>
+      <td dir="ltr">${a.u?`${esc(a.u)} <button class="btn small ghost" data-cu="${esc(a.u)}" onclick="navigator.clipboard.writeText(this.dataset.cu).then(()=>toast('اتنسخ'))">Copy</button>`:'—'}</td>
+      <td>${a.pSet?`<span id="pw_${a.key}" dir="ltr" style="font-family:monospace">••••••••</span> <button class="btn small ghost" onclick="paReveal('${esc(r.data.id)}','${a.key}',false)">Show</button><button class="btn small ghost" onclick="paReveal('${esc(r.data.id)}','${a.key}',true)">Copy</button>`:'—'}</td></tr>`).join('')}</table></div>`
+    :`<div class="empty" style="padding:16px">No access saved in the brief yet.</div>`}</div>`;
+}
+async function paReveal(pid,key,copyIt){
+  const el=$('pw_'+key);
+  try{
+    if(!el.dataset.v) el.dataset.v=(await call('accessReveal',{project:pid,key})).p||'';
+    if(copyIt){ await navigator.clipboard.writeText(el.dataset.v); toast('اتنسخ'); }
+    else el.textContent = el.textContent.startsWith('••') ? el.dataset.v : '••••••••';
+  }catch(e){ toast(e.message); }
 }
