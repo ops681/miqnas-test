@@ -4,12 +4,12 @@ function fmtD(v){ if(!v) return '—'; const d=new Date(v+'T12:00:00'); return i
 const HEALTH={ overdue:['Overdue','p-bad','#D92D20'], risk:['At risk','p-absent','#E8753D'], behind:['Behind','p-yel','#D6A100'], ok:['On track','p-in','#107366'] };
 function renderDash(r,keep){
   S.skew=Date.now()-r.now;
-  const role=S.user.role, k=r.kpis;
+  const k=r.kpis;
   setTop('Dashboard', new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short',year:'numeric'})+' · updated '+new Date(r.now).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
     `<button class="btn" onclick="refreshDash()">Refresh</button>`);
   const F=S.alertFilter, cats={all:'All',project:'Projects',task:'Tasks',people:'People'};
   const L=r.alerts.map((a,i)=>({a,i})).filter(x=>F==='all'||x.a.cat===F);
-  const showPeople = role==='admin'||role==='hr';
+  const showPeople = can('attendance.view_all');
   const y=window.scrollY;
   $('main').innerHTML=`
   <div class="grid kpis">

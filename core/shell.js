@@ -13,22 +13,25 @@ const IC = {
   bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
   out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
   flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  org:'<rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/>',
   warn:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>'
 };
 const ico=(k,s)=>`<svg width="${s||18}" height="${s||18}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
 const initials = n => { n=String(n||'').trim(); const p=n.split(/\s+/); return (p.length>1? p[0][0]+p[1][0] : n.slice(0,2)).toUpperCase(); };
 
 function navFor(u){
-  const r=u.role, N=[];
+  const N=[];
   const add=(id,label,icon,sec)=>N.push({id,label,icon,sec});
-  if(r!=='team') add('dash','Dashboard','dash','Workspace');
+  if(can('dashboard.view')) add('dash','Dashboard','dash','Workspace');
   if(u.clocks) add('clock','Time Clock','clock','Workspace');
-  if(r==='team') add('mytasks','My Tasks','tasks','Workspace');
-  if(r!=='team') add('projects','Projects','folder','Workspace');
-  if(r==='admin'||r==='am') add('blockers','Blockers','flag','Workspace');
-  if(r!=='hr') add('briefs','Briefs','brief','Workspace');
-  if(r==='admin'||r==='hr'){ add('today','Attendance','cal','People'); add('monthly','Monthly Report','chart','People'); add('screen','Screen Report','monitor','People'); add('users','Employees','users','People'); }
-  if(r==='admin') add('settings','Settings','gear','System');
+  if(can('tasks.mine')) add('mytasks','My Tasks','tasks','Workspace');
+  if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) add('projects','Projects','folder','Workspace');
+  if(can('blockers.manage')) add('blockers','Blockers','flag','Workspace');
+  if(can('briefs.use')) add('briefs','Briefs','brief','Workspace');
+  if(can('attendance.view_all')){ add('today','Attendance','cal','People'); add('monthly','Monthly Report','chart','People'); add('screen','Screen Report','monitor','People'); }
+  if(can('people.manage')) add('users','Employees','users','People');
+  if(canAny(['org.manage','people.manage'])) add('org','Organization','org','System');
+  if(can('system.admin')) add('settings','Settings','gear','System');
   return N;
 }
 function renderSide(){
@@ -62,7 +65,7 @@ function startApp(){
   const deep=briefFromHash();
   const N=navFor(S.user);
   if(deep && N.some(n=>n.id==='briefs')) go('briefs',{id:deep});
-  else if(!S.view || !N.some(n=>n.id===S.view)) go(N[0].id==='clock' && S.user.role==='team' && S.status && S.status.clockedIn ? 'mytasks' : N[0].id);
+  else if(!S.view || !N.some(n=>n.id===S.view)) go(N[0].id==='clock' && can('tasks.mine') && S.status && S.status.clockedIn ? 'mytasks' : N[0].id);
   else go(S.view);
   startBellPolling();
   setTimeout(prefetch, 1200);
@@ -78,7 +81,7 @@ function go(v,opts){
   closeBell();
   $('nav').querySelectorAll('.nav').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   window.scrollTo(0,0);
-  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers};
+  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg};
   (map[v]||viewDash)();
 }
 function viewBriefs(opts){
@@ -90,10 +93,12 @@ function viewBriefs(opts){
 
 // تحميل مسبق في الخلفية، عشان الصفحات التانية تفتح على طول
 async function prefetch(){
-  const r=S.user.role, list=[];
-  if(r!=='team') list.push(['dash','dash',{}],['plist','projList',{}]);
-  if(r==='team') list.push(['my','myTasks',{}]);
-  if(r==='admin'||r==='hr') list.push(['board','board',{}],['users','users',{}]);
+  const list=[];
+  if(can('dashboard.view')) list.push(['dash','dash',{}]);
+  if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) list.push(['plist','projList',{}]);
+  if(can('tasks.mine')) list.push(['my','myTasks',{}]);
+  if(can('attendance.view_all')) list.push(['board','board',{}]);
+  if(can('people.manage')) list.push(['users','users',{}]);
   for(const [k,a,p] of list){
     if(S.fetched[k] && Date.now()-S.fetched[k]<60000) continue;
     try{ const d=await call(a,p); S.cache[k]=d; S.fetched[k]=Date.now(); if(k==='dash') renderBell(); }catch(e){ break; }
@@ -129,7 +134,7 @@ function alertHTML(a,i){
 }
 function openBell(){
   const L=alertsList();
-  $('bellPanel').innerHTML=`<div class="bh">Notifications<span class="spacer"></span>${S.user.role!=='team'?`<button class="btn ghost small" onclick="go('dash')">Open dashboard</button>`:''}</div>`+
+  $('bellPanel').innerHTML=`<div class="bh">Notifications<span class="spacer"></span>${can('dashboard.view')?`<button class="btn ghost small" onclick="go('dash')">Open dashboard</button>`:''}</div>`+
     (L.length? L.slice(0,40).map(alertHTML).join('') : `<div class="empty"><b>All clear</b>No alerts right now.</div>`);
   $('bellPanel').classList.remove('hidden');
 }
@@ -139,7 +144,7 @@ document.addEventListener('click',e=>{ if(!$('bellPanel').contains(e.target) && 
 function goAlert(i){
   const a=alertsList()[i]; if(!a||!a.go) return;
   closeBell();
-  if(a.go.view==='project'){ if(S.user.role==='team'){ go('mytasks'); setTimeout(()=>viewProject(a.go.id),0); } else { go('projects'); viewProject(a.go.id); } }
+  if(a.go.view==='project'){ if(!canAny(['projects.view_all','projects.manage_all','projects.manage_own'])){ go('mytasks'); setTimeout(()=>viewProject(a.go.id),0); } else { go('projects'); viewProject(a.go.id); } }
   else go(a.go.view);
 }
 async function refreshDash(){

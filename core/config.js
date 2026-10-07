@@ -12,6 +12,9 @@ const MODE_NAMES = { tab:'Tab', window:'Window', screen:'Full Screen' };
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LOADING = '<div class="loading">Loading...</div>';
+// الصلاحيات جاية من السيرفر مع بيانات المستخدم
+const can = p => !!(S.user && S.user.perms && S.user.perms.indexOf(p) >= 0);
+const canAny = list => list.some(can);
 // بيعرض الأسامي العربي صح جوه الجمل الإنجليزي
 const bd = s => esc(s).replace(/[\u0600-\u06FF](?:[\u0600-\u06FF\s\d.,،:()\-\/]*[\u0600-\u06FF])?/g, m=>'<bdi>'+m+'</bdi>');
 

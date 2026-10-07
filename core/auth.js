@@ -38,7 +38,7 @@ function boot(){
 async function refreshMe(first){
   try{
     const r=await call('me');
-    const changed=!S.user || S.user.role!==r.user.role || S.user.clocks!==r.user.clocks || S.user.seeAccess!==r.user.seeAccess;
+    const changed=!S.user || String(S.user.perms)!==String(r.user.perms) || S.user.clocks!==r.user.clocks || S.user.seeAccess!==r.user.seeAccess;
     S.user=r.user; S.cfg=r.cfg; setStatus(r.status); store('erp_user',JSON.stringify(r.user));
     if(first||changed) startApp(); else { renderSide(); if(S.view==='clock') viewClock(); }
     if(S.status && S.status.clockedIn && !S.sharing) showAlarm(true);

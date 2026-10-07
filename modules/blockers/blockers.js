@@ -51,7 +51,7 @@ function blCard(b){
       <button class="btn small" onclick="blNote('${esc(b.id)}')">Add</button>
       ${open?`<button class="btn small primary" onclick="blResolve('${esc(b.id)}')">Mark resolved</button>`:`<button class="btn small" onclick="blAct('${esc(b.id)}','reopen')">Reopen</button>`}
       <button class="btn small ghost" onclick="blockForm('${esc(b.id)}')">Edit</button>
-      ${S.user.role==='admin'?`<button class="btn small ghost danger" onclick="if(confirm('هيتمسح البلوكر ده نهائي. متأكد؟'))blAct('${esc(b.id)}','delete')">Delete</button>`:''}
+      ${can('system.admin')?`<button class="btn small ghost danger" onclick="if(confirm('هيتمسح البلوكر ده نهائي. متأكد؟'))blAct('${esc(b.id)}','delete')">Delete</button>`:''}
     </div>
   </div>`;
 }

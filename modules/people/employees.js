@@ -1,16 +1,17 @@
 /* ============ Employees ============ */
-const JOBS=['Store Manager','Copywriter','UI/UX','Designer','Developer','Front End','Account Manager','HR','Manager','Operations Manager'];
-const ROLE_NAMES={admin:'Admin',hr:'HR',am:'Account Manager',team:'Team'};
+// الأدوار والمسميات جاية من صفحة Organization
+const hasP=(u,p)=>(u.perms||[]).indexOf(p)>=0;
+function loadOrg(){ return S.cache.org ? Promise.resolve(S.cache.org) : call('orgGet').then(o=>{ S.cache.org=o; return o; }); }
 function viewUsers(){
   setTop('Employees','Add, edit or archive employees', `<button class="btn primary" onclick="editUser()">+ New Employee</button>`);
   swr('users','users',{},renderUsers);
 }
 function renderUsers(U,keep){
   const act=U.filter(u=>u.active), arch=U.filter(u=>!u.active);
-  const row=u=>{ const lock=S.user.role==='hr'&&u.role==='admin'; const me=u.username===S.user.username;
+  const row=u=>{ const lock=!can('people.manage_admins')&&hasP(u,'system.admin'); const me=u.username===S.user.username;
     return `<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="av">${esc(initials(u.name))}</div><div><b>${esc(u.name)}</b><div class="sub2">${esc(u.username)}</div></div></div></td>
-    <td>${esc(ROLE_NAMES[u.role]||u.role)}</td><td class="muted">${esc(u.job)}</td><td>${u.clocks?'✓':'—'}</td>
-    <td>${u.role==='team'?(u.seeAccess?'✓':'—'):'<span class="muted" style="font-size:12px">Always</span>'}</td>
+    <td>${esc(u.roleName||u.role)}</td><td class="muted">${esc(u.job)}</td><td>${u.clocks?'✓':'—'}</td>
+    <td>${!hasP(u,'briefs.access_all')?(u.seeAccess?'✓':'—'):'<span class="muted" style="font-size:12px">Always</span>'}</td>
     <td class="muted" style="font-size:13px">${esc(u.lastLogin)||'—'}</td>
     <td style="white-space:nowrap">${lock?'':u.active?`<button class="btn small" onclick="editUser('${esc(u.username)}')">Edit</button> <button class="btn small" onclick="setPw('${esc(u.username)}')">Set Password</button>${me?'':` <button class="btn small danger" onclick="archiveUser('${esc(u.username)}')">Archive</button>`}`:`<button class="btn small" onclick="restoreUser('${esc(u.username)}')">Restore</button>`}</td></tr>`; };
   $('main').innerHTML=`
@@ -22,10 +23,13 @@ function renderUsers(U,keep){
     <tr><th>Employee</th><th>Role</th><th>Job</th><th>Clocks in</th><th>Sees access</th><th>Last login</th><th></th></tr>${arch.map(row).join('')}</table></div>`:''}`;
 }
 function closeModal(){ if(!$('modalRoot').querySelector('.alarm')) $('modalRoot').innerHTML=''; }
-function editUser(un){
+async function editUser(un){
+  let O; try{ O=await loadOrg(); }catch(e){ alert(e.message); return; }
   const U=S.cache.users||[];
-  const u=un? U.find(x=>x.username===un) : {username:'',name:'',role:'team',job:'Store Manager',clocks:true,seeAccess:false};
-  const roles=[['team','Team'],['am','Account Manager'],['hr','HR']].concat(S.user.role==='admin'?[['admin','Admin']]:[]);
+  const lowest=O.roles.slice().sort((a,b)=>a.level-b.level)[0]||{id:''};
+  const u=un? U.find(x=>x.username===un) : {username:'',name:'',role:lowest.id,job:(O.jobs[0]||{}).name||'',clocks:true,seeAccess:false};
+  const roles=O.roles.filter(r=>can('people.manage_admins')||r.perms.indexOf('system.admin')<0||r.id===u.role).map(r=>[r.id,r.name]);
+  const JOBS=O.jobs.map(j=>j.name);
   $('modalRoot').innerHTML=`<div class="modal"><div class="card">
     <h2>${un?'Edit Employee':'New Employee'}</h2>
     <label for="fN">Name</label><input id="fN" value="${esc(u.name)}">
@@ -34,7 +38,7 @@ function editUser(un){
     <label for="fR">Role</label><select id="fR">${roles.map(r=>`<option value="${r[0]}" ${u.role===r[0]?'selected':''}>${r[1]}</option>`).join('')}</select>
     <label for="fJ">Job</label><select id="fJ">${JOBS.concat(u.job&&!JOBS.includes(u.job)?[u.job]:[]).map(j=>`<option ${j===u.job?'selected':''}>${esc(j)}</option>`).join('')}</select>
     <label class="check"><input type="checkbox" id="fC" ${u.clocks?'checked':''}>Clocks in / out</label>
-    <label class="check"><input type="checkbox" id="fX" ${u.seeAccess?'checked':''}>Sees the Access section in briefs <span class="muted" style="font-weight:400;font-size:12px">(team only)</span></label>
+    <label class="check"><input type="checkbox" id="fX" ${u.seeAccess?'checked':''}>Sees the Access section in briefs <span class="muted" style="font-weight:400;font-size:12px">(if their role doesn't already)</span></label>
     <div class="err" id="fE"></div>
     <div class="mfoot"><button class="btn primary" id="fS">${un?'Save':'Create'}</button><button class="btn" onclick="closeModal()">Cancel</button></div>
   </div></div>`;
@@ -79,9 +83,8 @@ async function archiveUser(un){
   $('modalRoot').innerHTML=`<div class="modal"><div class="card">${LOADING}</div></div>`;
   let imp;
   try{ imp=await call('userImpact',{username:un}); }catch(e){ closeModal(); alert(e.message); return; }
-  const JOBMAP={sm:'store manager',copy:'copywriter',uiux:'ui/ux',designer:'designer',dev:'developer',fe:'front end',joker:'front end'};
   const opts=(role)=>{ if(role==='am') return imp.ams.map(a=>`<option value="${esc(a.u)}">${esc(a.name)}</option>`).join('');
-    const pref=imp.team.filter(t=>String(t.job).toLowerCase()===JOBMAP[role]), rest=imp.team.filter(t=>String(t.job).toLowerCase()!==JOBMAP[role]);
+    const pref=imp.team.filter(t=>(t.slots||[]).indexOf(role)>=0), rest=imp.team.filter(t=>(t.slots||[]).indexOf(role)<0);
     return pref.concat(rest).map(t=>`<option value="${esc(t.u)}">${esc(t.name)} · ${esc(t.job)}</option>`).join(''); };
   $('modalRoot').innerHTML=`<div class="modal"><div class="card">
     <h2>Archive ${esc(u.name)}</h2>

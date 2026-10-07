@@ -244,14 +244,13 @@ async function projForm(id){
   $('main').innerHTML=LOADING;
   try{
     const meta=await call('projMeta');
-    const byJob=j=>{ const x=meta.team.find(t=>String(t.job).toLowerCase()===j.toLowerCase()); return x?x.u:''; };
+    const bySlot=k=>{ const x=meta.team.find(t=>(t.slots||[]).indexOf(k)>=0); return x?x.u:''; };
     let d={ client:'', type:'', identity:'هوية موجودة', cur_platform:'', target_platform:'', store_url:'', store_id:'', start_date:new Date().toLocaleDateString('en-CA',{timeZone:'Africa/Cairo'}), status:'Active', build_mode:'UI/UX + Dev', brief_id:'', am:'', go_live:'',
-      sm:byJob('Store Manager'), copy:byJob('Copywriter'), uiux:byJob('UI/UX'), designer:byJob('Designer'), dev:byJob('Developer'), fe:byJob('Front End'), joker:byJob('Front End'), joker_role:'uiux' };
-    if(id){ const r=await call('projGet',{id}); d=Object.assign(d,r.data); if(!d.joker) d.joker=byJob('Front End'); if(!d.joker_role) d.joker_role='uiux'; }
-    const isAdmin=S.user.role==='admin';
+      sm:bySlot('sm'), copy:bySlot('copy'), uiux:bySlot('uiux'), designer:bySlot('designer'), dev:bySlot('dev'), fe:bySlot('fe'), joker:bySlot('joker'), joker_role:'uiux' };
+    if(id){ const r=await call('projGet',{id}); d=Object.assign(d,r.data); if(!d.joker) d.joker=bySlot('joker'); if(!d.joker_role) d.joker_role='uiux'; }
+    const isAdmin=can('projects.manage_all');
     const opt=(list,v,blank)=>(blank!==undefined?`<option value="">${blank}</option>`:'')+list.map(o=>{ const val=typeof o==='string'?o:o.u, lab=typeof o==='string'?o:o.name+(o.job?' · '+o.job:''); return `<option value="${esc(val)}"${val===v?' selected':''}>${esc(lab)}</option>`; }).join('');
-    const JOB={ sm:'store manager', copy:'copywriter', uiux:'ui/ux', designer:'designer', dev:'developer', fe:'front end', joker:'front end' };
-    const teamSel=(k,label)=>{ const list=meta.team.filter(t=>String(t.job||'').trim().toLowerCase()===JOB[k]||t.u===d[k]);
+    const teamSel=(k,label)=>{ const list=meta.team.filter(t=>(t.slots||[]).indexOf(k)>=0||t.u===d[k]);
       return `<div><label>${label}</label><select id="pf_${k}">${opt(list,d[k],'—')}</select></div>`; };
     $('main').innerHTML=`<div class="en">
     <button class="btn ghost small" onclick="${id?`viewProject('${esc(id)}')`:'viewProjects()'}">← Back</button>

@@ -487,8 +487,10 @@ function bindAssign(b){
 }
 window.BriefModule={
   enter(el,user,opts){
-    app=el; me=user.username; myName=user.name; myRole=user.role; isAdmin=user.role==="admin";
-    canWrite=isAdmin||myRole==="am"; seeAccess=!!user.seeAccess;
+    const has=p=>(user.perms||[]).indexOf(p)>=0;
+    app=el; me=user.username; myName=user.name; isAdmin=has("briefs.manage_all");
+    myRole=isAdmin?"admin":has("briefs.manage_own")?"am":"team";
+    canWrite=isAdmin||myRole==="am"; seeAccess=!!user.seeAccess||has("briefs.access_all");
     const id=opts&&opts.id;
     if(id){ route={v:"view",id}; setHash(id); render(); if(!briefs.has(id)||briefs.get(id).partial) loadFull(id); loadList(); }
     else { route={v:"list"}; setHash(""); render(); loadList(); }
