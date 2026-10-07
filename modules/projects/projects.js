@@ -145,7 +145,14 @@ function taskRowHTML(t,pid,me,isAdmin){
 
 S.openNotes=new Set();
 function toggleNotes(k){ S.openNotes.has(k)?S.openNotes.delete(k):S.openNotes.add(k); rerender(); }
-function addNote(pid,key,id){ const el=$(id); const v=el?el.value.trim():''; if(!v) return; el.value=''; tAct(pid,key,'note',{text:v}); }
+function addNote(pid,key,id){
+  const el=$(id); const v=el?el.value.trim():''; if(!v) return; el.value='';
+  // النوت ممكن تستنى لو النت فاصل
+  callOrQueue('taskAct',{project:pid,key,act:'note',text:v},'Note on task').then(r=>{
+    if(r && r.queued){ toast('النت فاصل. التعديل هيتبعت لوحده أول ما يرجع'); return; }
+    toast('اتضاف التعديل ✓'); viewRefresh(pid);
+  }).catch(e=>alert(e.message));
+}
 async function projDelete(id){
   if(!confirm('هيتمسح المشروع '+id+' نهائي، ومعاه كل تاسكاته والوقت المتسجل عليه. متأكد؟')) return;
   try{ await call('projDelete',{id}); toast('اتمسح المشروع ✓'); viewProjects(); }catch(e){ alert(e.message); }

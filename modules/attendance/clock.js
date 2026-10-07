@@ -81,13 +81,13 @@ function stopStream(){
 }
 async function onShareEnded(){
   stopStream();
-  try{ await call('shareEvent',{event:'stopped'}); }catch(e){}
+  try{ await callOrQueue('shareEvent',{event:'stopped'}); }catch(e){}
   showAlarm(false);
 }
 function showAlarm(afterReload){
   if(!S.status||!S.status.clockedIn) return;
   if(S.status.onBreak) return; // وقت البريك مش لازم مشاركة
-  if(afterReload && !S.reloadLogged){ S.reloadLogged=true; call('shareEvent',{event:'stopped'}).catch(()=>{}); }
+  if(afterReload && !S.reloadLogged){ S.reloadLogged=true; callOrQueue('shareEvent',{event:'stopped'}).catch(()=>{}); }
   document.title='⚠ المشاركة واقفة';
   $('modalRoot').innerHTML=`<div class="alarm"><div class="card" dir="rtl">
     <h2>مشاركة الشاشة واقفة</h2>
@@ -102,7 +102,7 @@ function showAlarm(afterReload){
     $('aerr').textContent='';
     try{
       const mode=await startShare();
-      call('shareEvent',{event:'resumed',mode}).catch(()=>{});
+      callOrQueue('shareEvent',{event:'resumed',mode}).catch(()=>{});
       $('modalRoot').innerHTML=''; document.title='Miqnas ERP';
       startShotLoop(true);
       if(S.view==='clock') viewClock();
@@ -166,15 +166,18 @@ async function clockOut(){
     if(S.view==='clock' || gated()) go('clock');
   }catch(e){ alert(e.message); if(b){ b.disabled=false; b.textContent='Clock Out'; } }
 }
+// كل سكرين شوت بعد اللي قبله بـ shotMinutes ± 30 ثانية عشوائي،
+// عشان لو الفريق كله بصم في نفس الوقت الصور ماتتبعتش كلها في نفس اللحظة
+function nextShotGap(){ return S.cfg.shotMinutes*60000 + Math.floor((Math.random()-0.5)*60000); }
 function startShotLoop(now){
   clearInterval(S.tick);
-  const ms=S.cfg.shotMinutes*60000;
-  if(now) setTimeout(()=>takeShot().catch(()=>{}),2500);
+  S.shotGap=nextShotGap();
+  if(now) setTimeout(()=>takeShot().catch(()=>{}),2500+Math.floor(Math.random()*4000));
   S.tick=setInterval(()=>{
     if(!S.sharing) return;
-    if(S.pending.length) flushPending();
-    if(Date.now()-S.lastShot>=ms) takeShot().catch(()=>{});
-  },20000);
+    if(S.shotQ.length && !S.offline) flushShots();
+    if(Date.now()-S.lastShot>=S.shotGap) takeShot().catch(()=>{});
+  },15000+Math.floor(Math.random()*5000));
 }
 async function grabCanvas(maxW){
   const track=S.stream&&S.stream.getVideoTracks()[0];
@@ -192,13 +195,22 @@ async function takeShot(){
   if(S.status && S.status.onBreak) return;
   const shot=await grabCanvas(1600);
   shot.mode=S.mode;
-  S.lastShot=Date.now();
+  S.lastShot=Date.now(); S.shotGap=nextShotGap();
+  shot.at=S.lastShot;
+  shot.rid=S.lastShot.toString(36)+Math.random().toString(36).slice(2,10);
   try{ await call('uploadShot',shot); }
-  catch(e){ if(S.pending.length<3) S.pending.push(shot); }
+  catch(e){ if(e.offline){ S.shotQ.push(shot); if(S.shotQ.length>6) S.shotQ.shift(); renderNet(); } }
   const el=$('lastShotT'); if(el) el.textContent=new Date(S.lastShot).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
-async function flushPending(){
-  const p=S.pending.splice(0);
-  for(const s of p){ try{ await call('uploadShot',s); }catch(e){ S.pending.push(s); break; } }
+// السكرين شوتس اللي استنت لما النت كان فاصل (آخر 6 بس، يعني ساعة)
+async function flushShots(){
+  if(S.flushingShots) return; S.flushingShots=true;
+  try{
+    while(S.shotQ.length){
+      const s=S.shotQ[0];
+      try{ await call('uploadShot',s); }catch(e){ if(e.offline) break; }
+      S.shotQ.shift();
+    }
+  } finally { S.flushingShots=false; renderNet(); }
 }
 window.addEventListener('beforeunload',e=>{ if(S.status&&S.status.clockedIn){ e.preventDefault(); e.returnValue=''; } });

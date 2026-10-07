@@ -280,3 +280,6 @@ tr.clk{cursor:pointer} tr.clk:hover td{background:#F4F8F7}
   .two{grid-template-columns:1fr}
   #bellPanel{right:12px;top:60px}
 }
+#netBar{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:9999;padding:7px 16px;border-radius:0 0 10px 10px;font:600 13px 'IBM Plex Sans Arabic',system-ui,sans-serif;direction:rtl;box-shadow:0 4px 14px rgba(0,0,0,.12)}
+#netBar.off{background:#B42318;color:#fff}
+#netBar.sync{background:#FEF3C7;color:#7A4D00}
