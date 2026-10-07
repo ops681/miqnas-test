@@ -16,6 +16,8 @@ const IC = {
   org:'<rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/>',
   device:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M10 17h4"/><path d="M9 8l2 2 4-4"/>',
   pulse:'<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+  todo:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/>',
+  meet:'<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2.5 19c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5M13 15.2c.9-.5 1.9-.7 3-.7 2.7 0 4.9 1.5 5.5 4.5"/>',
   home:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
   crown:'<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/>',
   trend:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
@@ -31,6 +33,8 @@ function navFor(u){
   if(can('dashboard.view')) add('dash','Dashboard','dash','Workspace');
   if(u.clocks) add('clock','Time Clock','clock','Workspace');
   if(can('tasks.mine')) add('mytasks','My Tasks','tasks','Workspace');
+  add('tasks','Tasks','todo','Workspace');
+  add('meetings','Meetings','meet','Workspace');
   if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) add('projects','Projects','folder','Workspace');
   if(can('blockers.manage')) add('blockers','Blockers','flag','Workspace');
   if(can('briefs.use')) add('briefs','Briefs','brief','Workspace');
@@ -111,7 +115,7 @@ function go(v,opts){
   window.scrollTo(0,0);
   if(gated() && v!=='clock'){ S.lockShown=true; viewLocked(v); return; }
   S.lockShown=false;
-  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,exec:viewExec,pulse:viewPulse,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
+  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,tasks:()=>viewTasks(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
   (map[v]||viewDash)();
 }
 function viewLocked(v){
@@ -192,6 +196,7 @@ function goAlert(i){
 }
 function goTo(g){
   if(!g) return;
+  if((g.view==='tasks'||g.view==='meetings') && g.id){ go(g.view,{id:g.id}); return; }
   const a={go:g};
   if(a.go.view==='project'){ if(!canAny(['projects.view_all','projects.manage_all','projects.manage_own'])){ go('mytasks'); setTimeout(()=>viewProject(a.go.id),0); } else { go('projects'); viewProject(a.go.id); } }
   else go(a.go.view);
