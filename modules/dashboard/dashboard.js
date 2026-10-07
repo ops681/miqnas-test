@@ -6,7 +6,7 @@ function renderDash(r,keep){
   S.skew=Date.now()-r.now;
   const k=r.kpis;
   setTop('Dashboard', new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short',year:'numeric'})+' · updated '+new Date(r.now).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
-    `<button class="btn" onclick="refreshDash()">Refresh</button>`);
+    `<button class="btn" onclick="refreshDash(true)">Refresh</button>`);
   const F=S.alertFilter, cats={all:'All',project:'Projects',task:'Tasks',people:'People'};
   const L=r.alerts.map((a,i)=>({a,i})).filter(x=>F==='all'||x.a.cat===F);
   const showPeople = can('attendance.view_all');

@@ -206,9 +206,9 @@ function goTo(g){
   if(a.go.view==='project'){ if(!canAny(['projects.view_all','projects.manage_all','projects.manage_own'])){ go('mytasks'); setTimeout(()=>viewProject(a.go.id),0); } else { go('projects'); viewProject(a.go.id); } }
   else go(a.go.view);
 }
-async function refreshDash(){
+async function refreshDash(fresh){
   if(gated()) return;
-  try{ const d=await call('dash'); S.cache.dash=d; S.fetched.dash=Date.now(); saveCache(); if(d.unread!=null) S.unread=d.unread; renderBell(); if(S.view==='dash' && !busyTyping()) renderDash(d,true); }catch(e){}
+  try{ const d=await call('dash',fresh===true?{fresh:true}:{}); S.cache.dash=d; S.fetched.dash=Date.now(); saveCache(); if(d.unread!=null) S.unread=d.unread; renderBell(); if(S.view==='dash' && !busyTyping()) renderDash(d,true); }catch(e){}
 }
 function startBellPolling(){
   clearTimeout(S.bellT);
