@@ -1,10 +1,10 @@
 /* ============ System Health ============
    سرعة السيرفر، الأخطاء، الطابور، حجم الشيتات، وأبطأ العمليات.
    المؤشر اللي فوق بيقول إمتى نبدأ نفكر في داتابيز. */
-const HLV={green:['Healthy','var(--ok)','var(--okbg)'],yellow:['Watch','var(--yel)','var(--yelbg)'],red:['Act now','var(--bad)','var(--badbg)']};
-function viewHealth(){
-  setTop('System Health','Live from the server · last 24 hours unless noted', `<button class="btn" onclick="viewHealth()">Refresh</button>`);
-  swr('health','healthGet',{},renderHealth);
+const HLV={green:['Healthy','var(--ok)','var(--okbg)'],yellow:['Watch','var(--yel)','var(--yelbg)'],red:['Act now','var(--bad)','var(--badbg)'],collect:['Collecting data','var(--muted)','var(--line2)']};
+function viewHealth(fresh){
+  setTop('System Health','Live from the server · last 24 hours unless noted', `<button class="btn" onclick="viewHealth(true)">Refresh</button>`);
+  swr('health','healthGet',{fresh:fresh===true},renderHealth);
 }
 function hPill(level){ const v=HLV[level]||HLV.green; return `<span style="display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700;color:${v[1]};background:${v[2]}">${v[0]}</span>`; }
 function fmtMs(ms){ return ms>=1000? (Math.round(ms/100)/10)+' s' : Math.round(ms)+' ms'; }
@@ -13,7 +13,8 @@ function renderHealth(H){
   const k=H.kpis, ov=HLV[H.overall]||HLV.green;
   const msg={green:'Google Sheets is handling the load fine. No need to move to a database.',
     yellow:'Getting close to a limit. Keep an eye on it and start planning the database move.',
-    red:'A limit has been passed. Time to plan the move to a database.'}[H.overall];
+    red:'A limit has been passed. Time to plan the move to a database.',
+    collect:`Not enough data yet to judge speed and errors (${fmtN(k.requests)} of ${fmtN(H.minRequests)} requests in the last 24 hours). The signal turns on by itself.`}[H.overall];
   const maxN=Math.max(1,...H.hours.map(h=>h.n));
   const nowH=new Date().getHours();
   const lvlP=ms=>ms>=H.limits.p95[1]?'red':ms>=H.limits.p95[0]?'yellow':'green';
@@ -61,6 +62,6 @@ function renderHealth(H){
   <div class="card flush"><div class="chead"><h2>Last 7 days</h2></div>
     <div class="tbl-wrap" style="border:0"><table><tr><th>Day</th><th>Requests</th><th>Writes</th><th>p95</th><th>Server errors</th><th>Failed on devices</th></tr>
     ${H.days.slice().reverse().map(d=>`<tr><td>${esc(d.date)}</td><td>${fmtN(d.n)}</td><td>${fmtN(d.w)}</td><td>${d.n?fmtMs(d.p95):'—'}</td><td>${d.e||'—'}</td><td>${d.cf||'—'}</td></tr>`).join('')}</table></div></div>
-  <div class="muted" style="font-size:12.5px">Numbers are collected in memory and saved to the "System Health" tab once an hour. The current hour is live.</div>
+  <div class="muted" style="font-size:12.5px">Numbers are collected in memory and saved to the "System Health" tab once an hour. The current hour is live. This page does not count itself. Sheet size updates once an hour (Refresh recalculates it).</div>
   </div>`;
 }
