@@ -9,11 +9,11 @@ function viewUsers(){
 function renderUsers(U,keep){
   const act=U.filter(u=>u.active), arch=U.filter(u=>!u.active);
   const row=u=>{ const lock=!can('people.manage_admins')&&hasP(u,'system.admin'); const me=u.username===S.user.username;
-    return `<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="av">${esc(initials(u.name))}</div><div><b>${esc(u.name)}</b><div class="sub2">${esc(u.username)}</div></div></div></td>
+    return `<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="av" data-u="${esc(u.username)}">${esc(initials(u.name))}</div><div><b>${esc(u.name)}</b><div class="sub2">${esc(u.username)}</div></div></div></td>
     <td>${esc(u.roleName||u.role)}</td><td class="muted">${esc(u.job)}</td><td>${u.clocks?'✓':'—'}</td>
     <td>${!hasP(u,'briefs.access_all')?(u.seeAccess?'✓':'—'):'<span class="muted" style="font-size:12px">Always</span>'}</td>
     <td class="muted" style="font-size:13px">${esc(u.lastLogin)||'—'}</td>
-    <td style="white-space:nowrap">${lock?'':u.active?`<button class="btn small" onclick="editUser('${esc(u.username)}')">Edit</button> <button class="btn small" onclick="setPw('${esc(u.username)}')">Set Password</button>${me?'':` <button class="btn small danger" onclick="archiveUser('${esc(u.username)}')">Archive</button>`}`:`<button class="btn small" onclick="restoreUser('${esc(u.username)}')">Restore</button>`}</td></tr>`; };
+    <td style="white-space:nowrap">${lock?'':u.active?`<button class="btn small" onclick="editUser('${esc(u.username)}')">Edit</button> <button class="btn small" onclick="setPw('${esc(u.username)}')">Set Password</button> <button class="btn small" onclick="avEdit('${esc(u.username)}')">Photo</button>${me?'':` <button class="btn small danger" onclick="archiveUser('${esc(u.username)}')">Archive</button>`}`:`<button class="btn small" onclick="restoreUser('${esc(u.username)}')">Restore</button>`}</td></tr>`; };
   $('main').innerHTML=`
   <div class="tbl-wrap"><table style="min-width:860px">
     <tr><th>Employee</th><th>Role</th><th>Job</th><th>Clocks in</th><th>Sees access</th><th>Last login</th><th></th></tr>

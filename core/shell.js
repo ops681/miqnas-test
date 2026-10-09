@@ -63,7 +63,7 @@ function renderSide(){
   N.forEach(n=>{ if(n.sec!==sec){ sec=n.sec; h+=`<div class="nsec">${sec}</div>`; } const b=navBadge(n.id); h+=`<button class="nav${S.view===n.id?' on':''}${lock&&n.id!=='clock'?' locked':''}" data-v="${n.id}">${ico(n.icon)}<span>${n.label}</span>${b?`<span class="nb">${b}</span>`:''}</button>`; });
   $('nav').innerHTML=h;
   $('nav').querySelectorAll('.nav').forEach(b=>b.onclick=()=>go(b.dataset.v));
-  $('sUser').innerHTML=`<div class="av">${esc(initials(S.user.name))}</div><div class="nm"><b>${esc(S.user.name)}</b><small>${esc(S.user.roleName)}${S.user.job&&S.user.job!==S.user.roleName?' · '+esc(S.user.job):''}</small></div><button class="iconbtn" onclick="logout()" aria-label="Logout" title="Logout">${ico('out',17)}</button>`;
+  $('sUser').innerHTML=`<button class="av av-btn" data-u="${esc(S.user.username)}" onclick="avEdit()" title="Change your photo" aria-label="Change your photo">${esc(initials(S.user.name))}</button><div class="nm"><b>${esc(S.user.name)}</b><small>${esc(S.user.roleName)}${S.user.job&&S.user.job!==S.user.roleName?' · '+esc(S.user.job):''}</small></div><button class="iconbtn" onclick="logout()" aria-label="Logout" title="Logout">${ico('out',17)}</button>`;
   renderSideClock();
 }
 // الأرقام اللي على القايمة

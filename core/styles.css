@@ -98,6 +98,7 @@ h3{font-size:15.5px;margin:0 0 10px}
 .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:20px;align-items:start;margin-bottom:20px}
 .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
 .row>div{flex:1;min-width:150px}
+.row>.av{flex:none;min-width:0}
 
 /* tables */
 .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
@@ -406,3 +407,20 @@ table.pacc{table-layout:fixed}
 @keyframes ppIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.pp-card{animation:none}}
 @media print{.pp-box{display:none}}
+
+/* صور الموظفين */
+.av.has-img{background-size:cover;background-position:center;color:transparent}
+.av-btn{border:0;cursor:pointer;padding:0;font:inherit;font-weight:700}
+.av-btn:hover{outline:2px solid rgba(255,255,255,.5)}
+.av-btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.av-xl{width:88px;height:88px;font-size:26px;background-size:cover;background-position:center}
+
+/* Team workload */
+.wl-row{width:100%;background:none;border:0;border-bottom:1px solid var(--line2);text-align:left;cursor:pointer;font:inherit;color:inherit}
+.wl-row:hover{background:var(--line2)}
+.wl-row:focus-visible{outline:2px solid var(--brand2);outline-offset:-2px}
+.wl-proj{all:unset;box-sizing:border-box;cursor:pointer;border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:8px}
+.wl-proj:hover{border-color:var(--brand2)}
+.wl-proj:focus-visible{outline:2px solid var(--brand2);outline-offset:2px}
+.wl-bars{display:grid;grid-template-columns:110px 1fr 44px 80px;gap:10px;align-items:center;font-size:12.5px}
+.wl-bars b{text-align:right}

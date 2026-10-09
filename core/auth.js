@@ -43,7 +43,7 @@ async function refreshMe(first){
   try{
     const r=await call('me');
     const changed=!S.user || String(S.user.perms)!==String(r.user.perms) || S.user.clocks!==r.user.clocks || S.user.seeAccess!==r.user.seeAccess;
-    S.user=r.user; S.cfg=r.cfg; setStatus(r.status); store('erp_user',JSON.stringify(r.user));
+    S.user=r.user; S.cfg=r.cfg; setStatus(r.status); store('erp_user',JSON.stringify(r.user)); avSync(r.avv);
     if(first||changed) startApp(); else { renderSide(); if(S.view==='clock') viewClock(); else if(gated() && S.view!=='clock') go('clock'); else if(S.lockShown && !gated()) go(S.view); }
     if(S.status && S.status.clockedIn && !S.sharing) showAlarm(true);
   }catch(e){ if(first){ $('loginView').classList.remove('hidden'); } }

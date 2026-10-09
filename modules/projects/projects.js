@@ -38,8 +38,9 @@ function renderProjects(r,keep){
       ${r.workload.length||r.running.length?`<div class="kpi"><b>${r.running.length}</b><span>Tasks running now</span></div>`:''}
     </div>
     ${r.running.length?`<div class="card" style="margin-bottom:16px"><h3>Running now</h3><div class="runlist">${r.running.map(x=>`<div class="runit"><b>${bd(x.name)}</b><span class="muted">${esc(x.task)}</span><span class="muted">· ${esc(x.client)}</span><span class="ttime" data-live data-total="0" data-since="${x.since}"></span></div>`).join('')}</div></div>`:''}
-    ${r.workload.length?`<div class="card" style="margin-bottom:16px"><h3>Team workload (active projects)</h3><div class="tbl-wrap" style="border:0"><table style="min-width:420px"><tr><th>Name</th><th>Open</th><th>Ready to start</th><th>Running</th></tr>
-      ${r.workload.sort((a,b)=>b.open-a.open).map(w=>`<tr><td><b>${bd(w.name)}</b></td><td>${w.open}</td><td>${w.ready}</td><td>${w.running?`<span class="pill p-run">${w.running}</span>`:'0'}</td></tr>`).join('')}</table></div></div>`:''}
+    ${r.workload.length?`<div class="card flush" style="margin-bottom:16px"><div class="chead"><h2>Team workload</h2><span class="muted" style="font-size:12.5px">Active projects each person still has work in · click a name for the details</span></div>
+      ${r.workload.slice().sort((a,b)=>(b.active||0)-(a.active||0)||b.open-a.open).map(w=>`<button class="tm wl-row" onclick="wlOpen('${esc(w.u)}')"><div class="av" data-u="${esc(w.u)}">${esc(initials(w.name))}</div><div class="tx"><b>${bd(w.name)}</b> <span class="muted" style="font-size:12px">· ${esc(w.job||'')}</span><div>${(w.projects||[]).filter(p=>p.myPct<100).slice(0,3).map(p=>esc(p.client)).join(' · ')||'All parts done'}</div></div>
+        <div class="nums"><b>${w.active||0} ${(w.active||0)===1?'project':'projects'}</b>${w.running?'<span style="color:var(--brand2)">● timer running</span>':''}</div></button>`).join('')}</div>`:''}
     <div class="flt">${[['Active','Active'],['On Hold','On Hold'],['Launched','Launched'],['Cancelled','Cancelled'],['all','All']].map(f=>`<button class="${F===f[0]?'on':''}" onclick="S.pFilter='${f[0]}';renderProjects(S.cache.plist)">${f[1]} <span>${f[0]==='all'?P.length:P.filter(p=>p.status===f[0]).length}</span></button>`).join('')}</div>
     ${list.length?`<div class="tbl-wrap"><table>
       <tr><th>Project</th><th>Client</th><th>Type</th><th>Account Manager</th><th>Start</th><th>Target Launch</th><th>Status</th><th style="min-width:150px">Progress</th><th>Hours</th></tr>
@@ -365,4 +366,16 @@ function openBriefFrom(briefId, projId){
   const back = projId ? { label:'Back to '+projId, go:()=>goTo({view:'project',id:projId}) }
                       : { label:'Back to My Tasks', go:()=>go('mytasks') };
   go('briefs',{id:briefId, back});
+}
+
+// تفاصيل شغل الموظف: المشاريع اللي هو فيها، ونسبة الجزء بتاعه ونسبة المشروع كله
+function wlOpen(un){
+  const w=((S.cache.plist||{}).workload||[]).find(x=>x.u===un); if(!w) return;
+  const P=w.projects||[];
+  $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:560px">
+    <div class="row" style="align-items:center;gap:12px"><div class="av" data-u="${esc(w.u)}">${esc(initials(w.name))}</div><div><h2 style="margin:0;font-size:18px">${bd(w.name)}</h2><div class="muted" style="font-size:13px">${esc(w.job||'')} · ${w.active||0} active ${(w.active||0)===1?'project':'projects'} · ${w.open} open tasks</div></div><div class="spacer"></div><button class="btn ghost small" onclick="closeModal()">Close</button></div>
+    <div style="display:grid;gap:8px;margin-top:16px">${P.length?P.map(p=>`<button class="wl-proj" onclick="closeModal();goTo({view:'project',id:'${esc(p.id)}'})">
+      <div class="row" style="align-items:center;gap:8px"><b>${esc(p.client)}</b><span class="muted" style="font-size:12.5px">${esc(p.id)} · ${esc(p.type||'')}</span><div class="spacer"></div>${p.myPct===100?'<span class="pill p-in">Your part done</span>':p.running?'<span class="pill p-prog">Timer running</span>':''}</div>
+      <div class="wl-bars"><span class="muted">Their part</span>${pbar(p.myPct)}<b>${p.myPct}%</b><span class="muted">${p.done}/${p.total} tasks</span></div>
+      <div class="wl-bars"><span class="muted">Whole project</span>${pbar(p.projPct)}<b>${p.projPct}%</b><span></span></div></button>`).join(''):'<div class="muted">No active projects.</div>'}</div></div></div>`;
 }

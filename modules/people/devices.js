@@ -5,7 +5,7 @@ function viewDevices(){
   swr('devices','devicesList',{},renderDevices);
 }
 function renderDevices(D){
-  const who=r=>`<div style="display:flex;align-items:center;gap:10px"><div class="av">${esc(initials(r.name))}</div><div><b>${esc(r.name)}</b><div class="sub2">${esc(r.u)}</div></div></div>`;
+  const who=r=>`<div style="display:flex;align-items:center;gap:10px"><div class="av" data-u="${esc(r.username||r.u||'')}">${esc(initials(r.name))}</div><div><b>${esc(r.name)}</b><div class="sub2">${esc(r.u)}</div></div></div>`;
   const blocked=r=>`<span class="muted" style="font-size:12.5px">${esc(r.block)}</span>`;
   const ST={active:'Approved',rejected:'Rejected',replaced:'Removed',pending:'Waiting'};
   $('main').innerHTML=`<div style="display:grid;gap:22px">
