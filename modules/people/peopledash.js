@@ -48,6 +48,7 @@ function renderPeople(r){
     ${link('Requests waiting',k.requests,'Leave, permissions, overtime','var(--warn)','requests')}
     ${k.devices!=null?link('New devices',k.devices,'Waiting for approval','var(--warn)','devices'):''}
   </div>
+  ${pdChartsHTML(r)}
   <div class="pd-grid">
     <div id="pdList">
       <div class="card" style="padding:12px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
@@ -74,3 +75,55 @@ async function pdDecide(id,decision){
   else if(!confirm('توافق على الطلب ده؟')) return;
   try{ await call('reqDecide',{id,decision,note}); toast(decision==='approve'?'اتوافق ✓':'اترفض'); S.rqMeta=null; pdRefresh(); refreshDash(); }catch(e){ alert(e.message); }
 }
+
+/* ----- الرسومات ----- */
+const PD_REQ=[['pending','Waiting','#E0A100'],['approved','Approved','#12B76A'],['rejected','Rejected','#D92D20'],['cancelled','Cancelled','#98A2B3']];
+function pdStack(parts,total){
+  // شريط واحد مقسوم، بفاصل 2px بين الأجزاء، وكل جزء ليه tooltip
+  if(!total) return `<div class="pd-stack empty"><span>No data yet</span></div>`;
+  return `<div class="pd-stack" role="img" aria-label="${esc(parts.filter(x=>x.n).map(x=>x.label+' '+x.n).join(', '))}">${parts.filter(x=>x.n).map(x=>`<span class="seg" style="flex:${x.n};background:${x.c}" data-tip="${esc(x.label)}: <b>${x.n}</b> (${Math.round(x.n/total*100)}%)"${x.click?` onclick="${x.click}"`:''} tabindex="0"></span>`).join('')}</div>`;
+}
+function pdLegend(parts){ return `<div class="pd-legend">${parts.map(x=>`<button class="lg${x.click?'':' static'}"${x.click?` onclick="${x.click}"`:''}><i style="background:${x.c}"></i>${esc(x.label)} <b>${x.n}</b></button>`).join('')}</div>`; }
+function pdChartsHTML(r){
+  const k=r.kpis, C=r.charts;
+  const today=[['in','Clocked in',k.in],['break','On break',k.brk],['out','Clocked out',k.out],['absent','Not clocked in',k.notIn],['leave','On leave',k.leave],['stale','Forgot to clock out',k.stale]]
+    .map(([st,label,n])=>({label,n:n||0,c:PD_ST[st][1],click:`pdFilter('${st}')`}));
+  const tTotal=today.reduce((a,x)=>a+x.n,0);
+  let h=`<div class="pd-charts">
+    <div class="card pd-ch wide"><div class="pd-ch-h"><h3>Attendance today</h3><span class="muted">${tTotal} of ${k.clockers} who clock in · click a color to see who</span></div>
+      ${pdStack(today,tTotal)}${pdLegend(today)}</div>`;
+  if(!C){ return h+`</div>`; }
+  // 30 يوم
+  const T=C.trend||[], avg=T.length?Math.round(T.reduce((a,x)=>a+x.pct,0)/T.length):0;
+  const step=Math.max(1,Math.ceil(T.length/6));
+  h+=`<div class="card pd-ch"><div class="pd-ch-h"><h3>Attendance · last 30 working days</h3><span class="muted">Average <b style="color:var(--ink)">${avg}%</b></span></div>
+    ${T.length?`<div class="pd-cols"><div class="pd-yax"><span>100%</span><span>50%</span><span>0</span></div><div class="pd-plot">${[100,50].map(v=>`<i class="gl" style="bottom:${v}%"></i>`).join('')}
+      ${T.map((d,i)=>`<div class="col" tabindex="0" data-tip="${esc(new Date(d.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}))}<br><b>${d.pct}%</b> · ${d.present} of ${d.expected} clocked in${d.leave?'<br>'+d.leave+' on leave':''}"><span style="height:${Math.max(d.pct,1)}%"></span></div>`).join('')}</div></div>
+      <div class="pd-xax">${T.map((d,i)=>`<span>${i%step===0||i===T.length-1?esc(new Date(d.date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})):''}</span>`).join('')}</div>`:`<div class="empty">No working days yet.</div>`}</div>`;
+  // الأقسام
+  const D=C.deptHours||[], maxD=Math.max(1,...D.map(x=>x.hours));
+  h+=`<div class="card pd-ch"><div class="pd-ch-h"><h3>Hours by department · this month</h3><span class="muted">${Math.round(D.reduce((a,x)=>a+x.hours,0))} h in total</span></div>
+    ${D.length?`<div class="pd-hbars">${D.map(x=>`<div class="hb" tabindex="0" data-tip="${esc(x.name)}<br><b>${x.hours} h</b> · ${x.people} ${x.people===1?'person':'people'}<br>${x.avg} h per person"><span class="nm">${esc(x.name)}</span><span class="tr"><i style="width:${Math.max(1,Math.round(x.hours/maxD*100))}%"></i></span><span class="v">${x.hours} h <small>· ${x.avg}/person</small></span></div>`).join('')}</div>`:`<div class="empty">No hours yet this month.</div>`}</div>`;
+  // الإجازات
+  const L=C.leaveTypes||[], maxL=Math.max(1,...L.map(x=>x.days));
+  h+=`<div class="card pd-ch"><div class="pd-ch-h"><h3>Leave · this month</h3><span class="muted">Approved</span></div>
+    ${L.length?`<div class="pd-hbars">${L.map(x=>`<div class="hb" tabindex="0" data-tip="${esc(x.label)}<br><b>${x.days} ${x.days===1?'day':'days'}</b> · ${x.count} ${x.count===1?'request':'requests'}"><span class="nm">${esc(x.label)}</span><span class="tr"><i style="width:${Math.max(1,Math.round(x.days/maxL*100))}%;background:var(--blue)"></i></span><span class="v">${x.days} d</span></div>`).join('')}</div>`:`<div class="empty" style="padding:16px">No approved leave this month.</div>`}
+    <div class="pd-mini"><div><span>Permissions</span><b>${C.permissions.hours} h</b><small>${C.permissions.count} ${C.permissions.count===1?'request':'requests'}</small></div><div><span>Overtime</span><b>${C.overtime.hours} h</b><small>${C.overtime.count} approved</small></div></div></div>`;
+  // الطلبات
+  const R=C.requests, rp=PD_REQ.map(([key,label,c])=>({label,n:R[key]||0,c})), rTot=rp.reduce((a,x)=>a+x.n,0);
+  h+=`<div class="card pd-ch"><div class="pd-ch-h"><h3>Requests · this month</h3><span class="muted">${rTot} sent</span></div>
+    <div class="pd-hero">${R.avgHours==null?`<span>No decisions yet this month</span>`:`<b>${R.avgHours<24?R.avgHours+' h':Math.round(R.avgHours/24*10)/10+' days'}</b><span>Average time until a decision</span>`}</div>
+    ${pdStack(rp,rTot)}${pdLegend(rp)}</div>`;
+  return h+`</div>`;
+}
+// tooltip واحد للرسومات كلها
+(function(){
+  let tip=null;
+  const show=(el,x,y)=>{ if(!tip){ tip=document.createElement('div'); tip.className='pd-tip'; document.body.appendChild(tip); }
+    tip.innerHTML=el.dataset.tip; tip.style.display='block';
+    const w=tip.offsetWidth, hh=tip.offsetHeight; tip.style.left=Math.min(window.innerWidth-w-8,Math.max(8,x-w/2))+'px'; tip.style.top=Math.max(8,y-hh-12)+'px'; };
+  const hide=()=>{ if(tip) tip.style.display='none'; };
+  document.addEventListener('mousemove',e=>{ const el=e.target.closest&&e.target.closest('[data-tip]'); if(el) show(el,e.clientX,e.clientY); else hide(); });
+  document.addEventListener('focusin',e=>{ const el=e.target.closest&&e.target.closest('[data-tip]'); if(el){ const b=el.getBoundingClientRect(); show(el,b.left+b.width/2,b.top); } });
+  document.addEventListener('focusout',hide); window.addEventListener('scroll',hide,{passive:true});
+})();
