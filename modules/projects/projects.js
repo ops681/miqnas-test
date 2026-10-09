@@ -79,20 +79,25 @@ function renderProject(r,keep){
     <button class="btn ghost small" onclick="${backTo[0]}">← ${backTo[1]}</button>
     <div class="card phead">
       <div class="row" style="align-items:center;gap:10px"><h2 style="margin:0">${esc(r.client)}</h2><span class="pill p-out">${esc(r.id)}</span><span class="pill ${PSTAT[r.status]||'p-out'}">${esc(r.status)}</span>${r.blockers&&r.blockers.length?blBadge({open:r.blockers.filter(b=>b.status!=='Resolved').length,total:r.blockers.length,days:r.blockers.reduce((s,b)=>s+b.days,0)}):''}<div class="spacer"></div>
-        ${r.brief_id?`<button class="btn ghost small" onclick="go('briefs',{id:'${esc(r.brief_id)}'})">Open Brief</button>`:''}
+        ${r.brief_id?`<button class="btn ghost small" onclick="openBriefFrom('${esc(r.brief_id)}','${esc(r.id)}')">Open Brief</button>`:''}
         ${r.canEdit?`<button class="btn ghost small" onclick="projForm('${esc(r.id)}')">Edit Project</button>`:''}
         ${r.isAdmin?`<button class="btn ghost small" style="color:var(--bad)" onclick="projDelete('${esc(r.id)}')">Delete</button>`:''}</div>
-      <div class="pmeta">
-        <span><b>Type</b>${esc(r.type)}</span><span><b>Brand Identity</b>${esc(D.identity)}</span>
-        <span><b>Platform</b>${esc(D.cur_platform||'—')} → ${esc(D.target_platform||'—')}</span>
-        <span><b>Start</b>${fmtDay(r.start_date)}</span>
-        <span><b>Target Launch</b>${r.overdue?`<span style="color:var(--bad);font-weight:600">${fmtDay(r.target_launch)} · Overdue</span>`:fmtDay(r.target_launch)}</span>
-        ${r.go_live?`<span><b>Go Live</b>${fmtDay(r.go_live)}</span>`:''}
-        <span><b>Account Manager</b>${esc(r.amName||'—')}</span>
-        ${D.store_url?`<span><b>Store</b><a href="${esc(D.store_url)}" target="_blank" rel="noopener">${esc(D.store_url)}</a></span>`:''}
+      <div class="pinfo">
+        <div class="pbox"><h4>Store</h4>
+          <div class="kv"><b>Type</b><span>${esc(r.type)}</span></div>
+          <div class="kv"><b>Brand Identity</b><span>${esc(D.identity||'—')}</span></div>
+          <div class="kv"><b>Platform</b><span>${esc(D.cur_platform||'—')} → ${esc(D.target_platform||'—')}</span></div>
+          ${D.store_url?`<div class="kv"><b>Store</b><span><a href="${esc(D.store_url)}" target="_blank" rel="noopener">${esc(D.store_url)}</a></span></div>`:''}
+          <div class="kv"><b>Start</b><span>${fmtDay(r.start_date)}</span></div>
+          <div class="kv"><b>Target Launch</b><span>${r.overdue?`<span style="color:var(--bad);font-weight:600">${fmtDay(r.target_launch)} · Overdue</span>`:fmtDay(r.target_launch)}</span></div>
+          ${r.go_live?`<div class="kv"><b>Go Live</b><span>${fmtDay(r.go_live)}</span></div>`:''}
+        </div>
+        <div class="pbox"><h4>Team <span class="pill p-prog" style="margin-left:6px">${esc(r.build_mode)}</span></h4>
+          <div class="kv"><b>Account Manager</b><span>${esc(r.amName||'—')}</span></div>
+          ${ROLE_ORDER.map(k=>`<div class="kv"><b>${ROLE_T[k]}</b><span>${bd(r.team[k]||'—')}</span></div>`).join('')}
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">${pbar(r.progress)}<b style="font-size:14px">${r.progress}%</b><span class="muted" style="font-size:13px">${r.done}/${r.total} tasks · ${r.hours} h</span></div>
-      <div class="pteam">${ROLE_ORDER.map(k=>`<span><b>${ROLE_T[k]}</b>${bd(r.team[k]||'—')}</span>`).join('')}<span class="pill p-prog">${esc(r.build_mode)}</span></div>
     </div>
     ${projAccessHTML(r)}
     ${projBlockersHTML(r)}
@@ -231,7 +236,7 @@ function renderMyTasks(r,keep){
     ${r.projects.length? r.projects.filter(p=>p.id===sel).map(p=>`
       <div class="card tgroup">
         <div class="tghead"><h3 style="margin:0">${esc(p.client)}</h3><span class="pill p-out">${esc(p.id)}</span>${p.status!=='Active'?`<span class="pill p-absent">${esc(p.status)}</span>`:''}<span class="muted" style="font-size:13px">${esc(p.type)} · Target ${fmtDay(p.target_launch)}</span><div class="spacer"></div>
-          ${p.brief_id?`<button class="btn ghost small" onclick="go('briefs',{id:'${esc(p.brief_id)}'})">Brief</button>`:''}
+          ${p.brief_id?`<button class="btn ghost small" onclick="openBriefFrom('${esc(p.brief_id)}','')">Brief</button>`:''}
           <button class="btn ghost small" onclick="viewProject('${esc(p.id)}')">Full Project</button></div>
         <div style="display:flex;align-items:center;gap:8px;margin:2px 0 6px">${pbar(p.progress)}<span class="muted" style="font-size:12px">${p.progress}% of project</span></div>
         ${p.links.length?`<div class="links sm">${p.links.map(l=>`<a href="${esc(l.link)}" target="_blank" rel="noopener" class="lnk"><b>${esc(l.title)}</b><span>${bd(l.by)}</span></a>`).join('')}</div>`:''}
@@ -344,4 +349,11 @@ async function paReveal(pid,key,copyIt){
     if(copyIt){ await navigator.clipboard.writeText(el.dataset.v); toast('اتنسخ'); }
     else el.textContent = el.textContent.startsWith('••') ? el.dataset.v : '••••••••';
   }catch(e){ toast(e.message); }
+}
+
+// فتح البريف من المشروع أو من My Tasks، وزرار الرجوع في البريف يرجّع لنفس المكان
+function openBriefFrom(briefId, projId){
+  const back = projId ? { label:'Back to '+projId, go:()=>goTo({view:'project',id:projId}) }
+                      : { label:'Back to My Tasks', go:()=>go('mytasks') };
+  go('briefs',{id:briefId, back});
 }

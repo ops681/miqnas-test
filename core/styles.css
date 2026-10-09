@@ -287,3 +287,13 @@ tr.clk{cursor:pointer} tr.clk:hover td{background:#F4F8F7}
 .al.unread .tx b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--brand2);margin-right:7px;vertical-align:middle}
 button.kpi{font:inherit;color:inherit}
 button.kpi:hover{border-color:#B8C9C4}
+
+/* كارت المشروع: بيانات المتجر والفريق في مربعين، كل حاجة تحت بعض */
+.pinfo{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+.pbox{border:1px solid var(--line);border-radius:12px;padding:12px 16px;background:var(--card,#fff)}
+.pbox h4{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);display:flex;align-items:center}
+.pbox .kv{display:flex;justify-content:space-between;gap:16px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.pbox .kv:last-child{border-bottom:0}
+.pbox .kv b{color:var(--muted);font-weight:500;white-space:nowrap}
+.pbox .kv span{text-align:right;min-width:0;overflow-wrap:anywhere}
+@media(max-width:760px){.pinfo{grid-template-columns:1fr}}

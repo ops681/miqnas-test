@@ -109,6 +109,8 @@ function toast(msg){ window.erpToast(msg); }
 async function copy(text){try{await navigator.clipboard.writeText(text);toast("اتنسخ");}catch(e){const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("اتنسخ");}catch(_){toast("ماقدرتش أنسخ، انسخ يدوي");}ta.remove();}}
 
 let me=null, myName="", canWrite=false, isAdmin=false, myRole="", seeAccess=false, teamUsers=null;
+// لو البريف اتفتح من مشروع (أو من My Tasks): زرار الرجوع يرجّع هناك
+let backTo=null, asgEdit=false;
 const session="";
 let briefs=new Map(), loaded=false, route={v:"list"}, query="", amFilter="", confirmDel=false;
 let draft=null, saveTimer=null, saving=false, again=false, lastSaved=null;
@@ -120,6 +122,8 @@ function setHash(id){ try{ history.replaceState(null,"", id ? "#brief="+id : loc
 
 function go(r){
   if (route.v==="edit" && draft){ flush(false, draft); draft=null; }
+  if(!(r.v==="view"&&backTo&&r.id===backTo.brief) && !(r.v==="edit"&&backTo&&r.id===backTo.brief)) backTo=null;
+  if(r.v!=="view"||r.id!==route.id) asgEdit=false;
   route=r; confirmDel=false;
   setHash(r.v==="view"?r.id:"");
   if(r.v==="list") loadList();
@@ -369,7 +373,7 @@ function renderView(){
   if(!b){app.innerHTML= loaded?`<div class="note">This brief doesn't exist or isn't shared with you. <button class="btn" id="back">All Briefs</button></div>`:`<div class="note">Loading brief...</div>`; const bk=$("#back"); if(bk) bk.onclick=()=>go({v:"list"}); return;}
   const a=b.answers||{};
   app.innerHTML=`
-  <div class="topbar"><button class="btn ghost" id="back">← All Briefs</button></div>
+  <div class="topbar"><button class="btn ghost" id="back">← ${backTo&&backTo.brief===b.id?esc(backTo.label):"All Briefs"}</button></div>
   <div class="vhead">
 ${headHTML(b)}
     <div class="actions">
@@ -382,7 +386,7 @@ ${headHTML(b)}
     ${assignHTML(src)}
   </div>
   ${sectionsHTML(a)}`;
-  const bk=$("#back"); if(bk) bk.onclick=()=>go({v:"list"});
+  const bk=$("#back"); if(bk) bk.onclick=()=>{ if(backTo&&backTo.brief===b.id){ const t=backTo; backTo=null; t.back(); } else go({v:"list"}); };
   const ed=$("#edit"); if(ed) ed.onclick=()=>editBrief(src.id);
   $("#copytxt").onclick=()=>copy(briefText(b));
   const pb=$("#pdf"); if(pb) pb.onclick=()=>exportPDF(b,pb);
@@ -473,21 +477,27 @@ async function loadFull(id){
 function assignHTML(b){
   if(!b) return "";
   const cur=(b.assigned||[]);
-  if(!canEditB(b)) return cur.length?`<div class="assign"><span class="muted" style="font-size:13px">Assigned team:</span><div class="tags">${cur.map(x=>`<span class="tag">${esc(x.name)}</span>`).join("")}</div></div>`:"";
-  if(!teamUsers) return `<div class="assign"><span class="muted" style="font-size:13px">Assigned team: loading...</span></div>`;
+  const jobOf=u=>{ const t=(teamUsers||[]).find(x=>x.u===u); return t&&t.job?t.job:""; };
+  const tags=cur.length?`<div class="tags">${cur.map(x=>`<span class="tag">${esc(x.name)}${jobOf(x.u)?`<span style="opacity:.7;font-size:12px"> · ${esc(jobOf(x.u))}</span>`:""}</span>`).join("")}</div>`:`<span class="muted" style="font-size:13px">لسه مفيش حد على البريف</span>`;
+  if(!canEditB(b)) return cur.length?`<div class="assign"><span class="muted" style="font-size:13px">Assigned team:</span>${tags}</div>`:"";
+  const head=`<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><b style="font-size:14px">Assigned Team</b><span class="muted" style="font-size:12.5px">Only they can view it (read-only)</span><div style="flex:1"></div>${asgEdit?"":`<button class="btn ghost small" id="asgedit" type="button">تعديل الفريق</button>`}</div>`;
+  if(!asgEdit) return `<div class="assign">${head}${tags}</div>`;
+  if(!teamUsers) return `<div class="assign">${head}<span class="muted" style="font-size:13px">Loading team...</span></div>`;
   const on=new Set(cur.map(x=>x.u));
-  return `<div class="assign"><div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><b style="font-size:14px">Assigned Team</b><span class="muted" style="font-size:12.5px">Only they can view it (read-only)</span></div>
+  return `<div class="assign">${head}
     <div class="seg" id="asg">${teamUsers.map(t=>`<button type="button" data-asg="${esc(t.u)}" aria-pressed="${on.has(t.u)}">${esc(t.name)}<span style="opacity:.7;font-size:12px"> · ${esc(t.job||"")}</span></button>`).join("")}</div>
-    <div><button class="btn" id="asgsave" hidden>Save Team</button></div></div>`;
+    <div style="display:flex;gap:8px"><button class="btn primary" id="asgsave" type="button">Save Team</button><button class="btn" id="asgcancel" type="button">Cancel</button></div></div>`;
 }
 function bindAssign(b){
   if(!canEditB(b)) return;
-  if(!teamUsers){ window.erpCall("briefTeam",{}).then(r=>{ teamUsers=r; if(route.v==="view"&&route.id===b.id) renderView(); }).catch(e=>toast(e.message)); return; }
-  const box=$("#asg"), sv=$("#asgsave"); if(!box) return;
-  box.querySelectorAll("[data-asg]").forEach(x=>x.onclick=()=>{ x.setAttribute("aria-pressed", x.getAttribute("aria-pressed")!=="true"); sv.hidden=false; });
+  if(!teamUsers){ window.erpCall("briefTeam",{}).then(r=>{ teamUsers=r; if(route.v==="view"&&route.id===b.id) renderView(); }).catch(e=>toast(e.message)); }
+  const ed=$("#asgedit"); if(ed) ed.onclick=()=>{ asgEdit=true; renderView(); };
+  const cc=$("#asgcancel"); if(cc) cc.onclick=()=>{ asgEdit=false; renderView(); };
+  const box=$("#asg"), sv=$("#asgsave"); if(!box||!sv) return;
+  box.querySelectorAll("[data-asg]").forEach(x=>x.onclick=()=>{ x.setAttribute("aria-pressed", x.getAttribute("aria-pressed")!=="true"); });
   sv.onclick=async()=>{ sv.disabled=true; sv.textContent="Saving...";
     const list=[...box.querySelectorAll('[data-asg][aria-pressed="true"]')].map(x=>x.dataset.asg);
-    try{ const r=await window.erpCall("briefAssign",{id:b.id,assigned:list}); b.assigned=r; toast("اتحفظ الفريق ✓"); renderView(); }
+    try{ const r=await window.erpCall("briefAssign",{id:b.id,assigned:list}); b.assigned=r; asgEdit=false; toast("اتحفظ الفريق ✓"); renderView(); }
     catch(e){ toast(e.message); sv.disabled=false; sv.textContent="Save Team"; } };
 }
 window.BriefModule={
@@ -497,6 +507,7 @@ window.BriefModule={
     myRole=isAdmin?"admin":has("briefs.manage_own")?"am":"team";
     canWrite=isAdmin||myRole==="am"; seeAccess=!!user.seeAccess||has("briefs.access_all");
     const id=opts&&opts.id;
+    backTo=id&&opts.back?{brief:id,label:opts.back.label,back:opts.back.go}:null; asgEdit=false;
     if(id){ route={v:"view",id}; setHash(id); render(); if(!briefs.has(id)||briefs.get(id).partial) loadFull(id); loadList(); }
     else { route={v:"list"}; setHash(""); render(); loadList(); }
     window.scrollTo(0,0);
