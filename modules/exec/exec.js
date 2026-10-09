@@ -34,7 +34,7 @@ function renderExec(X){
   const gid=g=>{ S.execGo.push(g); return S.execGo.length-1; };
   const D=X.delivery, R=X.risks, C=X.capacity;
   const seg=(n,c,l)=>n?`<div title="${l}: ${n}" style="flex:${n};background:${c}"></div>`:'';
-  const cols=[['people','People'],['present','Present now'],['hours','Hours today'],['open','Open tasks'],['late','Late tasks'],['alerts','Alerts']];
+  const cols=[['people','People'],['present','Present now'],['hours','Hours today'],['open','Open tasks'],['late','Late tasks'],['alerts','Alerts']].filter(c=>!X.noProjects||['people','present','hours'].indexOf(c[0])>=0);
   $('main').innerHTML=`<div style="display:grid;gap:20px">
 
   ${X.actions.length?`<div class="card flush" style="border-left:5px solid var(--bad)">
@@ -44,7 +44,7 @@ function renderExec(X){
 
   ${pulseCard(X.pulse)}
 
-  <div class="two" style="margin:0">
+  ${X.noProjects?'':`  <div class="two" style="margin:0">
     <div class="card flush"><div class="chead"><h2>Delivery Health</h2><span class="spacer"></span><button class="btn ghost small" onclick="go('dash')">Operations dashboard →</button></div>
       <div style="padding:16px 20px">
         <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:14px">
@@ -69,21 +69,21 @@ function renderExec(X){
       ${R.critical.filter(a=>a.tag!=='BLOCKER').map(a=>`<button class="al sev-red" onclick="goTo(S.execGo[${gid(a.go)}])"><span class="dot"></span><span class="tx"><b>${bd(a.title)}</b><span>${bd(a.detail)}</span></span><span class="tg">${esc(a.tag)}</span></button>`).join('')}
       ${!R.blockers.length&&!R.critical.length?`<div class="empty"><b>No critical risks</b>${R.idle} idle task alerts · ${R.waiting} people waiting on handovers</div>`:`<div class="muted" style="font-size:12.5px;padding:10px 20px">${R.idle} idle task alerts · ${R.waiting} people waiting on handovers</div>`}
     </div>
-  </div>
+  </div>`}
 
   <div class="card flush"><div class="chead"><h2>People & Capacity</h2><span class="spacer"></span><button class="btn ghost small" onclick="go('today')">Attendance →</button></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--line2);border-bottom:1px solid var(--line2)">
-      ${[['Headcount',C.headcount],['Clocked in',C.clockedIn+'/'+C.clockers],['On break',C.onBreak],['Absent today',C.absent],['Hours today',C.hoursToday],['Timers running',C.timers],['Done today',C.doneToday],['Late tasks',C.lateTasks]]
+      ${[['Headcount',C.headcount],['Clocked in',C.clockedIn+'/'+C.clockers],['On break',C.onBreak],['Absent today',C.absent],['Hours today',C.hoursToday],['Timers running',C.timers],['Done today',C.doneToday],['Late tasks',C.lateTasks]].filter(k=>k[1]!=null)
         .map(k=>`<div style="background:var(--card);padding:12px 14px"><div class="muted" style="font-size:12px">${k[0]}</div><b style="font-size:22px">${k[1]}</b></div>`).join('')}
     </div>
-    <div style="padding:14px 20px">
+    ${X.noProjects?'':`    <div style="padding:14px 20px">
       <div class="muted" style="font-size:12.5px;margin-bottom:8px">Open tasks per person (team average ${C.avgOpen})</div>
       ${C.load.map(x=>{ const mx=Math.max(1,...C.load.map(y=>y.open)); const over=C.overloaded.some(o=>o.u===x.u);
         return `<div style="display:grid;grid-template-columns:160px 1fr 70px;gap:10px;align-items:center;margin:5px 0;font-size:13px">
           <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b>${esc(x.name)}</b> <span class="muted">${esc(x.job)}</span></div>
           <div style="height:10px;background:var(--line2);border-radius:99px;overflow:hidden"><div style="height:100%;width:${Math.round(x.open/mx*100)}%;background:${over?'var(--bad)':'var(--brand2)'}"></div></div>
           <div style="text-align:right">${x.open}${x.late?` <span style="color:var(--bad)">· ${x.late} late</span>`:''}</div></div>`; }).join('')||'<div class="muted">No one is assigned to projects yet.</div>'}
-      ${C.idle.length?`<div class="muted" style="font-size:12.5px;margin-top:10px">No open tasks: ${C.idle.map(esc).join('، ')}</div>`:''}
+      ${C.idle.length?`<div class="muted" style="font-size:12.5px;margin-top:10px">No open tasks: ${C.idle.map(esc).join('، ')}</div>`:''}`}
     </div>
   </div>
 
