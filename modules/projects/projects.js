@@ -316,6 +316,7 @@ async function projForm(id){
       document.querySelectorAll('.m-fe').forEach(e=>e.classList.toggle('hidden',m!=='Front End'));
       document.querySelectorAll('.m-joker').forEach(e=>e.classList.toggle('hidden',cp||m!=='Joker')); };
     $('pf_build_mode').onchange=mode; $('pf_type').addEventListener('change',mode); mode();
+    ['cp','cp2','sm','copy','designer','uiux','dev','fe','joker','am'].forEach(k=>pickify($('pf_'+k), k==='am'?meta.ams.map(a=>Object.assign({job:'Account Manager'},meta.team.find(t=>t.u===a.u)||{},a)):meta.team));
     const normName=v=>String(v||'').toLowerCase().replace(/[\u064B-\u065F\u0670\u0640\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g,'').replace(/[\s\-_–—.]+/g,'');
     const dupCheck=()=>{ const v=normName($('pf_client').value), list=(S.cache.plist&&S.cache.plist.projects)||[];
       const hit=v&&list.find(p=>p.id!==(id||'')&&normName(p.client)===v);
@@ -329,7 +330,7 @@ async function projForm(id){
       set('store_url',b.f.store_url); set('store_id',b.f.zid_id);
       if(b.f.logo_plan) $('pf_identity').value = b.f.logo_plan==='لوجو جديد' ? 'هوية جديدة' : 'هوية موجودة';
       if($('pf_am')){ const a=meta.ams.find(x=>x.u===b.owner); if(a) $('pf_am').value=a.u; }
-      toast('Filled from the brief');
+      pkSyncAll(); toast('Filled from the brief');
     };
     $('pf_save').onclick=async()=>{
       $('pf_err').textContent=''; $('pf_save').disabled=true;

@@ -1,14 +1,54 @@
-/* ============ Attendance › Today ============ */
+/* ============ Attendance › Today (وأي يوم قبل كده) ============ */
+const tdISO=d=>{ const z=new Date(d.getTime()-d.getTimezoneOffset()*6e4); return z.toISOString().slice(0,10); };
+function attDayLabel(d){ const x=new Date(d+'T12:00:00'); return x.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short',year:'numeric'}); }
 function viewToday(){
-  setTop('Attendance','Today · refreshes every minute');
+  S.attDay=''; setTop('Attendance','Today · refreshes every minute',attDayBar(''));
   swr('board','board',{},renderToday);
-  S.viewTimer=setInterval(()=>{ if(S.view==='today' && document.visibilityState==='visible') call('board').then(r=>{ S.cache.board=r; if(S.view==='today') renderToday(r,true); }).catch(()=>{}); },60000);
+  S.viewTimer=setInterval(()=>{ if(S.view==='today' && !S.attDay && document.visibilityState==='visible') call('board').then(r=>{ S.cache.board=r; if(S.view==='today'&&!S.attDay) renderToday(r,true); }).catch(()=>{}); },60000);
 }
+function attDayBar(d){
+  const today=tdISO(new Date()), v=d||today;
+  return `<div class="att-day"><button class="btn small ghost" title="Previous day" onclick="attShift(-1)">‹</button>
+    <input type="date" id="attDate" value="${v}" max="${today}" onchange="attGo(this.value)">
+    <button class="btn small ghost" title="Next day" onclick="attShift(1)" ${v>=today?'disabled':''}>›</button>
+    ${d&&d!==today?'<button class="btn small" onclick="attGo(\'\')">Today</button>':''}</div>`;
+}
+function attShift(n){ const cur=S.attDay||tdISO(new Date()); const x=new Date(cur+'T12:00:00'); x.setDate(x.getDate()+n); attGo(tdISO(x)); }
+function attGo(d){
+  const today=tdISO(new Date());
+  if(!d||d>=today){ S.attDay=''; setTop('Attendance','Today',attDayBar('')); if(S.cache.board) renderToday(S.cache.board); else $('main').innerHTML=LOADING; call('board').then(r=>{ S.cache.board=r; if(S.view==='today'&&!S.attDay) renderToday(r,true); }).catch(e=>toast(e.message)); return; }
+  S.attDay=d; setTop('Attendance',attDayLabel(d),attDayBar(d));
+  const k='bd_'+d; S.dayCache=S.dayCache||{};
+  if(S.dayCache[k]) renderToday(S.dayCache[k]); else $('main').innerHTML=LOADING;
+  call('board',{date:d}).then(r=>{ S.dayCache[k]=r; if(S.view==='today'&&S.attDay===d) renderToday(r,true); }).catch(e=>{ $('main').innerHTML=`<div class="empty">${esc(e.message)}</div>`; });
+}
+const shortD=d=>new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
 function renderToday(r,keep){
-  const L=r.list;
-  const inN=L.filter(x=>x.state==='in'||x.state==='break').length, came=L.filter(x=>x.state!=='absent'&&x.state!=='leave').length;
+  const L=r.list, past=r.isToday===false;
+  if(past){
+    const came=L.filter(x=>x.state==='out'||x.state==='open').length, lv=L.filter(x=>x.state==='leave').length, miss=L.filter(x=>x.state==='open').length;
+    const hrs=Math.round(L.reduce((s,x)=>s+(+x.hoursToday||0),0)*100)/100;
+    setTop('Attendance',attDayLabel(r.date)+(r.workday===false?' · Day off':''),attDayBar(r.date));
+    $('main').innerHTML=`
+    <div class="grid kpis">
+      <div class="kpi"><span>Came in</span><b>${came}</b><small>of ${L.length}</small></div>
+      <div class="kpi"><span>Absent</span><b>${L.length-came-lv}</b><small>${r.workday===false?'Day off':'No clock-in'}</small></div>
+      <div class="kpi"><span>On leave</span><b>${lv}</b></div>
+      <div class="kpi"><span>Missed clock-out</span><b style="color:${miss?'var(--bad)':'var(--ink)'}">${miss}</b><small>${hrs} h worked in total</small></div>
+    </div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Name</th><th>Job</th><th>Status</th><th>In</th><th>Out</th><th>Sharing</th><th>Last screenshot</th><th>Stops</th><th>Hours</th></tr>
+      ${L.map(x=>`<tr>
+        <td><b>${esc(x.name)}</b></td><td class="muted">${esc(x.job)}</td>
+        <td>${x.state==='open'?'<span class="pill p-bad">No clock-out</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>'+(x.sessions>1?`<div class="sub2">${x.sessions} sessions</div>`:''):x.state==='leave'?'<span class="pill" style="background:var(--bluebg);color:var(--blue)">On leave</span>':r.workday===false?'<span class="pill p-out">Day off</span>':'<span class="pill p-absent">Absent</span>'}</td>
+        <td class="nw">${esc(x.inT)||'—'}</td><td class="nw">${esc(x.outT)||'—'}</td><td>${esc(x.mode)||'—'}</td>
+        <td class="nw">${esc(x.lastShot)||'—'}</td><td>${x.stops?`<span class="pill p-bad">${x.stops}</span>`:'0'}</td><td>${x.hoursToday||0}</td></tr>`).join('')}
+    </table></div>`;
+    return;
+  }
+  const inN=L.filter(x=>(x.state==='in'||x.state==='break')&&!x.staleOpen).length, came=L.filter(x=>x.state!=='absent'&&x.state!=='leave'&&!x.staleOpen).length;
   const alerts=L.filter(x=>x.alert||x.staleOpen).length;
-  setTop('Attendance','Today · '+r.today+' · updated '+r.now);
+  setTop('Attendance','Today · '+(r.today?attDayLabel(r.today):'')+' · updated '+r.now,attDayBar(''));
   $('main').innerHTML=`
   <div class="grid kpis">
     <div class="kpi"><span>Working now</span><b>${inN}</b></div>
@@ -20,9 +60,9 @@ function renderToday(r,keep){
     <tr><th>Name</th><th>Job</th><th>Status</th><th>In</th><th>Out</th><th>Sharing</th><th>Last screenshot</th><th>Stops</th><th>Hours today</th></tr>
     ${L.map(x=>`<tr>
       <td><b>${esc(x.name)}</b></td><td class="muted">${esc(x.job)}</td>
-      <td>${x.staleOpen?'<span class="pill p-bad">Forgot clock-out</span>':x.alert?'<span class="pill p-bad">No screenshots</span>':x.state==='break'?`<span class="pill p-prog">On Break</span><div class="sub2" dir="auto">${esc(x.breakSince)} · ${esc(x.breakReason)}</div>`:x.state==='in'?'<span class="pill p-in">Working</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>':x.state==='leave'?'<span class="pill" style="background:var(--bluebg);color:var(--blue)">On leave</span>':'<span class="pill p-absent">Absent</span>'}</td>
-      <td>${esc(x.inT)||'—'}</td><td>${esc(x.outT)||'—'}</td><td>${esc(x.mode)||'—'}</td>
-      <td>${esc(x.lastShot)||'—'}</td><td>${x.stops?`<span class="pill p-bad">${x.stops}</span>`:'0'}</td><td>${x.hoursToday}</td></tr>`).join('')}
+      <td>${x.staleOpen?`<span class="pill p-bad">Forgot clock-out</span><div class="sub2">Open since ${x.openSince?shortD(x.openSince):'an earlier day'}</div>`:x.alert?'<span class="pill p-bad">No screenshots</span>':x.state==='break'?`<span class="pill p-prog">On Break</span><div class="sub2" dir="auto">${esc(x.breakSince)} · ${esc(x.breakReason)}</div>`:x.state==='in'?'<span class="pill p-in">Working</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>':x.state==='leave'?'<span class="pill" style="background:var(--bluebg);color:var(--blue)">On leave</span>':'<span class="pill p-absent">Absent</span>'}</td>
+      <td class="nw">${x.staleOpen?'—':esc(x.inT)||'—'}</td><td class="nw">${esc(x.outT)||'—'}</td><td>${esc(x.mode)||'—'}</td>
+      <td class="nw">${esc(x.lastShot)||'—'}</td><td>${x.stops?`<span class="pill p-bad">${x.stops}</span>`:'0'}</td><td>${x.hoursToday}</td></tr>`).join('')}
   </table></div>`;
 }
 

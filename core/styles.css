@@ -424,3 +424,32 @@ table.pacc{table-layout:fixed}
 .wl-proj:focus-visible{outline:2px solid var(--brand2);outline-offset:2px}
 .wl-bars{display:grid;grid-template-columns:110px 1fr 44px 80px;gap:10px;align-items:center;font-size:12.5px}
 .wl-bars b{text-align:right}
+.att-day{display:flex;align-items:center;gap:6px}
+.att-day input[type=date]{width:auto;padding:7px 10px}
+.att-day .btn.small.ghost{font-size:18px;line-height:1;padding:6px 11px}
+/* اختيار شخص */
+.pk-btn{width:100%;display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card,#fff);cursor:pointer;text-align:start;font:inherit;color:var(--ink)}
+.pk-btn:hover{border-color:var(--brand)}
+.pk-btn:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+.pk-btn .av{width:28px;height:28px;font-size:11px}
+.pk-t{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.25}
+.pk-t b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pk-t small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pk-ph{flex:1;color:var(--muted)}
+.pk-car{color:var(--muted);font-size:12px}
+.pk-pop{position:fixed;z-index:10050;background:var(--card,#fff);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.16);display:flex;flex-direction:column;max-height:360px;overflow:hidden}
+.pk-pop.pk-sheet{left:12px;right:12px;bottom:12px;max-height:70vh}
+.pk-q{margin:10px;width:auto}
+.pk-list{overflow:auto;padding:0 6px 8px}
+.pk-g{font-size:11.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);padding:10px 8px 4px;position:sticky;top:0;background:var(--card,#fff)}
+.pk-g span{font-weight:500}
+.pk-row{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;cursor:pointer}
+.pk-row .av{width:30px;height:30px;font-size:11px}
+.pk-row.hi{background:var(--bg,#F3F6F5)}
+.pk-row.on .pk-t b{color:var(--brand)}
+.pk-none{color:var(--muted);font-size:13.5px}
+.pk-load{font-size:12px;color:var(--muted);white-space:nowrap;background:var(--bg,#F3F6F5);padding:2px 8px;border-radius:999px}
+.pk-load.hi{color:var(--bad);background:#FBEAE7}
+.pk-leave{font-size:11.5px;color:var(--blue);background:var(--bluebg);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pk-emp{padding:14px;color:var(--muted);text-align:center}
+td.nw{white-space:nowrap}

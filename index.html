@@ -52,16 +52,19 @@
 <script>
 /* ============ تحميل ملفات السيستم ============
    الترتيب مهم: core الأول، بعدها الموديولات، وآخر حاجة start.js.
-   version.json بيتقرا من غير كاش، فأول ما رقم النسخة يتغير كل الملفات بتتحمّل جديدة. */
+   version.json بيتقرا من غير كاش، فأول ما رقم النسخة يتغير كل الملفات بتتحمّل جديدة.
+   قايمة الملفات نفسها جوه version.json، فلو الصفحة دي متخزنة قديمة في المتصفح الملفات الجديدة برضه بتتحمّل. */
 (function () {
   var CSS = ["core/styles.css", "modules/briefs/briefs.css"];
-  var JS = [ "core/config.js", "core/time12.js", "core/api.js", "core/queue.js", "core/auth.js", "core/shell.js", "core/popup.js", "core/avatars.js", "modules/dashboard/dashboard.js", "modules/attendance/clock.js", "modules/attendance/reports.js", "modules/attendance/locations.js", "modules/people/employees.js", "modules/people/devices.js", "modules/people/peopledash.js", "modules/settings/settings.js", "modules/settings/health.js", "modules/blockers/blockers.js", "modules/projects/projects.js", "modules/org/org.js", "modules/briefs/briefs.js", "modules/desk/desk.js", "modules/tasks/tasks.js", "modules/meetings/meetings.js", "modules/requests/requests.js", "modules/exec/exec.js", "modules/crm/crm.js", "modules/soon/soon.js", "core/start.js" ];
+  var JS = [ "core/config.js", "core/time12.js", "core/api.js", "core/queue.js", "core/auth.js", "core/shell.js", "core/popup.js", "core/avatars.js", "core/picker.js", "modules/dashboard/dashboard.js", "modules/attendance/clock.js", "modules/attendance/reports.js", "modules/attendance/locations.js", "modules/people/employees.js", "modules/people/devices.js", "modules/people/peopledash.js", "modules/settings/settings.js", "modules/settings/health.js", "modules/blockers/blockers.js", "modules/projects/projects.js", "modules/org/org.js", "modules/briefs/briefs.js", "modules/desk/desk.js", "modules/tasks/tasks.js", "modules/meetings/meetings.js", "modules/requests/requests.js", "modules/exec/exec.js", "modules/crm/crm.js", "modules/soon/soon.js", "core/start.js" ];
   function fail() { var d = document.getElementById('ld'); if (d) d.textContent = 'مشكلة في التحميل. اعمل ريفريش.'; }
   fetch('version.json?ts=' + Date.now(), { cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .catch(function () { return { v: String(Date.now()) }; })
     .then(function (m) {
       var v = encodeURIComponent(m.v);
+      if (m.js && m.js.length) JS = m.js;
+      if (m.css && m.css.length) CSS = m.css;
       CSS.forEach(function (href) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href + '?v=' + v; document.head.appendChild(l); });
       JS.forEach(function (src) { var s = document.createElement('script'); s.src = src + '?v=' + v; s.async = false; s.onerror = fail; document.body.appendChild(s); });
     });

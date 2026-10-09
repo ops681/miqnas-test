@@ -1,1 +1,39 @@
-{"v": "2026-10-10.6"}
+{
+ "v": "2026-10-10.7",
+ "css": [
+  "core/styles.css",
+  "modules/briefs/briefs.css"
+ ],
+ "js": [
+  "core/config.js",
+  "core/time12.js",
+  "core/api.js",
+  "core/queue.js",
+  "core/auth.js",
+  "core/shell.js",
+  "core/popup.js",
+  "core/avatars.js",
+  "core/picker.js",
+  "modules/dashboard/dashboard.js",
+  "modules/attendance/clock.js",
+  "modules/attendance/reports.js",
+  "modules/attendance/locations.js",
+  "modules/people/employees.js",
+  "modules/people/devices.js",
+  "modules/people/peopledash.js",
+  "modules/settings/settings.js",
+  "modules/settings/health.js",
+  "modules/blockers/blockers.js",
+  "modules/projects/projects.js",
+  "modules/org/org.js",
+  "modules/briefs/briefs.js",
+  "modules/desk/desk.js",
+  "modules/tasks/tasks.js",
+  "modules/meetings/meetings.js",
+  "modules/requests/requests.js",
+  "modules/exec/exec.js",
+  "modules/crm/crm.js",
+  "modules/soon/soon.js",
+  "core/start.js"
+ ]
+}
