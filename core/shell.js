@@ -104,7 +104,8 @@ function startApp(){
   else if(!S.view || !N.some(n=>n.id===S.view)) go(N[0].id==='clock' && can('tasks.mine') && S.status && S.status.clockedIn ? 'mytasks' : N[0].id);
   else go(S.view);
   startBellPolling();
-  setTimeout(prefetch, 2500);
+  startPrefetchLoop();
+  setTimeout(prefetch, 600);
 }
 
 function briefFromHash(){ const m=(location.hash||'').match(/^#brief=(b[a-z0-9]{6,30})$/); return m? m[1] : null; }
@@ -139,28 +140,44 @@ function viewBriefs(opts){
 }
 
 // تحميل مسبق في الخلفية، عشان الصفحات التانية تفتح على طول
-async function prefetch(){
-  if(gated() || document.visibilityState==='hidden') return;
-  const list=[];
-  if(can('dashboard.view')) list.push(['dash','dash']);
-  if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) list.push(['plist','projList']);
-  if(can('tasks.mine')) list.push(['my','myTasks']);
-  if(can('attendance.view_all')) list.push(['board','board']);
-  if(can('people.manage')) list.push(['users','users']);
-  const need=list.filter(([k])=>!(S.fetched[k] && Date.now()-S.fetched[k]<60000));
-  if(!need.length) return;
-  // كله في طلب واحد بدل طلب لكل صفحة
+// كل صفحة ليها الداتا بتاعتها: [مفتاح الكاش، العملية]
+const VIEW_DATA={
+  desk:[['desk','deskGet']], dash:[['dash','dash']], mytasks:[['my','myTasks']], tasks:[['gt','gtList']], meetings:[['mt','mtList']],
+  requests:[['rqMeta','reqMeta'],['rqList','reqList']], projects:[['plist','projList']], blockers:[['blockers','blockList']],
+  briefs:[['briefs','briefList']], exec:[['exec','execDash']], today:[['board','board']], users:[['users','users']],
+  devices:[['devices','devicesList']], org:[['org','orgGet']], settings:[['settings','settingsGet']]
+};
+// تحميل كل الصفحات في الخلفية في طلب واحد، عشان أي صفحة تتفتح على طول من آخر داتا
+async function prefetch(force){
+  if(gated() || document.visibilityState==='hidden' || S.prefetching) return;
+  const need=[['notifs','notifList']];
+  navFor(S.user).forEach(n=>(VIEW_DATA[n.id]||[]).forEach(x=>{ if(!need.some(y=>y[0]===x[0])) need.push(x); }));
+  const todo=need.filter(([k])=>force || !(S.fetched[k] && Date.now()-S.fetched[k]<60000));
+  if(!todo.length) return;
+  S.prefetching=true;
   try{
-    const r=await call('bundle',{items:need.map(x=>x[1])});
-    need.forEach(([k,a])=>{ const x=r[a]; if(x && x.ok){ S.cache[k]=x.data; S.fetched[k]=Date.now(); if(k==='dash'){ if(x.data.unread!=null) S.unread=x.data.unread; renderBell(); } } });
+    const r=await call('bundle',{items:todo.map(x=>x[1])});
+    todo.forEach(([k,a])=>{ const x=r[a]; if(!x || !x.ok) return;
+      S.cache[k]=x.data; S.fetched[k]=Date.now();
+      if(k==='notifs'){ S.notifs=x.data.list; S.unread=x.data.unread; }
+      if(k==='dash' && x.data.unread!=null) S.unread=x.data.unread;
+      if(k==='briefs' && window.BriefModule && BriefModule.prime) BriefModule.prime(x.data);
+    });
+    if(r.reqMeta&&r.reqMeta.ok) S.rqMeta=r.reqMeta.data;
+    if(r.reqList&&r.reqList.ok) S.rqList=r.reqList.data;
+    renderBell(); renderSide(); saveCache();
   }catch(e){
-    if(!/غير معروفة/.test(e.message||'')) return;
-    for(const [k,a] of need){
-      try{ const d=await call(a,{}); S.cache[k]=d; S.fetched[k]=Date.now(); if(k==='dash') renderBell(); }catch(e2){ break; }
-    }
-  }
-  saveCache();
+    // السيرفر القديم مايعرفش bundle: نرجع للطريقة القديمة
+    if(/غير معروفة/.test(e.message||'')) for(const [k,a] of todo){ try{ const d=await call(a,{}); S.cache[k]=d; S.fetched[k]=Date.now(); }catch(e2){ break; } }
+  } finally { S.prefetching=false; }
 }
+// كل 4 دقايق تقريبًا والصفحة قدام الموظف
+function startPrefetchLoop(){
+  clearTimeout(S.pfT);
+  const next=()=>{ S.pfT=setTimeout(()=>{ if(document.visibilityState==='visible' && S.token) prefetch(); next(); }, 220000+Math.floor(Math.random()*40000)); };
+  next();
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && S.token && S.user) prefetch(); });
 
 /* ============ مؤقت واحد لكل العدادات ============ */
 function setStatus(st){ if(st) st._off=Date.now()-(st.serverNow||Date.now()); S.status=st; }

@@ -41,12 +41,15 @@ window.erpToast = toast;
 window.ERP_SITE_URL = SITE_URL;
 
 /* ============ كاش (عشان كل صفحة تفتح على طول) ============ */
-const PERSIST = ['dash','my','plist','users','board','settings','screen','blockers'];
+const PERSIST = ['dash','my','plist','users','board','settings','screen','blockers','desk','gt','mt','rqMeta','rqList','exec','notifs','devices','org','briefs'];
 function cacheKey(){ return 'erp_c_'+(S.user?S.user.username:''); }
-function loadCache(){ try{ S.cache=JSON.parse(load(cacheKey())||'{}')||{}; }catch(e){ S.cache={}; } }
+function loadCache(){ try{ S.cache=JSON.parse(load(cacheKey())||'{}')||{}; }catch(e){ S.cache={}; } if(S.cache.notifs){ S.notifs=S.cache.notifs.list; if(S.unread==null) S.unread=S.cache.notifs.unread; } if(S.cache.rqMeta) S.rqMeta=S.cache.rqMeta; if(S.cache.rqList) S.rqList=S.cache.rqList; }
 function saveCache(){
   clearTimeout(S.csT);
-  S.csT=setTimeout(()=>{ const keep={}; PERSIST.forEach(k=>{ if(S.cache[k]) keep[k]=S.cache[k]; }); try{ store(cacheKey(), JSON.stringify(keep)); }catch(e){} },500);
+  S.csT=setTimeout(()=>{ const keep={}; PERSIST.forEach(k=>{ if(S.cache[k]) keep[k]=S.cache[k]; });
+    // آخر 6 مشاريع اتفتحت
+    Object.keys(S.cache).filter(k=>k.indexOf('p:')===0 && S.cache[k]).slice(-6).forEach(k=>{ keep[k]=S.cache[k]; });
+    try{ store(cacheKey(), JSON.stringify(keep)); }catch(e){ try{ delete keep.briefs; store(cacheKey(), JSON.stringify(keep)); }catch(e2){} } },500);
 }
 function busyTyping(){ const a=document.activeElement; return a && $('main').contains(a) && (a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT'); }
 // بيعرض اللي متخزن فوراً، وبيجيب الجديد في الخلفية

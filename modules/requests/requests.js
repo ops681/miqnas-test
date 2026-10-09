@@ -7,10 +7,20 @@ S.rqTab='mine';
 function viewRequests(opts){
   if(opts&&opts.tab) S.rqTab=opts.tab;
   setTop('Leave & Requests','Leave, permissions and overtime');
-  $('main').innerHTML=LOADING;
-  Promise.all([call('reqMeta'),call('reqList')]).then(([M,L])=>{ S.rqMeta=M; S.rqList=L; renderRequests(); }).catch(e=>{ $('main').innerHTML=`<div class="card err">${esc(e.message)}</div>`; });
+  // آخر داتا متخزنة تظهر على طول، والجديدة بتتجاب في الخلفية
+  const had=!!(S.rqMeta&&S.rqList), vt=S.vt;
+  if(had) renderRequests(); else $('main').innerHTML=LOADING;
+  rqFetch().then(()=>{ if(S.vt!==vt || (had && busyTyping())) return; renderRequests(); }).catch(e=>{ if(S.vt!==vt) return; if(!had) $('main').innerHTML=`<div class="card err">${esc(e.message)}</div>`; else toast(e.message); });
 }
-async function rqReload(){ const [M,L]=await Promise.all([call('reqMeta'),call('reqList')]); S.rqMeta=M; S.rqList=L; renderRequests(); refreshDash(); }
+function rqSet(M,L){ S.rqMeta=M; S.rqList=L; S.cache.rqMeta=M; S.cache.rqList=L; S.fetched.rqMeta=S.fetched.rqList=Date.now(); saveCache(); }
+// الاتنين في طلب واحد (ولو السيرفر قديم: طلبين)
+async function rqFetch(){
+  const r=await call('bundle',{items:['reqMeta','reqList']});
+  if(!r.reqMeta||!r.reqList){ const [M,L]=await Promise.all([call('reqMeta'),call('reqList')]); rqSet(M,L); return; }
+  if(!r.reqMeta.ok) throw new Error(r.reqMeta.error); if(!r.reqList.ok) throw new Error(r.reqList.error);
+  rqSet(r.reqMeta.data,r.reqList.data);
+}
+async function rqReload(){ await rqFetch(); renderRequests(); refreshDash(); }
 function rqWhen(r){
   if(r.kind==='permission') return `${fmtD(r.from)} · ${esc(r.timeFrom)}–${esc(r.timeTo)} · ${r.hours} h`;
   if(r.kind==='overtime') return `${fmtD(r.from)} · ${r.hours} h${r.source==='manual'?' · entered manually':r.source==='auto'?' · from clock-out':''}`;

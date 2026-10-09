@@ -462,9 +462,15 @@ async function exportCSV(){
   try{ await downloads.save({filename:"briefs-"+new Date().toISOString().slice(0,10)+".csv", data:csv}); }
   catch(e){ if(!(e&&e.code==="declined")) toast("ماقدرتش أصدّر الملف"); }
 }
+// قايمة البريفات المتخزنة (من التحميل في الخلفية) بتظهر على طول
+function primeList(r){
+  if(!r||!r.briefs) return;
+  const m=new Map(); for(const b of r.briefs){ const old=briefs.get(b.id); m.set(b.id, old&&!old.partial&&old.updatedAt>=b.updatedAt?old:b); }
+  briefs=m; loaded=true;
+}
 async function loadList(){
   if(!me) return;
-  try{ const r=await api("listBriefs",session);
+  try{ const r=await api("listBriefs",session); try{ if(typeof S!=="undefined"&&S.cache){ S.cache.briefs=r; S.fetched.briefs=Date.now(); if(window.saveCache) saveCache(); } }catch(e){}
     const m=new Map(); for(const b of r.briefs){ const old=briefs.get(b.id); m.set(b.id, old&&!old.partial&&old.updatedAt>=b.updatedAt?old:b); }
     briefs=m; loaded=true; if(route.v==="list"||(route.v==="view"&&!briefs.has(route.id))) render(); }
   catch(e){ if(!/SESSION|الجلسة/.test(e.message)){ loaded=true; if(route.v==="list") app.innerHTML=`<div class="note">ماقدرتش أحمّل البريفات. ${esc(e.message)}</div>`; } }
@@ -501,11 +507,13 @@ function bindAssign(b){
     catch(e){ toast(e.message); sv.disabled=false; sv.textContent="Save Team"; } };
 }
 window.BriefModule={
+  prime(r){ if(me) { primeList(r); if(app&&route.v==="list"&&typeof S!=="undefined"&&S.view==="briefs") render(); } },
   enter(el,user,opts){
     const has=p=>(user.perms||[]).indexOf(p)>=0;
     app=el; me=user.username; myName=user.name; isAdmin=has("briefs.manage_all");
     myRole=isAdmin?"admin":has("briefs.manage_own")?"am":"team";
     canWrite=isAdmin||myRole==="am"; seeAccess=!!user.seeAccess||has("briefs.access_all");
+    if(!loaded && typeof S!=="undefined" && S.cache && S.cache.briefs) primeList(S.cache.briefs);
     const id=opts&&opts.id;
     backTo=id&&opts.back?{brief:id,label:opts.back.label,back:opts.back.go}:null; asgEdit=false;
     if(id){ route={v:"view",id}; setHash(id); render(); if(!briefs.has(id)||briefs.get(id).partial) loadFull(id); loadList(); }
