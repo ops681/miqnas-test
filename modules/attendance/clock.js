@@ -166,7 +166,7 @@ async function clockOut(){
     toast('اتسجلت بصمة الخروج ✓');
     document.title='Miqnas ERP';
     renderSide();
-    if(S.view==='clock' || gated()) go('clock');
+    if(S.view==='clock' || (gated() && FREE_VIEWS.indexOf(S.view)<0)) go('clock');
   }catch(e){ alert(e.message); if(b){ b.disabled=false; b.textContent='Clock Out'; } }
 }
 // كل سكرين شوت بعد اللي قبله بـ shotMinutes ± 30 ثانية عشوائي،

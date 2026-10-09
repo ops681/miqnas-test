@@ -60,7 +60,7 @@ function renderSide(){
   const N=navFor(S.user);
   let sec='', h='';
   const lock=gated();
-  N.forEach(n=>{ if(n.sec!==sec){ sec=n.sec; h+=`<div class="nsec">${sec}</div>`; } const b=navBadge(n.id); h+=`<button class="nav${S.view===n.id?' on':''}${lock&&n.id!=='clock'?' locked':''}" data-v="${n.id}">${ico(n.icon)}<span>${n.label}</span>${b?`<span class="nb">${b}</span>`:''}</button>`; });
+  N.forEach(n=>{ if(n.sec!==sec){ sec=n.sec; h+=`<div class="nsec">${sec}</div>`; } const b=navBadge(n.id); h+=`<button class="nav${S.view===n.id?' on':''}${lock&&FREE_VIEWS.indexOf(n.id)<0?' locked':''}" data-v="${n.id}">${ico(n.icon)}<span>${n.label}</span>${b?`<span class="nb">${b}</span>`:''}</button>`; });
   $('nav').innerHTML=h;
   $('nav').querySelectorAll('.nav').forEach(b=>b.onclick=()=>go(b.dataset.v));
   $('sUser').innerHTML=`<button class="av av-btn" data-u="${esc(S.user.username)}" onclick="avEdit()" title="Change your photo" aria-label="Change your photo">${esc(initials(S.user.name))}</button><div class="nm"><b>${esc(S.user.name)}</b><small>${esc(S.user.roleName)}${S.user.job&&S.user.job!==S.user.roleName?' · '+esc(S.user.job):''}</small></div><button class="iconbtn" onclick="logout()" aria-label="Logout" title="Logout">${ico('out',17)}</button>`;
@@ -103,7 +103,7 @@ function startApp(){
   const deep=briefFromHash();
   const N=navFor(S.user);
   if(deep && N.some(n=>n.id==='briefs')) go('briefs',{id:deep});
-  else if(gated()) go('clock');
+  else if(gated() && FREE_VIEWS.indexOf(S.view)<0) go('clock');
   else if(!S.view || !N.some(n=>n.id===S.view)) go(N[0].id==='clock' && can('tasks.mine') && S.status && S.status.clockedIn ? 'mytasks' : N[0].id);
   else go(S.view);
   startBellPolling();
@@ -121,7 +121,7 @@ function go(v,opts){
   closeBell();
   $('nav').querySelectorAll('.nav').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   window.scrollTo(0,0);
-  if(gated() && v!=='clock'){ S.lockShown=true; viewLocked(v); return; }
+  if(gated() && FREE_VIEWS.indexOf(v)<0){ S.lockShown=true; viewLocked(v); return; }
   S.lockShown=false;
   const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,people:viewPeople,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
   (map[v]||viewDash)();
