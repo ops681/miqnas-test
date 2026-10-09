@@ -12,6 +12,7 @@ function renderDash(r,keep){
   const showPeople = can('attendance.view_all');
   const y=window.scrollY;
   $('main').innerHTML=`
+  ${readyCardHTML(r.readyNow)}
   <div class="grid kpis">
     <div class="kpi"><span>Active projects</span><b>${k.active}</b><small>${r.projects.length} tracked</small></div>
     <div class="kpi"><span>At risk / behind</span><b style="color:${k.risk?'var(--warn)':'var(--ink)'}">${k.risk}</b><small>Behind expected progress</small></div>
@@ -19,6 +20,7 @@ function renderDash(r,keep){
     ${showPeople?`<div class="kpi"><span>Clocked in</span><b>${k.clockedIn}/${k.clockers}</b><small>Right now</small></div>`:''}
     <div class="kpi"><span>Timers running</span><b style="color:var(--brand2)">${k.timers}</b><small>Across all projects</small></div>
   </div>
+  ${handoversHTML(r.handovers)}
   <div class="two">
     <div class="card flush">
       <div class="chead"><span style="color:var(--bad)">${ico('warn',20)}</span><h2>Needs attention</h2><span class="pill p-bad">${r.alerts.length}</span><span class="spacer"></span>
@@ -57,4 +59,21 @@ function blockersDashHTML(B){
       ${L.length? L.slice(0,4).map(b=>`<button class="al" style="padding:6px 0;border:0" onclick="go('projects');viewProject('${esc(b.project)}')"><span class="tx"><b style="font-size:13px">${bd(b.client)}</b><span style="font-size:12px">${b.days} day${b.days===1?'':'s'} · ${esc(b.cause)}</span></span></button>`).join('')+(L.length>4?`<div class="muted" style="font-size:12px">+${L.length-4} more</div>`:'') : '<div class="muted" style="font-size:12.5px">None</div>'}
     </div>`; }).join('')}
     </div></div>`;
+}
+
+/* ----- جاهز ليك دلوقتي (تاسكات اتفتحتلك ولسه مبدأتهاش) ----- */
+function hoAgo(ms){ return ms? timeAgo(ms) : ''; }
+function readyCardHTML(list){
+  if(!list||!list.length) return '';
+  return `<div class="card flush ready-card" style="margin-bottom:20px"><div class="chead"><span style="color:var(--ok)">${ico('tasks',20)}</span><h2>Ready for you now</h2><span class="pill p-in">${list.length}</span><span class="muted" style="font-size:12.5px">Handed over to you · not started yet</span></div>
+    ${list.map(t=>`<button class="al" onclick="goTo({view:'project',id:'${esc(t.project)}'})"><span class="tx"><b>${bd(t.title)}</b><span>${bd(t.client)} · ${bd(t.fromName||'—')} finished ${bd(t.fromTask)}${t.since?' · '+hoAgo(t.since):''}</span></span><span class="pill p-in">Ready</span></button>`).join('')}</div>`;
+}
+/* ----- التسليمات النهارده (للإدارة) ----- */
+function handoversHTML(H){
+  if(!H) return '';
+  const row=(x,late)=>`<button class="al" onclick="goTo({view:'project',id:'${esc(x.project)}'})"><span class="tx"><b dir="ltr" style="text-align:left">${bd(x.from)} <span class="muted" style="font-weight:500">handed over to</span> ${bd(x.to)}</b><span>${bd(x.client)} · ${bd(x.fromTask)} → ${bd(x.toTask)}${late?'':' · '+hoAgo(x.at)}</span></span>
+    ${late?`<span class="pill p-bad">Not started · ${x.days} ${x.days===1?'day':'days'}</span>`:x.done?'<span class="pill p-out">Done</span>':x.started?'<span class="pill p-in">Started</span>':'<span class="pill p-yel">Waiting to start</span>'}</button>`;
+  return `<div class="card flush" style="margin-bottom:20px"><div class="chead"><span style="color:var(--brand2)">${ico('trend',20)}</span><h2>Handovers today</h2><span class="pill p-prog">${H.today.length}</span><span class="muted" style="font-size:12.5px">Who finished a task and who it unlocked</span></div>
+    ${H.today.length?H.today.map(x=>row(x,false)).join(''):`<div class="empty" style="padding:18px"><b>No handovers yet today</b>When a task is done and opens the next one, it shows up here.</div>`}
+    ${H.waiting.length?`<div class="chead" style="border-top:1px solid var(--line)"><h2 style="font-size:14px;color:var(--bad)">Handed over but not started</h2><span class="pill p-bad">${H.waiting.length}</span><span class="muted" style="font-size:12.5px">Ready for more than a day</span></div>${H.waiting.map(x=>row(x,true)).join('')}`:''}</div>`;
 }

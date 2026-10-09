@@ -388,3 +388,21 @@ table.pacc{table-layout:fixed}
 .pacc-v .v{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pacc-v .v.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
 .pacc-v .btn{flex:none;min-width:60px;justify-content:center}
+
+/* تنبيهات على الشاشة */
+.pp-box{position:fixed;right:18px;bottom:18px;z-index:900;display:grid;gap:10px;width:min(380px,calc(100vw - 32px))}
+.pp-card{position:relative;display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--brand2);border-radius:12px;padding:12px 34px 12px 14px;box-shadow:0 10px 30px rgba(16,35,31,.16);animation:ppIn .25s ease-out}
+.pp-card.ready{border-left-color:var(--ok)}
+.pp-ic{color:var(--brand2);flex:none;margin-top:2px}
+.pp-card.ready .pp-ic{color:var(--ok)}
+.pp-tx{display:grid;gap:3px;min-width:0}
+.pp-tx b{font-size:14px}
+.pp-tx span{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.pp-act{display:flex;gap:6px;margin-top:6px}
+.pp-x{all:unset;position:absolute;top:8px;right:10px;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 4px;border-radius:6px}
+.pp-x:hover{color:var(--ink);background:var(--line2)}
+.pp-x:focus-visible{outline:2px solid var(--brand2)}
+.pp-more{all:unset;cursor:pointer;justify-self:end;font-size:12.5px;font-weight:600;color:var(--brand2);background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 12px}
+@keyframes ppIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.pp-card{animation:none}}
+@media print{.pp-box{display:none}}
