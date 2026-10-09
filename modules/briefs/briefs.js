@@ -46,19 +46,23 @@ const SECTIONS = [
   {id:"product_notes", label:"تعليمات عن المنتجات إن وجدت", type:"textarea"},
   {id:"hidden_products", label:"هل في منتجات مخفية؟", type:"yn"},
   {id:"hidden_transfer", label:"المنتجات المخفية هتتنقل؟", type:"yn", showIf:a=>a.hidden_products==="أيوه"},
-  {id:"oos_transfer", label:"المنتجات الـ Out of Stock هتتنقل؟", type:"yn"}]},
+  {id:"oos_transfer", label:"المنتجات الـ Out of Stock هتتنقل؟", type:"yn"},
+  {id:"products_note", label:"ملاحظات (Notes)", type:"textarea", optional:true, hideEmpty:true, hint:"اختياري. أي ملاحظات على القسم ده"}]},
  {id:"shipping", group:"Store Manager", title:"الشحن", items:[
   {id:"shipping_cos", label:"شركات الشحن والتوصيل", type:"textarea", hint:"الشركات المشترك فيها على المنصة. لو مفيش وفي مناديب خاصة، نسأل عنهم وعن تفاصيلهم."},
   {id:"shipping_zones", label:"المناطق المخصصة للشحن", type:"textarea"},
   {id:"shipping_options", label:"خيارات الشحن", type:"multi", options:["شحن للعميل","استلام من الفرع"]},
   {id:"pickup_cod", label:"الدفع عند الاستلام مفعّل مع الاستلام من الفرع؟", type:"yn", showIf:a=>(a.shipping_options||[]).includes("استلام من الفرع")},
   {id:"branches", label:"بيانات الفروع", type:"textarea", hint:"اسم الفرع والعنوان ومواعيد الاستلام", showIf:a=>(a.shipping_options||[]).includes("استلام من الفرع")},
-  {id:"support_phone", label:"رقم دعم خدمة العملاء", type:"text", ltr:true}]},
+  {id:"support_phone", label:"رقم دعم خدمة العملاء", type:"text", ltr:true},
+  {id:"shipping_note", label:"ملاحظات (Notes)", type:"textarea", optional:true, hideEmpty:true, hint:"اختياري. أي ملاحظات على القسم ده"}]},
  {id:"payment", group:"Store Manager", title:"طرق الدفع", items:[
-  {id:"payments", label:"طرق الدفع المفعّلة", type:"checks", options:PAY}]},
+  {id:"payments", label:"طرق الدفع المفعّلة", type:"checks", options:PAY},
+  {id:"payment_note", label:"ملاحظات (Notes)", type:"textarea", optional:true, hideEmpty:true, hint:"اختياري. أي ملاحظات على القسم ده"}]},
  {id:"docs", group:"Store Manager", title:"الوثائق الرسمية", items:[
   {id:"documents", label:"الوثائق المستلمة", type:"checks", options:DOCS},
-  {id:"docs_drive", label:"لينك درايف مجمّع بكل الوثائق", type:"url"}]},
+  {id:"docs_drive", label:"لينك درايف مجمّع بكل الوثائق", type:"url"},
+  {id:"docs_note", label:"ملاحظات (Notes)", type:"textarea", optional:true, hideEmpty:true, hint:"اختياري. أي ملاحظات على القسم ده"}]},
  {id:"side", group:"Store Manager", title:"معلومات إضافية", items:[
   {id:"categories", label:"الأقسام الخاصة بالمتجر", type:"textarea"},
   {id:"discount_codes", label:"أكواد الخصم", type:"textarea"},
@@ -69,7 +73,8 @@ const SECTIONS = [
   {id:"cashback", label:"هل يوجد كاش باك؟", type:"yn"},
   {id:"cashback_details", label:"إيه هي الخصومات المطبقة؟", type:"textarea", hint:"نسبة الكاش باك وشروطه، وأي خصومات تانية شغالة", showIf:a=>a.cashback==="أيوه"},
   {id:"offers", label:"هل في عروض مطبقة حاليًا؟", type:"yn"},
-  {id:"offers_details", label:"العروض وشروطها", type:"textarea", showIf:a=>a.offers==="أيوه"}]},
+  {id:"offers_details", label:"العروض وشروطها", type:"textarea", showIf:a=>a.offers==="أيوه"},
+  {id:"side_note", label:"ملاحظات (Notes)", type:"textarea", optional:true, hideEmpty:true, hint:"اختياري. أي ملاحظات على القسم ده"}]},
  {id:"uiux", title:"UI / UX", items:[
   {id:"brand_story", label:"قصة البراند (Brand Story)", type:"textarea", hint:"معنى اسم المتجر والقصة من إنشائه"},
   {id:"tone", label:"نبرة الكلام (Tone of Voice)", type:"textarea", hint:"بيخاطب أي فئة؟ والأسلوب ودّي، رسمي، ولا شبابي؟"},
@@ -84,12 +89,14 @@ const SECTIONS = [
   {id:"competitors", label:"منافسين أو References", type:"textarea"},
   {id:"best_sellers", label:"المنتجات الأكثر مبيعًا / اللي بنركز عليها في البنرات", type:"textarea"},
   {id:"product_photos", label:"صور المنتجات بجودة عالية", type:"textarea"},
-  {id:"header_footer", label:"الفوتر والهيدر", type:"textarea", hint:"هل هيتضاف حاجة معينة في الفوتر أو الهيدر؟"}]},
+  {id:"header_footer", label:"الفوتر والهيدر", type:"textarea", hint:"هل هيتضاف حاجة معينة في الفوتر أو الهيدر؟"},
+  {id:"uiux_note", label:"ملاحظات (Notes)", type:"textarea", optional:true, hideEmpty:true, hint:"اختياري. أي ملاحظات على القسم ده"}]},
  {id:"designer", title:"Designer", items:[
   {id:"logo_plan", label:"اللوجو", type:"choice", options:["هيفضل زي ما هو","تحسين على الحالي","لوجو جديد"]},
   {id:"logo_notes", label:"المطلوب في اللوجو", type:"textarea", showIf:a=>a.logo_plan&&a.logo_plan!=="هيفضل زي ما هو"},
-  {id:"colors", label:"الألوان المستخدمة", type:"textarea", hint:"لو مش هيغيّر حاجة: نفس الهوية اللي في قسم UI / UX"},
-  {id:"design_refs", label:"References", type:"textarea"}]}
+  {id:"colors", label:"الألوان المستخدمة", type:"textarea", hint:"لو مش هيغيّر حاجة: نفس الهوية اللي في قسم UI / UX", showIf:a=>a.logo_plan!=="هيفضل زي ما هو"},
+  {id:"design_refs", label:"References", type:"textarea", showIf:a=>a.logo_plan!=="هيفضل زي ما هو"},
+  {id:"designer_note", label:"ملاحظات (Notes)", type:"textarea", optional:true, hideEmpty:true, hint:"اختياري. أي ملاحظات على القسم ده", showIf:a=>a.logo_plan!=="هيفضل زي ما هو"}]}
 ];
 
 const $ = s => document.querySelector(s);
@@ -339,7 +346,7 @@ async function secretOf(key){ const r=await window.erpCall('accessReveal',{brief
 function briefText(b){
   const a=b.answers||{}; const lines=[`بريف: ${b.store||""}`,`العميل: ${b.client||""}`,`الأكاونت مانجر: ${amOf(b)||"—"}`, ""];
   for(const s of SECTIONS){ if(s.id==="access"&&!canSeeAccess()) continue; lines.push(`■ ${s.group?s.group+" / ":""}${s.title}`);
-    for(const it of s.items){ if(!visible(it,a)||it.headerOnly) continue; const v=a[it.id];
+    for(const it of s.items){ if(!visible(it,a)||it.headerOnly||(it.hideEmpty&&!filled(a[it.id]))) continue; const v=a[it.id];
       if(it.type==="checks") lines.push(`${it.label}: ${(v||[]).join("، ")||"—"}`);
       else if(it.type==="cred") lines.push(`${it.label}: ${filled(v)?credStr(v):"—"}`);
       else lines.push(`${it.label}: ${Array.isArray(v)?(v.join("، ")||"—"):(filled(v)?v:"—")}`);}
@@ -359,7 +366,7 @@ function headHTML(b){const a=b.answers||{}; return `
 function sectionsHTML(a,pdf){let prevGroup=null;return `${SECTIONS.map(s=>{const band=!!s.group&&s.group!==prevGroup; prevGroup=s.group||null;
   if(s.id==="access") return canSeeAccess()?accessHTML(s,a,pdf):"";
   return `${band?`<div class="grp-band"><span>${esc(s.group)}</span></div>`:""}<section class="sec vsec${s.group?" sub":""}${band?" after-group":""}"><div class="sec-h">${s.group?`<span class="grp">${esc(s.group)}</span>`:""}<h2>${esc(s.title)}</h2></div><div class="card"><dl>
-    ${s.items.filter(it=>visible(it,a)&&!it.headerOnly).map(it=>{const v=a[it.id];
+    ${s.items.filter(it=>visible(it,a)&&!it.headerOnly&&!(it.hideEmpty&&!filled(a[it.id]))).map(it=>{const v=a[it.id];
       if(it.type==="cred") return `<div class="vq"><dt>${esc(it.label)}</dt><dd>${filled(v)?credHTML(v,pdf,it.id):`<span class="none">—</span>`}</dd></div>`;
       if(it.type==="checks") return `<div class="vq"><dt>${esc(it.label)}</dt><dd><div class="tags">${it.options.map(o=>`<span class="tag${(v||[]).includes(o)?"":" off"}">${esc(o)}</span>`).join("")}</div></dd></div>`;
       const shown=Array.isArray(v)?v.join("، "):(it.type==="date"&&v?fmtDate(v):v);

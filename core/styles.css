@@ -297,3 +297,43 @@ button.kpi:hover{border-color:#B8C9C4}
 .pbox .kv b{color:var(--muted);font-weight:500;white-space:nowrap}
 .pbox .kv span{text-align:right;min-width:0;overflow-wrap:anywhere}
 @media(max-width:760px){.pinfo{grid-template-columns:1fr}}
+.tlink.tref span{color:var(--brand2,#2f7d6d);font-weight:600}
+
+/* Clients CRM */
+.crm{margin-bottom:14px;padding:16px 18px}
+.crm-h{display:flex;align-items:center;gap:12px}
+.crm-h h3{margin:0;font-size:17px}
+.crm-logo{width:44px;height:44px;border-radius:12px;background:var(--line2,#eef2f1);display:grid;place-items:center;font-weight:700;color:var(--brand2,#2f7d6d);overflow:hidden;flex:none}
+.crm-logo img{width:100%;height:100%;object-fit:cover}
+.crm-b{display:grid;grid-template-columns:minmax(220px,1fr) 2fr;gap:16px;margin-top:14px}
+.crm-facts .kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.crm-facts .kv:last-child{border-bottom:0}
+.crm-facts .kv b{color:var(--muted);font-weight:500;white-space:nowrap}
+.crm-facts .kv span{text-align:right;overflow-wrap:anywhere}
+.crm-projs{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;align-content:start}
+.crm-p{all:unset;box-sizing:border-box;cursor:pointer;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card,#fff)}
+.crm-p:hover{border-color:var(--brand2,#2f7d6d)}
+.crm-p:focus-visible{outline:2px solid var(--brand2,#2f7d6d);outline-offset:2px}
+@media(max-width:760px){.crm-b{grid-template-columns:1fr}}
+
+/* People Dashboard */
+.pdkpis .pdk{cursor:pointer;text-align:left;font:inherit;color:inherit}
+.pdkpis .pdk:hover{border-color:var(--brand2,#2f7d6d)}
+.pdkpis .pdk.on{border-color:var(--brand2,#2f7d6d);box-shadow:inset 0 0 0 1px var(--brand2,#2f7d6d)}
+.pdkpis .pdk:focus-visible{outline:2px solid var(--brand2,#2f7d6d);outline-offset:2px}
+.pd-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);gap:20px;align-items:start}
+.pd-dept{margin-bottom:14px}
+@media(max-width:1000px){.pd-grid{grid-template-columns:1fr}}
+
+/* Monthly report */
+.mr-bars{display:grid;gap:6px}
+.mr-bar{all:unset;box-sizing:border-box;display:grid;grid-template-columns:minmax(110px,180px) 1fr 64px;gap:10px;align-items:center;cursor:pointer;padding:3px 4px;border-radius:8px;font-size:13px}
+.mr-bar:hover{background:var(--line2,#f1f4f3)}
+.mr-bar:focus-visible{outline:2px solid var(--brand2,#2f7d6d)}
+.mr-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mr-t{height:10px;border-radius:99px;background:var(--line2,#eef2f1);overflow:hidden}
+.mr-t i{display:block;height:100%;border-radius:99px;background:var(--brand2,#2f7d6d)}
+.mr-bar b{text-align:right;font-size:12.5px}
+.mr-th{all:unset;cursor:pointer;font:inherit;color:inherit;white-space:nowrap}
+.mr-tbl tr.clk{cursor:pointer}
+.mr-tbl tr.clk:hover td{background:var(--line2,#f6f8f7)}

@@ -30,39 +30,75 @@ function renderToday(r,keep){
 let monthlyData=null;
 function viewMonthly(){
   const m=new Date().toISOString().slice(0,7);
-  setTop('Monthly Report','Attendance per employee', `<input type="month" id="mSel" value="${m}" style="width:auto"><button class="btn" id="csvBtn">Download Excel (CSV)</button>`);
+  setTop('Monthly Report','Attendance, leave and workload per employee', `<input type="month" id="mSel" value="${m}" style="width:auto"><button class="btn" id="csvBtn">Download Excel (CSV)</button>`);
+  if(!S.mrF) S.mrF={dept:'',q:'',sort:'hours',dir:-1};
   $('main').innerHTML=`<div id="mBody">${LOADING}</div>`;
   $('mSel').onchange=loadMonthly; $('csvBtn').onclick=exportCsv;
   loadMonthly();
 }
+const MR_COLS=[['name','Name'],['deptName','Department'],['days','Days'],['hours','Hours'],['avg','Avg / day'],['leaveDays','Leave days'],['permHours','Permission h'],['otHours','Overtime h'],['missed','Missed clock-outs'],['stops','Sharing stops'],['projects','Active projects']];
+function mrRows(r){ const F=S.mrF, q=F.q.trim().toLowerCase();
+  return r.rows.filter(x=>(!F.dept||x.dept===F.dept)&&(!q||[x.name,x.job,x.deptName].some(v=>String(v||'').toLowerCase().indexOf(q)>=0)))
+    .sort((a,b)=>{ const va=a[F.sort], vb=b[F.sort]; return (typeof va==='string'||typeof vb==='string' ? String(va||'').localeCompare(String(vb||'')) : (Number(va)||0)-(Number(vb)||0))*F.dir; }); }
+function mrSort(k){ const F=S.mrF; if(F.sort===k) F.dir*=-1; else { F.sort=k; F.dir=(k==='name'||k==='deptName')?1:-1; } drawMonthly(monthlyData); }
+function drawMonthly(r){
+  if(!r||!$('mBody')) return;
+  monthlyData=r;
+  const F=S.mrF, R=mrRows(r), sum=k=>Math.round(R.reduce((s,x)=>s+(Number(x[k])||0),0)*100)/100;
+  const depts=[...new Map(r.rows.map(x=>[x.dept,x.deptName])).entries()].filter(d=>d[0]);
+  const maxH=Math.max(1,...R.map(x=>x.hours||0));
+  const focus=document.activeElement&&document.activeElement.id==='mrQ';
+  $('mBody').innerHTML=`
+  <div class="grid kpis">
+    <div class="kpi"><span>Employees</span><b>${R.length}</b><small>${F.dept?esc((depts.find(d=>d[0]===F.dept)||[])[1]||''):'All departments'}</small></div>
+    <div class="kpi"><span>Total hours</span><b>${sum('hours')}</b><small>Avg ${R.length?Math.round(sum('hours')/R.length*10)/10:0} h per person</small></div>
+    <div class="kpi"><span>Leave days</span><b>${sum('leaveDays')}</b><small>${sum('permHours')} h of permissions</small></div>
+    <div class="kpi"><span>Overtime</span><b>${sum('otHours')} h</b><small>Approved</small></div>
+    <div class="kpi"><span>Missed clock-outs</span><b style="color:${sum('missed')?'var(--bad)':'var(--ink)'}">${sum('missed')}</b><small>${sum('stops')} sharing stops</small></div>
+  </div>
+  <div class="card" style="padding:12px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    <input id="mrQ" placeholder="Search by name, job or department..." value="${esc(F.q)}" style="flex:1;min-width:200px" oninput="S.mrF.q=this.value;drawMonthly(monthlyData)">
+    <select style="width:auto" onchange="S.mrF.dept=this.value;drawMonthly(monthlyData)"><option value="">All departments</option>${depts.map(d=>`<option value="${esc(d[0])}"${F.dept===d[0]?' selected':''}>${esc(d[1])}</option>`).join('')}</select>
+  </div>
+  <div class="card" style="padding:16px 20px;margin-bottom:14px"><h3 style="margin:0 0 10px;font-size:15px">Hours this month</h3>
+    ${R.length?`<div class="mr-bars">${R.slice().sort((a,b)=>b.hours-a.hours).map(x=>`<button class="mr-bar" onclick="mrOpen('${esc(x.username)}')" title="${esc(x.name)} · ${x.hours} h"><span class="mr-n">${bd(x.name)}</span><span class="mr-t"><i style="width:${Math.max(2,Math.round((x.hours||0)/maxH*100))}%"></i></span><b>${x.hours} h</b></button>`).join('')}</div>`:'<div class="muted">No data.</div>'}
+  </div>
+  <div class="tbl-wrap"><table class="mr-tbl">
+    <tr>${MR_COLS.map(c=>`<th><button class="mr-th" onclick="mrSort('${c[0]}')">${c[1]}${F.sort===c[0]?(F.dir>0?' ▲':' ▼'):''}</button></th>`).join('')}</tr>
+    ${R.map(x=>`<tr class="clk" onclick="mrOpen('${esc(x.username)}')"><td><b>${bd(x.name)}</b><div class="muted" style="font-size:12px">${esc(x.job||'')}</div></td><td class="muted">${esc(x.deptName||'')}</td><td>${x.days}</td><td><b>${x.hours}</b></td><td>${x.avg}</td>
+      <td>${x.leaveDays||0}</td><td>${x.permHours||0}</td><td>${x.otHours||0}</td>
+      <td>${x.missed?`<span class="pill p-bad">${x.missed}</span>`:'0'}</td><td>${x.stops?`<span class="pill p-absent">${x.stops}</span>`:'0'}</td><td>${x.projects!=null?x.projects:'—'}</td></tr>`).join('')}
+  </table></div>`;
+  if(focus){ const q=$('mrQ'); q.focus(); q.setSelectionRange(q.value.length,q.value.length); }
+}
 async function loadMonthly(){
   const month=$('mSel').value, key='monthly:'+month, vt=S.vt;
-  const draw=r=>{
-    monthlyData=r;
-    const R=r.rows, tot=R.reduce((s,x)=>s+x.hours,0);
-    $('mBody').innerHTML=`
-    <div class="grid kpis">
-      <div class="kpi"><span>Employees</span><b>${R.length}</b></div>
-      <div class="kpi"><span>Total hours</span><b>${Math.round(tot*100)/100}</b></div>
-      <div class="kpi"><span>Missed clock-outs</span><b style="color:${R.some(x=>x.missed)?'var(--bad)':'var(--ink)'}">${R.reduce((s,x)=>s+x.missed,0)}</b></div>
-    </div>
-    <div class="tbl-wrap"><table>
-      <tr><th>Name</th><th>Job</th><th>Days present</th><th>Total hours</th><th>Avg per day</th><th>Missed clock-outs</th><th>Sharing stops</th><th>Screenshots</th></tr>
-      ${R.map(x=>`<tr><td><b>${esc(x.name)}</b></td><td class="muted">${esc(x.job)}</td><td>${x.days}</td><td>${x.hours}</td><td>${x.avg}</td>
-        <td>${x.missed?`<span class="pill p-bad">${x.missed}</span>`:'0'}</td><td>${x.stops?`<span class="pill p-absent">${x.stops}</span>`:'0'}</td><td>${x.shots}</td></tr>`).join('')}
-    </table></div>`;
-  };
-  if(S.cache[key]) draw(S.cache[key]); else $('mBody').innerHTML=LOADING;
-  try{ const r=await call('monthly',{month}); S.cache[key]=r; if(S.vt===vt && $('mSel') && $('mSel').value===month) draw(r); }
+  if(S.cache[key]) drawMonthly(S.cache[key]); else $('mBody').innerHTML=LOADING;
+  try{ const r=await call('monthly',{month}); S.cache[key]=r; if(S.vt===vt && $('mSel') && $('mSel').value===month) drawMonthly(r); }
   catch(e){ if(!S.cache[key]) $('mBody').innerHTML=`<div class="card err">${esc(e.message)}</div>`; }
+}
+async function mrOpen(un){
+  const month=$('mSel')?$('mSel').value:new Date().toISOString().slice(0,7);
+  $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:640px">${LOADING}</div></div>`;
+  try{
+    const r=await call('monthlyUser',{username:un,month}); const s=r.summary||{};
+    const KIND={leave:'Leave',permission:'Permission',overtime:'Overtime'};
+    $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:640px">
+      <div class="row" style="align-items:center;gap:10px"><div class="av">${esc(initials(r.user.name))}</div><div><h2 style="margin:0;font-size:18px">${bd(r.user.name)}</h2><div class="muted" style="font-size:13px">${esc(r.user.job||'')} · ${esc(r.user.dept||'')} · ${esc(r.month)}</div></div><div class="spacer"></div><button class="btn ghost small" onclick="closeModal()">Close</button></div>
+      <div class="grid kpis" style="margin:14px 0"><div class="kpi"><span>Days</span><b>${s.days||0}</b></div><div class="kpi"><span>Hours</span><b>${s.hours||0}</b></div><div class="kpi"><span>Avg / day</span><b>${s.avg||0}</b></div><div class="kpi"><span>Missed clock-outs</span><b>${s.missed||0}</b></div></div>
+      ${r.requests.length?`<h3 style="font-size:14px;margin:0 0 6px">Approved requests</h3><div style="margin-bottom:12px">${r.requests.map(q=>`<div class="kv" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13.5px"><span>${KIND[q.kind]||q.kind}${q.kind==='leave'?' · '+esc(q.type):''}</span><span class="muted">${fmtD(q.from)}${q.to&&q.to!==q.from?' → '+fmtD(q.to):''} · ${q.kind==='leave'?q.days+' d':q.hours+' h'}</span></div>`).join('')}</div>`:''}
+      <h3 style="font-size:14px;margin:0 0 6px">Days</h3>
+      ${r.days.length?`<div class="tbl-wrap" style="max-height:320px;overflow:auto"><table><tr><th>Date</th><th>Day</th><th>In</th><th>Out</th><th>Hours</th></tr>${r.days.map(d=>`<tr><td>${fmtD(d.date)}</td><td class="muted">${esc(d.day||'')}</td><td>${esc(d.inT||'')}</td><td>${d.open?'<span class="pill p-absent">Open</span>':esc(d.outT||'')}</td><td>${d.hours}</td></tr>`).join('')}</table></div>`:'<div class="muted">No attendance this month.</div>'}
+    </div></div>`;
+  }catch(e){ closeModal(); toast(e.message); }
 }
 function exportCsv(){
   if(!monthlyData) return;
-  const head=['Name','Job','Days present','Total hours','Avg per day','Missed clock-outs','Sharing stops','Screenshots'];
-  const lines=[head].concat(monthlyData.rows.map(x=>[x.name,x.job,x.days,x.hours,x.avg,x.missed,x.stops,x.shots]))
+  const head=['Name','Department','Job','Days present','Total hours','Avg per day','Leave days','Permission hours','Overtime hours','Missed clock-outs','Sharing stops','Screenshots','Active projects'];
+  const lines=[head].concat(mrRows(monthlyData).map(x=>[x.name,x.deptName||'',x.job,x.days,x.hours,x.avg,x.leaveDays||0,x.permHours||0,x.otHours||0,x.missed,x.stops,x.shots,x.projects!=null?x.projects:'']))
     .map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(','));
   const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='attendance-'+monthlyData.month+'.csv'; a.click();
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='monthly-report-'+monthlyData.month+'.csv'; a.click();
 }
 
 /* ============ Screen Report ============ */

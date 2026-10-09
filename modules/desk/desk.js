@@ -1,6 +1,6 @@
 /* ============ My Desk ============
    الصفحة الشخصية لكل واحد: تاسكاتي، الإشعارات، الموافقات المستنياني، وحالتي النهارده. */
-const NOTIF_IC={approval:'cal',request:'cal',leave:'cal',project:'folder',note:'brief',ready:'tasks',blocker:'flag',brief:'brief',pulse:'chart',task:'todo',review:'todo',returned:'warn',done:'todo',comment:'brief',meeting:'meet'};
+const NOTIF_IC={approval:'cal',request:'cal',leave:'cal',project:'folder',note:'brief',ready:'tasks',blocker:'flag',brief:'brief',pulse:'chart',task:'todo',review:'todo',returned:'warn',done:'todo',comment:'brief',meeting:'meet',launch:'trend'};
 function viewDesk(){
   const h=new Date().getHours();
   setTop('أرحب بـ المقناص', String(S.user.name||'')+' · '+new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}));
@@ -30,6 +30,8 @@ function renderDesk(D){
   if(D.leaveLeft!=null) tiles.push(tile('Annual leave left',D.leaveLeft,'Days this year',null,'requests'));
   if(D.approvals!=null) tiles.push(tile('Approvals waiting',D.approvals,'Device requests',D.approvals?'var(--warn)':null,'devices'));
   if(D.myProjects!=null) tiles.push(tile('My projects',D.myProjects,'Active, you are the AM',null,'projects'));
+  const PE=D.people;
+  if(PE){ tiles.push(tile('Not clocked in',PE.workday?PE.notIn.length:'Day off',PE.workday?PE.in+' of '+PE.clockers+' clocked in':'Weekend or holiday',PE.workday&&PE.notIn.length?'var(--warn)':null,'people')); if(PE.leave.length) tiles.push(tile('On leave today',PE.leave.length,PE.leave.map(x=>x.name).slice(0,2).join(', '),'var(--blue)','people')); }
   if(D.pulseStale!=null) tiles.push(tile('Commercial Pulse',D.pulseStale?'Not entered':'Up to date','This month',D.pulseStale?'var(--warn)':'var(--ok)','pulse'));
   $('main').innerHTML=`<div style="display:grid;gap:20px">
   ${tiles.length?`<div class="grid kpis" style="margin:0">${tiles.join('')}</div>`:''}
@@ -38,6 +40,10 @@ function renderDesk(D){
       ${T.list.length?T.list.map(t=>{ const tag=t.running?['Running','p-in']:t.late?['Late','p-bad']:t.review?['In review','p-yel']:t.locked?['Waiting','p-yel']:t.status==='In Progress'?['In progress','p-in']:['Ready','p-absent'];
         return `<button class="al" onclick="${t.gid?`go('tasks',{id:'${esc(t.gid)}'})`:`go('mytasks')`}"><span class="tx"><b>${bd(t.title)}</b><span>${bd(t.client)}${t.deadline?' · due '+fmtD(t.deadline):''}</span></span><span class="pill ${tag[1]}">${tag[0]}</span></button>`; }).join('')
       :`<div class="empty"><b>Nothing open</b>You have no open tasks.</div>`}</div>`:''}
+    ${PE?`<div class="card flush"><div class="chead"><h2>Not clocked in today</h2>${PE.workday&&PE.notIn.length?`<span class="pill p-absent">${PE.notIn.length}</span>`:''}<span class="spacer"></span><button class="btn ghost small" onclick="go('people')">People Dashboard →</button></div>
+      ${!PE.workday?`<div class="empty"><b>Day off</b>Today is a weekend or holiday.</div>`:PE.notIn.length?PE.notIn.map(x=>`<div class="tm"><div class="av">${esc(initials(x.name))}<i style="background:#F79009"></i></div><div class="tx"><b>${bd(x.name)}</b><div>${esc(x.job||'')}</div></div></div>`).join(''):`<div class="empty"><b>Everyone is in</b>All who clock in have clocked in today.</div>`}</div>`:''}
+    ${D.reqList?`<div class="card flush"><div class="chead"><h2>Requests waiting for you</h2>${D.reqList.length?`<span class="pill p-absent">${D.requests||D.reqList.length}</span>`:''}<span class="spacer"></span><button class="btn ghost small" onclick="go('requests',{tab:'approve'})">Open requests →</button></div>
+      ${D.reqList.length?D.reqList.map(x=>`<button class="al" onclick="go('requests',{tab:'approve'})"><span class="tx"><b>${bd(x.name)} · ${x.kind==='leave'?esc(x.typeLabel):x.kind==='permission'?'Permission':'Overtime'}</b><span>${fmtD(x.from)}${x.to&&x.to!==x.from?' → '+fmtD(x.to):''}${x.kind==='leave'?' · '+x.days+(x.days===1?' day':' days'):' · '+x.hours+' h'}</span></span><span class="pill p-yel">Waiting</span></button>`).join(''):`<div class="empty"><b>Nothing waiting</b>New leave and permission requests show up here.</div>`}</div>`:''}
     <div class="card flush"><div class="chead"><h2>Notifications</h2>${D.unread?`<span class="pill p-bad">${D.unread} new</span>`:''}<span class="spacer"></span>${D.unread?`<button class="btn ghost small" onclick="readAll()">Mark all read</button>`:''}</div>
       ${D.notifs.length?D.notifs.map((n,i)=>notifHTML(n,i,'desk')).join(''):`<div class="empty"><b>All caught up</b>When something needs you, it shows up here.</div>`}</div>
   </div></div>`;

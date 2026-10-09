@@ -41,7 +41,7 @@ window.erpToast = toast;
 window.ERP_SITE_URL = SITE_URL;
 
 /* ============ كاش (عشان كل صفحة تفتح على طول) ============ */
-const PERSIST = ['dash','my','plist','users','board','settings','screen','blockers','desk','gt','mt','rqMeta','rqList','exec','notifs','devices','org','briefs'];
+const PERSIST = ['dash','my','plist','users','board','settings','screen','blockers','desk','gt','mt','rqMeta','rqList','exec','notifs','devices','org','briefs','crm','people'];
 function cacheKey(){ return 'erp_c_'+(S.user?S.user.username:''); }
 function loadCache(){ try{ S.cache=JSON.parse(load(cacheKey())||'{}')||{}; }catch(e){ S.cache={}; } if(S.cache.notifs){ S.notifs=S.cache.notifs.list; if(S.unread==null) S.unread=S.cache.notifs.unread; } if(S.cache.rqMeta) S.rqMeta=S.cache.rqMeta; if(S.cache.rqList) S.rqList=S.cache.rqList; }
 function saveCache(){

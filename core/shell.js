@@ -21,6 +21,7 @@ const IC = {
   pin:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
   home:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
   crown:'<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/>',
+  crm:'<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M7.5 18c.9-2.2 2.6-3.3 4.5-3.3s3.6 1.1 4.5 3.3"/>',
   trend:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
   warn:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>'
 };
@@ -42,8 +43,10 @@ function navFor(u){
   if(can('briefs.use')) add('briefs','Briefs','brief','Workspace');
   if(can('executive.view')) add('exec','Executive','crown','Leadership');
   if(canAny(['commercial.metrics.manage','executive.view'])) add('pulse','Commercial Pulse','trend','Leadership');
+  if(can('crm.view')) add('crm','Clients CRM','crm','Leadership');
   if(canAny(['executive.view','commercial.metrics.manage'])) add('sales','Sales CRM','chart','Business Lines');
   if(canAny(['executive.view','system.admin'])) add('line2','Line 2','trend','Business Lines');
+  if(canAny(['attendance.view_all','leave.approve_hr'])) add('people','People Dashboard','dash','People');
   if(can('attendance.view_all')){ add('today','Attendance','cal','People'); add('monthly','Monthly Report','chart','People'); add('screen','Screen Report','monitor','People'); }
   if(can('people.manage')) add('users','Employees','users','People');
   if(can('people.manage')) add('devices','Devices','device','People');
@@ -120,7 +123,7 @@ function go(v,opts){
   window.scrollTo(0,0);
   if(gated() && v!=='clock'){ S.lockShown=true; viewLocked(v); return; }
   S.lockShown=false;
-  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
+  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,people:viewPeople,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
   (map[v]||viewDash)();
 }
 function viewLocked(v){
@@ -145,7 +148,7 @@ const VIEW_DATA={
   desk:[['desk','deskGet']], dash:[['dash','dash']], mytasks:[['my','myTasks']], tasks:[['gt','gtList']], meetings:[['mt','mtList']],
   requests:[['rqMeta','reqMeta'],['rqList','reqList']], projects:[['plist','projList']], blockers:[['blockers','blockList']],
   briefs:[['briefs','briefList']], exec:[['exec','execDash']], today:[['board','board']], users:[['users','users']],
-  devices:[['devices','devicesList']], org:[['org','orgGet']], settings:[['settings','settingsGet']]
+  devices:[['devices','devicesList']], org:[['org','orgGet']], settings:[['settings','settingsGet']], crm:[['crm','crmList']], people:[['people','peopleDash']]
 };
 // تحميل كل الصفحات في الخلفية في طلب واحد، عشان أي صفحة تتفتح على طول من آخر داتا
 async function prefetch(force){

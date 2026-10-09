@@ -144,8 +144,9 @@ function taskRowHTML(t,pid,me,isAdmin){
       ? `<div class="tlink"><span>${esc(t.linkLabel)}</span><input id="${id}" value="${esc(t.link)}" placeholder="https://"><button class="tb ghost" onclick="tAct(${P},'link',{link:$('${id}').value})">Save</button></div>`
       : `<div class="tlink"><span>${esc(t.linkLabel)}</span>${t.link?`<a href="${esc(t.link)}" target="_blank" rel="noopener">${esc(t.link)}</a>`:'<span class="muted">Not yet</span>'}</div>`;
   }
+  const refs=(t.refs||[]).map(r=>`<div class="tlink tref"><span>${esc(r.label)}</span><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></div>`).join('');
   return `<div class="trow${t.locked?' locked':''}${t.running?' running':''}${t.status==='Done'?' done':''}">
-    <div class="tmain"><div class="tt">${esc(t.title)}</div>${who}${wait}${link}${notes}</div>
+    <div class="tmain"><div class="tt">${esc(t.title)}</div>${who}${wait}${refs}${link}${notes}</div>
     <div class="tside">${lock}${dl}${status}<span class="tsep"></span>${time}${timer}</div></div>`;
 }
 
