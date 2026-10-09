@@ -399,7 +399,7 @@ ${headHTML(b)}
   const pb=$("#pdf"); if(pb) pb.onclick=()=>exportPDF(b,pb);
   app.querySelectorAll("[data-reveal]").forEach(btn=>btn.onclick=async()=>{const sp=btn.parentElement.querySelector("[data-secret]"); const hidden=sp.textContent.startsWith("••");
     if(hidden&&!sp.dataset.secret&&sp.dataset.akey){ try{ sp.dataset.secret=await secretOf(sp.dataset.akey); }catch(e){ toast(e.message); return; } }
-    sp.textContent=hidden?sp.dataset.secret:"••••••••••"; btn.classList.toggle("on",hidden); btn.setAttribute("aria-label",hidden?"إخفاء الباسورد":"إظهار الباسورد");});
+    sp.textContent=hidden?sp.dataset.secret:"••••••••••"; sp.title=hidden?sp.dataset.secret:""; btn.classList.toggle("on",hidden); btn.setAttribute("aria-label",hidden?"إخفاء الباسورد":"إظهار الباسورد");});
   app.querySelectorAll("[data-copyv]").forEach(btn=>btn.onclick=()=>copy(btn.dataset.copyv));
   app.querySelectorAll("[data-copyk]").forEach(btn=>btn.onclick=async()=>{const sp=btn.parentElement.querySelector("[data-secret]"); try{ if(!sp.dataset.secret) sp.dataset.secret=await secretOf(btn.dataset.copyk); copy(sp.dataset.secret); }catch(e){ toast(e.message); }});
   const cl=$("#copylink"); if(cl) cl.onclick=()=>copy(briefLink(src.id));

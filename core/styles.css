@@ -381,3 +381,10 @@ button.kpi:hover{border-color:#B8C9C4}
 .pd-hero b{font-size:28px;line-height:1}.pd-hero span{font-size:12.5px;color:var(--muted)}
 .pd-tip{position:fixed;z-index:999;display:none;pointer-events:none;background:#10231F;color:#fff;font-size:12.5px;line-height:1.45;padding:7px 10px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);max-width:260px}
 .pd-tip b{color:#fff}
+
+/* Client access: الزرار مايتحركش لما الباسورد يظهر */
+table.pacc{table-layout:fixed}
+.pacc-v{display:flex;align-items:center;gap:4px;min-width:0}
+.pacc-v .v{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pacc-v .v.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+.pacc-v .btn{flex:none;min-width:60px;justify-content:center}

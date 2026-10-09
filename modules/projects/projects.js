@@ -1,8 +1,9 @@
 /* ============ المشاريع والتاسكات ============ */
 const TSTAT = { 'Not Started':['p-out','Not Started'], 'In Progress':['p-prog','In Progress'], 'Done':['p-in','Done ✓'], 'N/A':['p-na','N/A'] };
 const PSTAT = { 'Active':'p-in', 'On Hold':'p-absent', 'Launched':'p-prog', 'Cancelled':'p-out' };
-const ROLE_ORDER = ['sm','copy','uiux','designer','dev'];
-const ROLE_T = { sm:'Store Manager', copy:'Copywriter', uiux:'UI/UX', designer:'Designer', dev:'Developer' };
+const ROLE_ORDER = ['cp','sm','copy','uiux','designer','dev'];
+const CP_TYPE = 'نقل كما هو';
+const ROLE_T = { cp:'Store Transfer (Copy-Paste)', sm:'Store Manager', copy:'Copywriter', uiux:'UI/UX', designer:'Designer', dev:'Developer' };
 S.skew = 0; S.pFilter = 'Active';
 
 function fmtDay(v){ if(!v) return '—'; const d=new Date(v+'T12:00:00'); return isNaN(d)? v : d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
@@ -72,7 +73,7 @@ function renderProject(r,keep){
   S.proj=r;
   {
     const backTo = S.view==='mytasks' ? ['viewMyTasks()','My Tasks'] : ['viewProjects()','All Projects'];
-    const groups=ROLE_ORDER.map(role=>({role, tasks:r.tasks.filter(t=>t.role===role)})).filter(g=>g.tasks.length);
+    const groups=ROLE_ORDER.map(role=>({role, tasks:r.tasks.filter(t=>t.role===role)})).filter(g=>g.tasks.length && (r.type!==CP_TYPE || g.tasks.some(t=>!t.na)));
     const links=r.tasks.filter(t=>t.link);
     const D=r.data;
     $('main').innerHTML=`<div class="en">
@@ -92,9 +93,9 @@ function renderProject(r,keep){
           <div class="kv"><b>Target Launch</b><span>${r.overdue?`<span style="color:var(--bad);font-weight:600">${fmtDay(r.target_launch)} · Overdue</span>`:fmtDay(r.target_launch)}</span></div>
           ${r.go_live?`<div class="kv"><b>Go Live</b><span>${fmtDay(r.go_live)}</span></div>`:''}
         </div>
-        <div class="pbox"><h4>Team <span class="pill p-prog" style="margin-left:6px">${esc(r.build_mode)}</span></h4>
+        <div class="pbox"><h4>Team <span class="pill p-prog" style="margin-left:6px">${r.type===CP_TYPE?'Copy-Paste':esc(r.build_mode)}</span></h4>
           <div class="kv"><b>Account Manager</b><span>${esc(r.amName||'—')}</span></div>
-          ${ROLE_ORDER.map(k=>`<div class="kv"><b>${ROLE_T[k]}</b><span>${bd(r.team[k]||'—')}</span></div>`).join('')}
+          ${r.type===CP_TYPE?`<div class="kv"><b>Transfer (all tasks)</b><span>${bd(r.team.cp||'—')}</span></div>`:ROLE_ORDER.filter(k=>k!=='cp').map(k=>`<div class="kv"><b>${ROLE_T[k]}</b><span>${bd(r.team[k]||'—')}</span></div>`).join('')}
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">${pbar(r.progress)}<b style="font-size:14px">${r.progress}%</b><span class="muted" style="font-size:13px">${r.done}/${r.total} tasks · ${r.hours} h</span></div>
@@ -290,7 +291,12 @@ async function projForm(id){
         ${isAdmin?`<div><label>Account Manager</label><select id="pf_am">${opt(meta.ams,d.am,'—')}</select></div>`:''}
       </div>
       <h3>Team</h3>
-      <div class="pfgrid">
+      <div class="pfgrid m-cp">
+        <div><label>Responsible for the transfer *</label><select id="pf_cp">${opt(meta.team,d.cp,'Select...')}</select></div>
+        <div><label>Helper (optional)</label><select id="pf_cp2">${opt(meta.team,d.cp2,'—')}</select></div>
+      </div>
+      <div class="muted m-cp" style="font-size:12.5px;margin-top:6px">Copy-paste transfer: this person gets every task (store &amp; data, design, content, core dev, domain, tests). All tasks are open from day one, in any order. The helper can work on the same tasks.</div>
+      <div class="pfgrid m-team">
         <div><label>Build Mode</label><select id="pf_build_mode">${opt(meta.modes,d.build_mode)}</select></div>
         ${teamSel('sm','Store Manager')}${teamSel('copy','Copywriter')}${teamSel('designer','Designer')}
         <div class="m-split">${teamSel('uiux','UI/UX')}</div><div class="m-split">${teamSel('dev','Developer')}</div>
@@ -298,15 +304,17 @@ async function projForm(id){
         <div class="m-joker">${teamSel('joker','Joker')}</div>
         <div class="m-joker"><label>Joker helps with</label><select id="pf_joker_role"><option value="uiux"${d.joker_role==='uiux'?' selected':''}>UI/UX</option><option value="dev"${d.joker_role==='dev'?' selected':''}>Developer</option></select></div>
       </div>
-      <div class="muted m-joker" style="font-size:12.5px;margin-top:6px">The Joker shares the selected role's tasks with the main person. Either of them can start and finish them.</div>
+      <div class="muted m-joker m-team" style="font-size:12.5px;margin-top:6px">The Joker shares the selected role's tasks with the main person. Either of them can start and finish them.</div>
       <div class="err" id="pf_err"></div>
       <div class="mfoot"><button class="btn" id="pf_save">${id?'Save':'Create Project'}</button></div>
     </div></div>`;
-    const mode=()=>{ const m=$('pf_build_mode').value;
+    const mode=()=>{ const m=$('pf_build_mode').value, cp=$('pf_type').value===CP_TYPE;
+      document.querySelectorAll('.m-cp').forEach(e=>e.classList.toggle('hidden',!cp));
+      document.querySelectorAll('.m-team').forEach(e=>e.classList.toggle('hidden',cp));
       document.querySelectorAll('.m-split').forEach(e=>e.classList.toggle('hidden',m==='Front End'));
       document.querySelectorAll('.m-fe').forEach(e=>e.classList.toggle('hidden',m!=='Front End'));
-      document.querySelectorAll('.m-joker').forEach(e=>e.classList.toggle('hidden',m!=='Joker')); };
-    $('pf_build_mode').onchange=mode; mode();
+      document.querySelectorAll('.m-joker').forEach(e=>e.classList.toggle('hidden',cp||m!=='Joker')); };
+    $('pf_build_mode').onchange=mode; $('pf_type').addEventListener('change',mode); mode();
     const normName=v=>String(v||'').toLowerCase().replace(/[\u064B-\u065F\u0670\u0640\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g,'').replace(/[\s\-_–—.]+/g,'');
     const dupCheck=()=>{ const v=normName($('pf_client').value), list=(S.cache.plist&&S.cache.plist.projects)||[];
       const hit=v&&list.find(p=>p.id!==(id||'')&&normName(p.client)===v);
@@ -316,7 +324,7 @@ async function projForm(id){
     $('pf_brief_id').onchange=()=>{
       const b=meta.briefs.find(x=>x.id===$('pf_brief_id').value); if(!b) return;
       const set=(k,v)=>{ if(v) $('pf_'+k).value=v; };
-      set('client',b.store); dupCheck(); set('type',typeMap(b.f.project_type)); set('cur_platform',platMap(b.f.current_platform)); set('target_platform',platMap(b.f.target_platform));
+      set('client',b.store); dupCheck(); set('type',typeMap(b.f.project_type)); mode(); set('cur_platform',platMap(b.f.current_platform)); set('target_platform',platMap(b.f.target_platform));
       set('store_url',b.f.store_url); set('store_id',b.f.zid_id);
       if(b.f.logo_plan) $('pf_identity').value = b.f.logo_plan==='لوجو جديد' ? 'هوية جديدة' : 'هوية موجودة';
       if($('pf_am')){ const a=meta.ams.find(x=>x.u===b.owner); if(a) $('pf_am').value=a.u; }
@@ -325,7 +333,7 @@ async function projForm(id){
     $('pf_save').onclick=async()=>{
       $('pf_err').textContent=''; $('pf_save').disabled=true;
       const g=k=>{ const el=$('pf_'+k); return el? el.value : (d[k]||''); };
-      const data={ id:id||'' }; ['client','type','identity','status','cur_platform','target_platform','store_url','store_id','start_date','go_live','am','brief_id','build_mode','sm','copy','designer','uiux','dev','fe','joker','joker_role'].forEach(k=>data[k]=g(k));
+      const data={ id:id||'' }; ['client','type','identity','status','cur_platform','target_platform','store_url','store_id','start_date','go_live','am','brief_id','build_mode','sm','copy','designer','uiux','dev','fe','joker','joker_role','cp','cp2'].forEach(k=>data[k]=g(k));
       try{ const r=await call('projSave',{project:data}); toast(id?'Saved ✓':'Project '+r.id+' created ✓'); viewProject(r.id); }
       catch(e){ $('pf_err').textContent=e.message; $('pf_save').disabled=false; }
     };
@@ -337,18 +345,18 @@ async function projForm(id){
 function projAccessHTML(r){
   if(!r.access) return '';
   return `<div class="card flush" style="margin-bottom:20px"><div class="chead"><span style="color:var(--brand2)">${ico('device',18)}</span><h2>Client access</h2><span class="muted" style="font-size:12.5px">Every password you reveal is logged</span></div>
-    ${r.access.length?`<div class="tbl-wrap" style="border:0"><table style="min-width:640px"><tr><th>Account</th><th>Username / email</th><th>Password</th></tr>
+    ${r.access.length?`<div class="tbl-wrap" style="border:0"><table class="pacc" style="min-width:640px"><colgroup><col style="width:26%"><col style="width:37%"><col style="width:37%"></colgroup><tr><th>Account</th><th>Username / email</th><th>Password</th></tr>
     ${r.access.map(a=>`<tr><td><b>${esc(a.label)}</b>${a.l?`<div class="sub2"><a href="${esc(/^https?:/i.test(a.l)?a.l:'https://'+a.l)}" target="_blank" rel="noopener" dir="ltr">${esc(a.l)}</a></div>`:''}</td>
-      <td dir="ltr">${a.u?`${esc(a.u)} <button class="btn small ghost" data-cu="${esc(a.u)}" onclick="navigator.clipboard.writeText(this.dataset.cu).then(()=>toast('اتنسخ'))">Copy</button>`:'—'}</td>
-      <td>${a.pSet?`<span id="pw_${a.key}" dir="ltr" style="font-family:monospace">••••••••</span> <button class="btn small ghost" onclick="paReveal('${esc(r.data.id)}','${a.key}',false)">Show</button><button class="btn small ghost" onclick="paReveal('${esc(r.data.id)}','${a.key}',true)">Copy</button>`:'—'}</td></tr>`).join('')}</table></div>`
+      <td dir="ltr">${a.u?`<div class="pacc-v"><span class="v" title="${esc(a.u)}">${esc(a.u)}</span><button class="btn small ghost" data-cu="${esc(a.u)}" onclick="navigator.clipboard.writeText(this.dataset.cu).then(()=>toast('اتنسخ'))">Copy</button></div>`:'—'}</td>
+      <td dir="ltr">${a.pSet?`<div class="pacc-v"><span class="v mono" id="pw_${a.key}">••••••••</span><button class="btn small ghost" onclick="paReveal('${esc(r.data.id)}','${a.key}',false,this)">Show</button><button class="btn small ghost" onclick="paReveal('${esc(r.data.id)}','${a.key}',true)">Copy</button></div>`:'—'}</td></tr>`).join('')}</table></div>`
     :`<div class="empty" style="padding:16px">No access saved in the brief yet.</div>`}</div>`;
 }
-async function paReveal(pid,key,copyIt){
+async function paReveal(pid,key,copyIt,btn){
   const el=$('pw_'+key);
   try{
     if(!el.dataset.v) el.dataset.v=(await call('accessReveal',{project:pid,key})).p||'';
     if(copyIt){ await navigator.clipboard.writeText(el.dataset.v); toast('اتنسخ'); }
-    else el.textContent = el.textContent.startsWith('••') ? el.dataset.v : '••••••••';
+    else { const show=el.textContent.startsWith('••'); el.textContent = show ? el.dataset.v : '••••••••'; el.title = show ? el.dataset.v : ''; if(btn) btn.textContent = show ? 'Hide' : 'Show'; }
   }catch(e){ toast(e.message); }
 }
 
