@@ -1,7 +1,7 @@
 /* ============ بورتال الشركاء (زد) ============
-   صفحة لوحدها من غير لوجين: المفتاح في اللينك (?k=...). للاطلاع بس.
+   صفحة لوحدها: المفتاح في اللينك (?k=...) + يوزر وباسورد بتحددهم الإدارة. للاطلاع بس.
    البيانات جاية من السيرفر محسوبة من المشاريع والتاسكات والبلوكرز. */
-const PT = { key: new URLSearchParams(location.search).get('k') || '', all: false, month: '', q: '', f: 'all', data: null, open: '' };
+const PT = { key: new URLSearchParams(location.search).get('k') || '', t: '', all: false, month: '', q: '', f: 'all', data: null, open: '' };
 const pe = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const AR_M = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const mName = m => { const p = String(m).split('-'); return AR_M[+p[1] - 1] + ' ' + p[0]; };
@@ -22,14 +22,44 @@ function ago(ms) {
   const h = Math.round(m / 60); if (h < 24) return 'منذ ' + h + (h === 1 ? ' ساعة' : ' ساعات');
   const d = Math.round(h / 24); if (d === 1) return 'منذ يوم'; if (d === 2) return 'منذ يومين'; return 'منذ ' + d + (d <= 10 ? ' أيام' : ' يوم');
 }
-function ptCall() {
-  return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'portal', k: PT.key, month: PT.month, all: PT.all }) })
-    .then(r => r.json()).then(r => { if (!r || !r.ok) throw new Error((r && r.error) || 'حصل خطأ'); return r.data; });
+const ptStoreKey = () => 'pt_t_' + PT.key.slice(0, 12);
+function ptTok(v) { try { if (v === undefined) return localStorage.getItem(ptStoreKey()) || ''; if (v) localStorage.setItem(ptStoreKey(), v); else localStorage.removeItem(ptStoreKey()); } catch (e) {} return v || ''; }
+function ptPost(body) {
+  return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ k: PT.key, t: PT.t }, body)) })
+    .then(r => r.json()).then(r => { if (!r || !r.ok) { const e = new Error((r && r.error) || 'حصل خطأ'); if (e.message === 'PT_LOGIN') e.login = true; throw e; } return r.data; });
 }
+function ptCall() { return ptPost({ action: 'portal', month: PT.month, all: PT.all }); }
 function ptLoad(quiet) {
   if (!PT.key) { ptErr('اللينك ناقص. اطلب اللينك الصحيح من مِقناص'); return; }
+  if (!PT.t) { ptLoginView(); return; }
   if (!quiet && !PT.data) document.getElementById('pt').innerHTML = '<div class="pt-load">جاري التحميل...</div>';
-  ptCall().then(d => { PT.data = d; if (!PT.month) PT.month = d.month; ptRender(); }).catch(e => { if (!PT.data) ptErr(e.message); });
+  ptCall().then(d => { PT.data = d; if (!PT.month) PT.month = d.month; ptRender(); }).catch(e => { if (e.login) { ptTok(null); PT.t = ''; PT.data = null; ptLoginView(); } else if (!PT.data) ptErr(e.message); });
+}
+function ptLoginView(msg) {
+  document.getElementById('pt').innerHTML = `<div class="pt-login"><form class="pt-lcard" onsubmit="ptLogin(event)">
+    <div class="pt-logo" aria-hidden="true">M</div><b>مِقناص × زد</b><span>بورتال الشركاء · سجّل دخول عشان تكمل</span>
+    <label>اسم المستخدم<input id="ptU" autocomplete="username" dir="ltr" required></label>
+    <label>كلمة المرور<input id="ptP" type="password" autocomplete="current-password" dir="ltr" required></label>
+    <div class="pt-lerr" role="alert">${msg ? pe(msg) : ''}</div>
+    <button type="submit" class="pt-lbtn" id="ptLb">دخول</button></form></div>`;
+  setTimeout(() => { const u = document.getElementById('ptU'); if (u) u.focus(); }, 30);
+}
+function ptLogin(ev) {
+  ev.preventDefault();
+  const b = document.getElementById('ptLb'); b.disabled = true; b.textContent = 'جاري الدخول...';
+  ptPost({ action: 'portalLogin', user: document.getElementById('ptU').value, pass: document.getElementById('ptP').value })
+    .then(r => { PT.t = ptTok(r.t); ptLoad(); })
+    .catch(e => ptLoginView(e.message));
+}
+function ptLogout() { ptPost({ action: 'portalLogout' }).catch(() => {}); ptTok(null); PT.t = ''; PT.data = null; ptLoginView(); }
+function ptReport() {
+  const w = window.open('', '_blank');
+  if (w) w.document.write('<p dir="rtl" style="font-family:sans-serif;padding:24px">جاري تجهيز التقرير...</p>');
+  ptPost({ action: 'portalReport', month: PT.data.month, all: PT.data.all }).then(r => {
+    if (!w) { alert('افتح النوافذ المنبثقة (pop-ups) للموقع ده وجرّب تاني'); return; }
+    w.document.open(); w.document.write(r.html); w.document.close();
+    setTimeout(() => { try { w.focus(); w.print(); } catch (e) {} }, 900);
+  }).catch(e => { if (w) w.close(); if (e.login) ptLoad(); else alert(e.message); });
 }
 function ptErr(msg) { document.getElementById('pt').innerHTML = '<div class="pt-err"><div><div class="pt-logo" style="margin:0 auto 14px">M</div>' + pe(msg) + '</div></div>'; }
 function ptList() {
@@ -46,11 +76,12 @@ function ptRender() {
   document.getElementById('pt').innerHTML = `<div class="pt-wrap">
   <header class="pt-head"><div class="pt-logo" aria-hidden="true">M</div>
     <div class="pt-title"><b>مِقناص × زد</b><span>بورتال الشركاء · تقرير التسليم</span></div>
-    <span class="pt-upd">محدّث ${pe(ago(d.at))}</span></header>
+    <span class="pt-upd">محدّث ${pe(ago(d.at))}</span><button type="button" class="pt-out" onclick="ptLogout()">خروج</button></header>
   <div class="pt-bar">
     <div class="pt-tabs" role="tablist"><button type="button" role="tab" aria-selected="${!d.all}" class="${d.all ? '' : 'on'}" onclick="ptSet('all',false)">متاجر الشهر</button><button type="button" role="tab" aria-selected="${d.all}" class="${d.all ? 'on' : ''}" onclick="ptSet('all',true)">كل المتاجر</button></div>
     ${d.all ? '' : `<label class="pt-field month"><small>الشهر</small><select aria-label="الشهر" onchange="ptSet('month',this.value)">${months.reverse().map(m => `<option value="${m}"${m === d.month ? ' selected' : ''}>${mName(m)}</option>`).join('')}</select></label>`}
     <button type="button" class="pt-btn" onclick="ptExport()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>تصدير Excel</button>
+    <button type="button" class="pt-btn" onclick="ptReport()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>تقرير PDF</button>
   </div>
   <label class="pt-field search"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9DB0AA" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="ptQ" placeholder="ابحث برقم المتجر أو اسمه" aria-label="بحث" value="${pe(PT.q)}" oninput="PT.q=this.value;ptRender()"></label>
   <section class="pt-kpis" aria-label="ملخص">
@@ -116,6 +147,7 @@ function ptExport() {
 }
 (function () {
   const m = location.hash.match(/s=([^&]+)/); if (m) PT.open = decodeURIComponent(m[1]);
+  PT.t = ptTok();
   ptLoad();
-  setInterval(() => { if (document.visibilityState === 'visible') ptLoad(true); }, 5 * 60000);
+  setInterval(() => { if (document.visibilityState === 'visible' && PT.t && PT.data) ptLoad(true); }, 5 * 60000);
 })();

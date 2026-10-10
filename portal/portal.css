@@ -110,3 +110,17 @@ button,input,select{font:inherit;color:inherit}
 .pt-log small{font-size:12px;color:var(--mut)}
 @media (max-width:520px){.pt-bar .pt-btn{flex:1;justify-content:center}.pt-field.month{flex:1}}
 .pt-wrap > .pt-field.search{flex:none}
+/* الدخول */
+.pt-login{min-height:100vh;display:grid;place-items:center;padding:20px 16px}
+.pt-lcard{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 20px;display:flex;flex-direction:column;gap:12px;text-align:center}
+.pt-lcard .pt-logo{margin:0 auto 4px}
+.pt-lcard > b{font-size:18px}
+.pt-lcard > span{font-size:13px;color:var(--mut);margin-bottom:6px}
+.pt-lcard label{display:flex;flex-direction:column;gap:6px;text-align:start;font-size:13px;color:var(--mut)}
+.pt-lcard input{min-height:46px;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:0 14px;font-size:15px;color:var(--ink);outline:none}
+.pt-lcard input:focus{border-color:var(--acc)}
+.pt-lerr{min-height:18px;font-size:13px;color:var(--bad)}
+.pt-lbtn{min-height:48px;border:0;border-radius:12px;background:var(--acc);color:var(--acc-ink);font-weight:700;font-size:15px;cursor:pointer}
+.pt-lbtn:disabled{opacity:.7}
+.pt-out{min-height:34px;border:1px solid var(--line);background:transparent;color:var(--mut);border-radius:999px;padding:0 14px;font-size:12.5px;cursor:pointer}
+.pt-out:hover{color:var(--ink)}

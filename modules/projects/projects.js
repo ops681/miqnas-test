@@ -409,17 +409,53 @@ async function pnAdd(id){ const t=$('pnT').value.trim(), n=$('pnN').value.trim()
   try{ const l=await call('partnerNoteAdd',{project:id,text:t,next:n}); pnPut(S.proj,l); toast('اتنشر للشريك ✓'); }catch(e){ alert(e.message); } }
 async function pnDel(nid,id){ if(!confirm('تمسح التحديث ده من البورتال؟')) return; try{ const l=await call('partnerNoteDelete',{id:nid}); pnPut(S.proj,l); }catch(e){ alert(e.message); } }
 
-/* ----- لينك بورتال زد (للإدارة) ----- */
+/* ----- بورتال زد (للإدارة): اللينك + اليوزر والباسورد + التقرير الشهري ----- */
 async function ptAdmin(regen){
-  if(regen && !confirm('اللينك القديم هيقف خالص وفريق زد محتاج اللينك الجديد. متأكد؟')) return;
+  if(regen && !confirm('اللينك القديم هيقف خالص وفريق زد محتاج اللينك الجديد ويسجلوا دخول تاني. متأكد؟')) return;
   try{
     const r=await call('portalAdmin',regen?{regen:true}:{});
-    const url=location.origin+location.pathname.replace(/[^/]*$/,'')+'portal.html?k='+r.key;
-    $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:560px">
-      <h2 style="margin:0 0 6px">Zid partner portal</h2>
-      <p class="muted" style="margin:0 0 14px;font-size:13.5px">Anyone with this link sees all ${r.stores} Zid stores (status, stages, blockers, updates). No phone numbers, passwords or team names are shown. Share it with the Zid team only.</p>
-      <div class="pt-link"><input readonly value="${esc(url)}" dir="ltr" onclick="this.select()" aria-label="Portal link"><button class="btn primary" onclick="navigator.clipboard.writeText('${esc(url)}').then(()=>toast('اتنسخ اللينك'))">Copy</button></div>
-      <div class="mfoot"><button class="btn ghost danger" onclick="ptAdmin(true)">New link (stop the old one)</button><div class="spacer"></div><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Open portal</a><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div>`;
+    S.ptAdm=r; ptAdminRender();
     if(regen) toast('اتعمل لينك جديد');
   }catch(e){ alert(e.message); }
+}
+function ptAdminRender(){
+  const r=S.ptAdm; if(!r) return;
+  const url=location.origin+location.pathname.replace(/[^/]*$/,'')+'portal.html?k='+r.key;
+  const months=[]; { const [y0,m0]=String(r.first||'').split('-').map(Number); const now=new Date(); let y=y0||now.getFullYear(), m=m0||now.getMonth()+1; while(y<now.getFullYear()||(y===now.getFullYear()&&m<=now.getMonth()+1)){ months.push(y+'-'+String(m).padStart(2,'0')); m++; if(m>12){m=1;y++;} } }
+  const mn=m=>new Date(m+'-15').toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:580px">
+    <h2 style="margin:0 0 6px">Zid partner portal</h2>
+    <p class="muted" style="margin:0 0 14px;font-size:13.5px">${r.stores} Zid stores. The Zid team opens this link and signs in with the username and password below. No phone numbers, passwords or team names are shown.</p>
+    <div class="pt-link"><input readonly value="${esc(url)}" dir="ltr" onclick="this.select()" aria-label="Portal link"><button class="btn primary" onclick="navigator.clipboard.writeText('${esc(url)}').then(()=>toast('اتنسخ اللينك'))">Copy</button></div>
+    <h3 style="margin:18px 0 6px;font-size:15px">Portal sign-in</h3>
+    <div class="muted" style="font-size:13px;margin-bottom:8px">${r.user&&r.hasPass?`Current username: <b dir="ltr">${esc(r.user)}</b>. Saving a new one signs everyone out of the portal.`:'<span style="color:var(--bad)">No username yet. The portal stays locked until you set one.</span>'}</div>
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <input id="ptAu" placeholder="Username" dir="ltr" autocomplete="off" value="${esc(r.user||'')}" style="flex:1 1 150px" aria-label="Portal username">
+      <input id="ptAp" type="password" placeholder="New password (8+)" dir="ltr" autocomplete="new-password" style="flex:1 1 150px" aria-label="Portal password">
+      <button class="btn" onclick="const i=$('ptAp');i.type=i.type==='password'?'text':'password'">Show</button>
+      <button class="btn primary" onclick="ptCredsSave()">Save</button>
+    </div>
+    <h3 style="margin:18px 0 6px;font-size:15px">Monthly report (PDF)</h3>
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <select id="ptRm" style="flex:1 1 180px" aria-label="Report month"><option value="all">All stores</option>${months.reverse().map((m,i)=>`<option value="${m}"${i===0?' selected':''}>${mn(m)}</option>`).join('')}</select>
+      <button class="btn primary" onclick="ptRepOpen()">Print / PDF</button>
+    </div>
+    <div class="muted" style="font-size:12.5px;margin-top:6px">A PDF of the previous month is also saved to Google Drive on the 1st of every month.</div>
+    <div class="mfoot"><button class="btn ghost danger" onclick="ptAdmin(true)">New link (stop the old one)</button><div class="spacer"></div><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Open portal</a><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div>`;
+}
+async function ptCredsSave(){
+  const user=$('ptAu').value.trim(), pass=$('ptAp').value;
+  if(!user||!pass) return alert('اكتب اليوزر والباسورد الجديد');
+  if(S.ptAdm&&S.ptAdm.hasPass&&!confirm('فريق زد هيحتاج اليوزر والباسورد الجداد ويسجلوا دخول تاني. متأكد؟')) return;
+  try{ S.ptAdm=await call('portalAdmin',{setCreds:true,user,pass}); ptAdminRender(); toast('اتحفظ اليوزر والباسورد'); }catch(e){ alert(e.message); }
+}
+async function ptRepOpen(){
+  const v=$('ptRm').value, w=window.open('','_blank');
+  if(w) w.document.write('<p style="font-family:sans-serif;padding:24px">Preparing report...</p>');
+  try{
+    const r=await call('partnerReport',v==='all'?{all:true}:{month:v});
+    if(!w) return alert('Allow pop-ups for this site and try again');
+    w.document.open(); w.document.write(r.html); w.document.close();
+    setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} },900);
+  }catch(e){ if(w) w.close(); alert(e.message); }
 }
