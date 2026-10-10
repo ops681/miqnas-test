@@ -519,3 +519,15 @@ td.nw{white-space:nowrap}
 .pn-h .btn{margin-inline-start:auto}
 .pt-link{display:flex;gap:8px}
 .pt-link input{flex:1;font-size:13px}
+/* تطبيق الموبايل */
+.pwa-bar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:9000;display:flex;align-items:center;gap:12px;background:var(--brand);color:#fff;border-radius:16px;padding:12px 12px 12px 14px;box-shadow:0 12px 30px rgba(0,0,0,.25);direction:rtl}
+.pwa-ic{width:40px;height:40px;border-radius:10px;background:#F08A4B;color:#1A0E06;display:grid;place-items:center;font-weight:700;font-size:18px;flex:none}
+.pwa-tx{flex:1;display:flex;flex-direction:column;gap:2px;font-size:13px;min-width:0}
+.pwa-tx b{font-size:14px}
+.pwa-tx svg{vertical-align:-2px}
+.pwa-bar .btn.primary{background:#F08A4B;border-color:#F08A4B;color:#1A0E06}
+.pwa-x{background:rgba(255,255,255,.12)}
+@media (display-mode: standalone){
+  #side{padding-top:calc(10px + env(safe-area-inset-top))}
+  #main{padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+}

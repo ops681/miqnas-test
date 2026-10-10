@@ -35,7 +35,7 @@ function navFor(u){
   const add=(id,label,icon,sec)=>N.push({id,label,icon,sec});
   add('desk','My Desk','home','Workspace');
   if(can('dashboard.view')) add('dash','Dashboard','dash','Workspace');
-  if(u.clocks) add('clock','Time Clock','clock','Workspace');
+  if(u.clocks && !S.mobile) add('clock','Time Clock','clock','Workspace');
   if(can('tasks.mine')) add('mytasks','My Tasks','tasks','Workspace');
   add('tasks','Tasks','todo','Workspace');
   add('meetings','Meetings','meet','Workspace');
@@ -91,7 +91,7 @@ function renderSideClock(){
   const st=S.status||{};
   el.innerHTML = st.clockedIn
     ? `<small>Clocked in since ${esc(st.inT)}</small><b id="sideElapsed">--:--:--</b>${st.onBreak?`<span class="sh off"><i></i>On break</span>`:`<span class="sh${S.sharing?'':' off'}"><i></i>${S.sharing?'Screen sharing on':'Sharing stopped'}</span>`}`
-    : `<small>Time Clock</small><b>Not clocked in</b><span class="sh off"><i></i>Clock in to start</span>`;
+    : `<small>Time Clock</small><b>Not clocked in</b><span class="sh off"><i></i>${S.mobile?'Clock in from your laptop':'Clock in to start'}</span>`;
   tickAll();
 }
 function setTop(title, sub, actions){
@@ -99,6 +99,7 @@ function setTop(title, sub, actions){
 }
 
 function startApp(){
+  setTimeout(pwaBanner, 1500);
   $('loginView').classList.add('hidden'); $('appView').classList.remove('hidden');
   loadCache();
   renderSide();
@@ -254,3 +255,22 @@ function themeIsDark(){ return document.documentElement.getAttribute('data-theme
 function themeBtn(){ const b=$('themeBtn'); if(!b) return; const d=themeIsDark(); b.innerHTML=ico(d?'sun':'moon',18); b.title=d?'Light mode':'Dark mode'; b.setAttribute('aria-label',b.title); }
 function themeToggle(){ const t=themeIsDark()?'light':'dark'; document.documentElement.setAttribute('data-theme',t); store('theme',t); themeBtn(); }
 document.addEventListener('DOMContentLoaded',themeBtn); setTimeout(themeBtn,0);
+
+/* ============ تطبيق الموبايل (PWA) ============ */
+// الأدمنز والـ Account Managers بيتابعوا من الموبايل. التطبيق بيتثبت من المتصفح (Add to Home Screen).
+const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+const isPhone = () => /iPhone|iPad|Android/i.test(navigator.userAgent);
+let pwaPrompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pwaPrompt = e; pwaBanner(); });
+if ('serviceWorker' in navigator && location.protocol === 'https:') { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); }
+function pwaWho(){ return S.user && (can('system.admin') || (can('projects.manage_own') && !can('projects.manage_all'))); }
+function pwaBanner(){
+  const el = $('pwaBar'); if (el) el.remove();
+  if (!S.user || !pwaWho() || isStandalone() || !isPhone() || load('pwa_hide') === '1') return;
+  const ios = /iPhone|iPad/i.test(navigator.userAgent);
+  const d = document.createElement('div'); d.id = 'pwaBar'; d.className = 'pwa-bar';
+  d.innerHTML = `<div class="pwa-ic">M</div><div class="pwa-tx"><b>ثبّت تطبيق مِقناص</b><span>${ios ? 'دوس على زرار المشاركة <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M5 12v8h14v-8"/></svg> وبعدين <bdi dir="ltr">Add to Home Screen</bdi>' : 'تابع شغلك من أيقونة على الموبايل'}</span></div>
+    ${!ios && pwaPrompt ? '<button class="btn primary small" onclick="pwaInstall()">تثبيت</button>' : ''}<button class="iconbtn pwa-x" aria-label="إخفاء" onclick="store(\'pwa_hide\',\'1\');pwaBanner()">✕</button>`;
+  document.body.appendChild(d);
+}
+async function pwaInstall(){ if (!pwaPrompt) return; pwaPrompt.prompt(); try { await pwaPrompt.userChoice; } catch (e) {} pwaPrompt = null; pwaBanner(); }

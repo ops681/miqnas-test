@@ -136,7 +136,7 @@ async function breakEnd(){
   try{
     setStatus(await call('breakEnd'));
     toast('رجعت من البريك ✓');
-    if(S.sharing) startShotLoop(true); else showAlarm(false);
+    if(S.sharing) startShotLoop(true); else if(!S.mobile) showAlarm(false);
     renderSideClock(); if(S.view==='clock') viewClock();
   }catch(e){ alert(e.message); if(b){ b.disabled=false; b.textContent='Resume Work'; } }
 }

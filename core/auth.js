@@ -4,7 +4,7 @@ $('loginForm').addEventListener('submit', async e=>{
   $('lerr').textContent=''; $('lbtn').disabled=true; $('lbtn').textContent='Signing in...';
   try{
     const r = await call('login',{username:$('lu').value,password:$('lp').value,device:deviceId(),deviceLabel:deviceLabel()});
-    S.token=r.token; store('erp_token',r.token);
+    S.token=r.token; store('erp_token',r.token); S.mobile=!!r.mobile; store('erp_mobile',S.mobile?'1':null);
     S.user=r.user; S.cfg=r.cfg; if(r.status) setStatus(r.status); store('erp_user',JSON.stringify(r.user));
     startApp();
     refreshMe();
@@ -25,13 +25,13 @@ async function logout(){
   try{ call('logout'); }catch(e){}
   stopStream(false);
   store(cacheKey(),null);
-  S.token=null; store('erp_token',null); store('erp_user',null);
+  S.token=null; store('erp_token',null); store('erp_user',null); store('erp_mobile',null);
   setTimeout(()=>location.reload(),150);
 }
 
 // بيفتح السيستم على طول من البيانات المتخزنة، وبيتأكد من السيرفر في نفس الوقت
 function boot(){
-  S.token=load('erp_token');
+  S.token=load('erp_token'); S.mobile=load('erp_mobile')==='1';
   let u=null; try{ u=JSON.parse(load('erp_user')||'null'); }catch(e){}
   // بيانات متخزنة من نسخة قديمة (من غير صلاحيات): نجيب الجديدة من السيرفر الأول
   if(u && !Array.isArray(u.perms)) u=null;
@@ -43,8 +43,8 @@ async function refreshMe(first){
   try{
     const r=await call('me');
     const changed=!S.user || String(S.user.perms)!==String(r.user.perms) || S.user.clocks!==r.user.clocks || S.user.seeAccess!==r.user.seeAccess;
-    S.user=r.user; S.cfg=r.cfg; setStatus(r.status); store('erp_user',JSON.stringify(r.user)); avSync(r.avv);
+    S.user=r.user; S.cfg=r.cfg; S.mobile=!!r.mobile; store('erp_mobile',S.mobile?'1':null); setStatus(r.status); store('erp_user',JSON.stringify(r.user)); avSync(r.avv);
     if(first||changed) startApp(); else { renderSide(); if(S.view==='clock') viewClock(); else if(gated() && FREE_VIEWS.indexOf(S.view)<0) go('clock'); else if(S.lockShown && !gated()) go(S.view); }
-    if(S.status && S.status.clockedIn && !S.sharing) showAlarm(true);
+    if(S.status && S.status.clockedIn && !S.sharing && !S.mobile) showAlarm(true);
   }catch(e){ if(first){ $('loginView').classList.remove('hidden'); } }
 }

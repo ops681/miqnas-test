@@ -18,7 +18,8 @@ const canAny = list => list.some(can);
 // اللي بيبصم: كل الصفحات مقفولة لحد بصمة الدخول (ماعدا Time Clock)
 // صفحات مفتوحة حتى قبل البصمة: البصمة نفسها وطلبات الإجازة والإذن
 const FREE_VIEWS = ['clock','requests'];
-const gated = () => !!(S.user && S.user.clocks && S.cfg && S.cfg.clockFirst && S.status && !S.status.clockedIn);
+// جلسة الموبايل (أدمن أو Account Manager) للمتابعة: مش محتاجة بصمة، والبصمة نفسها من اللابتوب بس
+const gated = () => !!(!S.mobile && S.user && S.user.clocks && S.cfg && S.cfg.clockFirst && S.status && !S.status.clockedIn);
 // بيعرض الأسامي العربي صح جوه الجمل الإنجليزي
 const bd = s => esc(s).replace(/[\u0600-\u06FF](?:[\u0600-\u06FF\s\d.,،:()\-\/]*[\u0600-\u06FF])?/g, m=>'<bdi>'+m+'</bdi>');
 
