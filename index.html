@@ -41,6 +41,7 @@ html[data-theme="dark"] #ld{background:#0B1311;color:#9DB0AA}</style>
 </div>
 
 <div id="appView" class="hidden">
+  <div id="sideShade" onclick="sideOpen(false)"></div>
   <aside id="side">
     <div class="logo"><i>M</i>Miqnas <span>ERP</span></div>
     <nav id="nav" aria-label="Main"></nav>
@@ -50,7 +51,8 @@ html[data-theme="dark"] #ld{background:#0B1311;color:#9DB0AA}</style>
   </aside>
   <div id="shell">
     <header id="top">
-      <div><h1 id="pgTitle"></h1><div id="pgSub"></div></div>
+      <button id="menuBtn" type="button" aria-label="Menu" aria-controls="side" aria-expanded="false" onclick="sideOpen(true)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <div class="ttl"><h1 id="pgTitle"></h1><div id="pgSub"></div></div>
       <div class="spacer"></div>
       <div id="topActions"></div>
       <button id="themeBtn" type="button" onclick="themeToggle()"></button>

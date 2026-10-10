@@ -120,6 +120,7 @@ window.addEventListener('hashchange',()=>{ const id=briefFromHash(); if(id && S.
 
 function go(v,opts){
   if(S.view==='briefs' && v!=='briefs' && window.BriefModule) BriefModule.leave();
+  sideOpen(false);
   S.view=v; S.vt++; S.proj=null;
   clearInterval(S.viewTimer);
   closeBell();
@@ -274,3 +275,7 @@ function pwaBanner(){
   document.body.appendChild(d);
 }
 async function pwaInstall(){ if (!pwaPrompt) return; pwaPrompt.prompt(); try { await pwaPrompt.userChoice; } catch (e) {} pwaPrompt = null; pwaBanner(); }
+
+/* القايمة الجانبية على الموبايل */
+function sideOpen(on){ document.body.classList.toggle('side-open',!!on); const b=$('menuBtn'); if(b) b.setAttribute('aria-expanded',on?'true':'false'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.body.classList.contains('side-open')) sideOpen(false); });
