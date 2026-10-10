@@ -212,14 +212,29 @@ function renderBell(){
   updateNavBadges();
 }
 function alertHTML(a,i){
-  return `<button class="al sev-${a.sev}" onclick="goAlert(${i})"><span class="dot"></span><span class="tx"><b>${bd(a.title)}</b><span>${bd(a.detail)}</span></span><span class="tg">${esc(a.tag)}</span></button>`;
+  return `<div class="al-w"><button class="al sev-${a.sev}" onclick="goAlert(${i})"><span class="dot"></span><span class="tx"><b>${bd(a.title)}</b><span>${bd(a.detail)}</span></span><span class="tg">${esc(a.tag)}</span></button>${seenBtn(a)}</div>`;
+}
+/* «تمت المشاهدة»: التنبيه يختفي من عندك إنت بس، ويرجع لوحده لو المشكلة كبرت */
+function seenBtn(a){ return a&&a.k?`<button class="al-seen" title="Seen · hide it until it gets worse" aria-label="Mark as seen" onclick="event.stopPropagation();alertSee(this,'${esc(encodeURIComponent(a.k))}',${a.lv?a.lv.s:0},${a.lv?a.lv.n:0})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Seen</span></button>`:''; }
+function hiddenNote(n){ return n?`<button class="btn ghost small al-hid" onclick="event.stopPropagation();alertUnseeAll()" title="Show the alerts you marked as seen">${n} seen · show</button>`:''; }
+async function alertSee(btn,ke,s,n){
+  const k=decodeURIComponent(ke);
+  const drop=d=>{ if(d&&d.alerts){ const b=d.alerts.length; d.alerts=d.alerts.filter(a=>a.k!==k); d.alertsHidden=(d.alertsHidden||0)+(b-d.alerts.length); } };
+  drop(S.cache.dash); drop(S.cache.people); saveCache();
+  const w=btn.closest('.al-w'); if(w){ w.style.opacity='.3'; }
+  try{ await call('alertSeen',{k,s,n}); }catch(e){ toast(e.message); }
+  renderBell(); if(S.view==='dash'&&S.cache.dash) renderDash(S.cache.dash,true); if(S.view==='people'&&S.cache.people&&typeof renderPeople==='function') renderPeople(S.cache.people,true);
+}
+async function alertUnseeAll(){
+  try{ await call('alertUnseeAll'); toast('All alerts are back'); }catch(e){ toast(e.message); return; }
+  refreshDash(true); if(S.view==='people') go('people');
 }
 // الجرس: "For you" (إشعارات شخصية) + "Alerts" (تنبيهات محسوبة)
 function openBell(){
   const L=alertsList(), N=S.notifs||[];
   $('bellPanel').innerHTML=`<div class="bh">For you${S.unread?` <span class="pill p-bad" style="margin-left:8px">${S.unread} new</span>`:''}<span class="spacer"></span>${S.unread?`<button class="btn ghost small" onclick="event.stopPropagation();readAll()">Mark all read</button>`:''}<button class="btn ghost small" onclick="go('desk')">My Desk</button></div>`+
     (N.length? N.slice(0,10).map((n,i)=>notifHTML(n,i,'bell')).join('') : `<div class="empty" style="padding:16px"><b>All caught up</b>Nothing new for you.</div>`)+
-    `<div class="bh" style="border-top:1px solid var(--line)">Alerts<span class="spacer"></span>${can('dashboard.view')?`<button class="btn ghost small" onclick="go('dash')">Open dashboard</button>`:''}</div>`+
+    `<div class="bh" style="border-top:1px solid var(--line)">Alerts<span class="spacer"></span>${hiddenNote((S.cache.dash||{}).alertsHidden)}${can('dashboard.view')?`<button class="btn ghost small" onclick="go('dash')">Open dashboard</button>`:''}</div>`+
     (L.length? L.slice(0,40).map(alertHTML).join('') : `<div class="empty" style="padding:16px"><b>All clear</b>No alerts right now.</div>`);
   $('bellPanel').classList.remove('hidden');
 }

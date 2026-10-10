@@ -544,3 +544,11 @@ td.nw{white-space:nowrap}
 #ptr.spin svg{animation:ptrspin .7s linear infinite}
 #ptr.spin{color:var(--brand2);transition:transform .2s,opacity .2s}
 @keyframes ptrspin{to{transform:rotate(360deg)}}
+/* تمت المشاهدة */
+.al-w{display:flex;align-items:stretch;border-bottom:1px solid var(--line2)}
+.al-w:last-child{border-bottom:0}
+.al-w .al{border-bottom:0;flex:1;min-width:0}
+.al-seen{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:52px;padding:0 10px;border:0;border-left:1px solid var(--line2);background:none;color:var(--muted);font-size:10.5px;font-weight:600;cursor:pointer}
+.al-seen:hover{color:var(--brand2);background:var(--soft,#F7FAF9)}
+.al-seen:focus-visible{outline:2px solid var(--brand2);outline-offset:-2px}
+.al-hid{margin-left:8px;font-size:12px}

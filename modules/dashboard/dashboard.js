@@ -24,7 +24,7 @@ function renderDash(r,keep){
   ${handoversHTML(r.handovers)}
   <div class="two">
     <div class="card flush">
-      <div class="chead"><span style="color:var(--bad)">${ico('warn',20)}</span><h2>Needs attention</h2><span class="pill p-bad">${r.alerts.length}</span><span class="spacer"></span>
+      <div class="chead"><span style="color:var(--bad)">${ico('warn',20)}</span><h2>Needs attention</h2><span class="pill p-bad">${r.alerts.length}</span>${hiddenNote(r.alertsHidden)}<span class="spacer"></span>
         <div class="chips">${Object.keys(cats).filter(c=>showPeople||c!=='people').map(c=>`<button class="${F===c?'on':''}" onclick="S.alertFilter='${c}';renderDash(S.cache.dash,true)">${cats[c]}</button>`).join('')}</div></div>
       ${L.length? L.map(x=>alertHTML(x.a,x.i)).join('') : `<div class="empty"><b>All clear</b>Nothing needs your attention here.</div>`}
     </div>
