@@ -25,7 +25,7 @@ async function viewProjects(){
 }
 function renderProjects(r,keep){
   const y=window.scrollY;
-  setTop('Projects', r.projects.length+' projects', r.canCreate?'<button class="btn primary" onclick="projForm()">+ New Project</button>':'');
+  setTop('Projects', r.projects.length+' projects', (can('projects.manage_all')?'<button class="btn ghost" onclick="ptAdmin()">Zid Portal</button>':'')+(r.canCreate?'<button class="btn primary" onclick="projForm()">+ New Project</button>':''));
   {
     const P=r.projects, F=S.pFilter;
     const list=P.filter(p=>F==='all'||p.status===F);
@@ -93,6 +93,8 @@ function renderProject(r,keep){
           <div class="kv"><b>Start</b><span>${fmtDay(r.start_date)}</span></div>
           <div class="kv"><b>Target Launch</b><span>${r.overdue?`<span style="color:var(--bad);font-weight:600">${fmtDay(r.target_launch)} · Overdue</span>`:fmtDay(r.target_launch)}</span></div>
           ${r.go_live?`<div class="kv"><b>Go Live</b><span>${fmtDay(r.go_live)}</span></div>`:''}
+          ${D.partner?`<div class="kv"><b>Partner</b><span><span class="pill p-prog">${esc(D.partner)}</span> ${esc([D.partner_ref,D.priority,D.delivery_mode].filter(Boolean).join(' · '))}</span></div>`:''}
+          ${D.referral_date?`<div class="kv"><b>Referral</b><span>${fmtDay(D.referral_date)}</span></div>`:''}
         </div>
         <div class="pbox"><h4>Team <span class="pill p-prog" style="margin-left:6px">${r.type===CP_TYPE?'Copy-Paste':esc(r.build_mode)}</span></h4>
           <div class="kv"><b>Account Manager</b><span>${esc(r.amName||'—')}</span></div>
@@ -103,12 +105,14 @@ function renderProject(r,keep){
     </div>
     ${projAccessHTML(r)}
     ${projBlockersHTML(r)}
+    ${D.partner?`<div id="pnBox">${pnHTML(r,S.pn&&S.pn[r.id])}</div>`:''}
     ${links.length?`<div class="card" style="margin-top:14px"><h3>Deliverables</h3><div class="links">${links.map(t=>`<a href="${esc(t.link)}" target="_blank" rel="noopener" class="lnk"><b>${esc(t.linkLabel||t.title)}</b><span>${bd(t.assigneeName)}</span></a>`).join('')}</div></div>`:''}
     ${groups.map(g=>{ const a=g.tasks.find(t=>t.assigneeName); const live=g.tasks.filter(t=>!t.na); const dn=live.filter(t=>t.status==='Done').length;
       return `<div class="card tgroup"><div class="tghead"><h3 style="margin:0">${ROLE_T[g.role]}</h3><span class="muted">${esc(a?a.assigneeName:'Unassigned')}</span><div class="spacer"></div><span class="muted" style="font-size:13px">${live.length?dn+'/'+live.length:'Not in scope'}</span></div>
       ${g.tasks.map(t=>taskRowHTML(t,r.id,r.me,r.isAdmin)).join('')}</div>`; }).join('')}</div>`;
     if(keep) window.scrollTo(0,y);
     startTicks();
+    if(D.partner) pnLoad(r);
   }
 }
 
@@ -291,6 +295,15 @@ async function projForm(id){
         ${id?`<div><label>Go Live Date</label><input type="date" id="pf_go_live" value="${esc(d.go_live)}"></div>`:''}
         ${isAdmin?`<div><label>Account Manager</label><select id="pf_am">${opt(meta.ams,d.am,'—')}</select></div>`:''}
       </div>
+      <h3>Partner</h3>
+      <label class="pf-chk"><input type="checkbox" id="pf_partner_on"${d.partner==='Zid'?' checked':''}> Referred by Zid <span class="muted">· shows in the Zid partner portal</span></label>
+      <div class="pfgrid m-partner${d.partner==='Zid'?'':' hidden'}">
+        <div><label>Zid Project ID</label><input id="pf_partner_ref" value="${esc(d.partner_ref||'')}" placeholder="ZID-028" dir="ltr"></div>
+        <div><label>Referral Date</label><input type="date" id="pf_referral_date" value="${esc(d.referral_date||'')}"></div>
+        <div><label>Priority</label><select id="pf_priority">${opt(meta.priorities||[],d.priority||'Normal')}</select></div>
+        <div><label>Delivery Mode</label><select id="pf_delivery_mode">${opt(meta.deliveryModes||[],d.delivery_mode||'Professional Build')}</select></div>
+        <div><label>Live Domain</label><input id="pf_live_domain" value="${esc(d.live_domain||'')}" placeholder="https://" dir="ltr"></div>
+      </div>
       <h3>Team</h3>
       <div class="pfgrid m-cp">
         <div><label>Responsible for the transfer *</label><select id="pf_cp">${opt(meta.team,d.cp,'Select...')}</select></div>
@@ -316,6 +329,8 @@ async function projForm(id){
       document.querySelectorAll('.m-fe').forEach(e=>e.classList.toggle('hidden',m!=='Front End'));
       document.querySelectorAll('.m-joker').forEach(e=>e.classList.toggle('hidden',cp||m!=='Joker')); };
     $('pf_build_mode').onchange=mode; $('pf_type').addEventListener('change',mode); mode();
+    $('pf_partner_on').onchange=()=>document.querySelectorAll('.m-partner').forEach(e=>e.classList.toggle('hidden',!$('pf_partner_on').checked));
+    if(!id) $('pf_target_platform').addEventListener('change',()=>{ if($('pf_target_platform').value==='Zid' && !$('pf_partner_on').checked){ $('pf_partner_on').checked=true; $('pf_partner_on').onchange(); } });
     ['cp','cp2','sm','copy','designer','uiux','dev','fe','joker','am'].forEach(k=>pickify($('pf_'+k), k==='am'?meta.ams.map(a=>Object.assign({job:'Account Manager'},meta.team.find(t=>t.u===a.u)||{},a)):meta.team));
     const normName=v=>String(v||'').toLowerCase().replace(/[\u064B-\u065F\u0670\u0640\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g,'').replace(/[\s\-_–—.]+/g,'');
     const dupCheck=()=>{ const v=normName($('pf_client').value), list=(S.cache.plist&&S.cache.plist.projects)||[];
@@ -335,7 +350,7 @@ async function projForm(id){
     $('pf_save').onclick=async()=>{
       $('pf_err').textContent=''; $('pf_save').disabled=true;
       const g=k=>{ const el=$('pf_'+k); return el? el.value : (d[k]||''); };
-      const data={ id:id||'' }; ['client','type','identity','status','cur_platform','target_platform','store_url','store_id','start_date','go_live','am','brief_id','build_mode','sm','copy','designer','uiux','dev','fe','joker','joker_role','cp','cp2'].forEach(k=>data[k]=g(k));
+      const data={ id:id||'' }; ['client','type','identity','status','cur_platform','target_platform','store_url','store_id','start_date','go_live','am','brief_id','build_mode','sm','copy','designer','uiux','dev','fe','joker','joker_role','cp','cp2'].forEach(k=>data[k]=g(k)); data.partner=$('pf_partner_on').checked?'Zid':''; ['partner_ref','referral_date','priority','delivery_mode','live_domain'].forEach(k=>data[k]=g(k));
       try{ const r=await call('projSave',{project:data}); toast(id?'Saved ✓':'Project '+r.id+' created ✓'); viewProject(r.id); }
       catch(e){ $('pf_err').textContent=e.message; $('pf_save').disabled=false; }
     };
@@ -379,4 +394,32 @@ function wlOpen(un){
       <div class="row" style="align-items:center;gap:8px"><b>${esc(p.client)}</b><span class="muted" style="font-size:12.5px">${esc(p.id)} · ${esc(p.type||'')}</span><div class="spacer"></div>${p.myPct===100?'<span class="pill p-in">Your part done</span>':p.running?'<span class="pill p-prog">Timer running</span>':''}</div>
       <div class="wl-bars"><span class="muted">Their part</span>${pbar(p.myPct)}<b>${p.myPct}%</b><span class="muted">${p.done}/${p.total} tasks</span></div>
       <div class="wl-bars"><span class="muted">Whole project</span>${pbar(p.projPct)}<b>${p.projPct}%</b><span></span></div></button>`).join(''):'<div class="muted">No active projects.</div>'}</div></div></div>`;
+}
+
+/* ----- تحديثات الشريك (زد) على المشروع ----- */
+// بتظهر في بورتال زد تحت «آخر التحديثات» مع التحديثات التلقائية
+function pnHTML(r,list){
+  return `<div class="card" style="margin-top:14px"><div class="row" style="align-items:center;gap:8px"><h3 style="margin:0">Partner updates <span class="muted" style="font-weight:500;font-size:13px">· visible to Zid in the partner portal</span></h3></div>
+    ${r.canEdit?`<div class="pn-form"><textarea id="pnT" rows="2" placeholder="اكتب تحديث للشريك… (مثلاً: تم إرسال التصميم للعميل)" dir="auto"></textarea><input id="pnN" placeholder="الخطوة الجاية (اختياري)" dir="auto"><button class="btn primary" onclick="pnAdd('${esc(r.id)}')">Post update</button></div>`:''}
+    ${list===undefined?'<div class="muted" style="padding:8px 0">Loading...</div>':list.length?list.map(n=>`<div class="pn-row"><div class="pn-h"><b>${bd(n.by)}</b><span class="muted">${new Date(n.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</span>${n.mine||can('projects.manage_all')?`<button class="btn ghost small" onclick="pnDel('${esc(n.id)}','${esc(r.id)}')">Delete</button>`:''}</div><div dir="auto">${esc(n.text)}</div>${n.next?`<div class="muted" dir="auto" style="font-size:13px">الخطوة الجاية: ${esc(n.next)}</div>`:''}</div>`).join(''):'<div class="muted" style="padding:8px 0;font-size:13.5px">No updates yet. Stage changes and blockers already show in the portal automatically.</div>'}</div>`;
+}
+function pnPut(r,list){ S.pn=S.pn||{}; S.pn[r.id]=list; const el=$('pnBox'); if(el && S.proj && S.proj.id===r.id) el.innerHTML=pnHTML(r,list); }
+function pnLoad(r){ call('partnerNotes',{project:r.id}).then(l=>pnPut(r,l)).catch(()=>{}); }
+async function pnAdd(id){ const t=$('pnT').value.trim(), n=$('pnN').value.trim(); if(t.length<3){ toast('اكتب التحديث'); return; }
+  try{ const l=await call('partnerNoteAdd',{project:id,text:t,next:n}); pnPut(S.proj,l); toast('اتنشر للشريك ✓'); }catch(e){ alert(e.message); } }
+async function pnDel(nid,id){ if(!confirm('تمسح التحديث ده من البورتال؟')) return; try{ const l=await call('partnerNoteDelete',{id:nid}); pnPut(S.proj,l); }catch(e){ alert(e.message); } }
+
+/* ----- لينك بورتال زد (للإدارة) ----- */
+async function ptAdmin(regen){
+  if(regen && !confirm('اللينك القديم هيقف خالص وفريق زد محتاج اللينك الجديد. متأكد؟')) return;
+  try{
+    const r=await call('portalAdmin',regen?{regen:true}:{});
+    const url=location.origin+location.pathname.replace(/[^/]*$/,'')+'portal.html?k='+r.key;
+    $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:560px">
+      <h2 style="margin:0 0 6px">Zid partner portal</h2>
+      <p class="muted" style="margin:0 0 14px;font-size:13.5px">Anyone with this link sees all ${r.stores} Zid stores (status, stages, blockers, updates). No phone numbers, passwords or team names are shown. Share it with the Zid team only.</p>
+      <div class="pt-link"><input readonly value="${esc(url)}" dir="ltr" onclick="this.select()" aria-label="Portal link"><button class="btn primary" onclick="navigator.clipboard.writeText('${esc(url)}').then(()=>toast('اتنسخ اللينك'))">Copy</button></div>
+      <div class="mfoot"><button class="btn ghost danger" onclick="ptAdmin(true)">New link (stop the old one)</button><div class="spacer"></div><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Open portal</a><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div>`;
+    if(regen) toast('اتعمل لينك جديد');
+  }catch(e){ alert(e.message); }
 }

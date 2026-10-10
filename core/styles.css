@@ -505,3 +505,14 @@ td.nw{white-space:nowrap}
   body.printing-cr *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   @page{size:A4;margin:12mm}
 }
+/* Partner */
+.pf-chk{display:flex;align-items:center;gap:8px;min-height:40px;font-weight:600;cursor:pointer;margin-bottom:6px}
+.pf-chk input{width:18px;height:18px}
+.pn-form{display:grid;gap:8px;margin:12px 0}
+.pn-form textarea{resize:vertical}
+.pn-form .btn{justify-self:start}
+.pn-row{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:4px}
+.pn-h{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.pn-h .btn{margin-inline-start:auto}
+.pt-link{display:flex;gap:8px}
+.pt-link input{flex:1;font-size:13px}
