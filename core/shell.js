@@ -298,3 +298,15 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.body.cl
     setTimeout(()=>{ i.classList.remove('spin','ready'); i.style.opacity=0; i.style.transform='translate(-50%,0)'; busy=false; },700);
   });
 })();
+
+/* لو الصفحة الرئيسية متخزنة قديمة في الموبايل (الآيفون بيخزنها)، نضيف زراير القايمة والنايت مود من هنا */
+function ensureChrome(){
+  if(!document.documentElement.getAttribute('data-theme')){ let t=load('theme'); if(t!=='dark'&&t!=='light') t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'; document.documentElement.setAttribute('data-theme',t); }
+  const top=$('top'); if(!top) return;
+  if(!$('menuBtn')){ const b=document.createElement('button'); b.id='menuBtn'; b.type='button'; b.setAttribute('aria-label','Menu'); b.setAttribute('aria-controls','side'); b.setAttribute('aria-expanded','false');
+    b.onclick=()=>sideOpen(true); b.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>'; top.insertBefore(b,top.firstChild); }
+  if(top.children[1] && !top.children[1].classList.contains('ttl') && top.children[1].querySelector('#pgTitle')) top.children[1].classList.add('ttl');
+  if(!$('sideShade')){ const d=document.createElement('div'); d.id='sideShade'; d.onclick=()=>sideOpen(false); $('appView').insertBefore(d,$('appView').firstChild); }
+  if(!$('themeBtn') && $('bell')){ const t=document.createElement('button'); t.id='themeBtn'; t.type='button'; t.onclick=themeToggle; $('bell').parentNode.insertBefore(t,$('bell')); themeBtn(); }
+}
+ensureChrome(); document.addEventListener('DOMContentLoaded',ensureChrome);
