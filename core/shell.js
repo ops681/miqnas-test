@@ -39,6 +39,7 @@ function navFor(u){
   add('meetings','Meetings','meet','Workspace');
   add('requests','Leave & Requests','cal','Workspace');
   if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) add('projects','Projects','folder','Workspace');
+  if(canClientRep()) add('clientrep','Client Report','chart','Workspace');
   if(can('blockers.manage')) add('blockers','Blockers','flag','Workspace');
   if(can('briefs.use')) add('briefs','Briefs','brief','Workspace');
   if(can('executive.view')) add('exec','Executive','crown','Leadership');
@@ -123,7 +124,7 @@ function go(v,opts){
   window.scrollTo(0,0);
   if(gated() && FREE_VIEWS.indexOf(v)<0){ S.lockShown=true; viewLocked(v); return; }
   S.lockShown=false;
-  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,people:viewPeople,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
+  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,clientrep:()=>viewClientRep(opts),people:viewPeople,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
   (map[v]||viewDash)();
 }
 function viewLocked(v){
@@ -230,6 +231,7 @@ function goTo(g){
   if(!g) return;
   if((g.view==='tasks'||g.view==='meetings') && g.id){ go(g.view,{id:g.id}); return; }
   if(g.view==='requests'){ go('requests',{tab:g.tab}); return; }
+  if(g.view==='clientrep'){ go('clientrep',{month:g.month}); return; }
   const a={go:g};
   if(a.go.view==='project'){ if(!canAny(['projects.view_all','projects.manage_all','projects.manage_own'])){ go('mytasks'); setTimeout(()=>viewProject(a.go.id),0); } else { go('projects'); viewProject(a.go.id); } }
   else go(a.go.view);

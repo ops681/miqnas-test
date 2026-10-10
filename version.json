@@ -1,5 +1,5 @@
 {
- "v": "2026-10-10.8",
+ "v": "2026-10-10.9",
  "css": [
   "core/styles.css",
   "modules/briefs/briefs.css"
@@ -33,6 +33,7 @@
   "modules/requests/requests.js",
   "modules/exec/exec.js",
   "modules/crm/crm.js",
+  "modules/clients/report.js",
   "modules/soon/soon.js",
   "core/start.js"
  ]
