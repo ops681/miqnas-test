@@ -26,20 +26,22 @@ function rqWhen(r){
   if(r.kind==='overtime') return `${fmtD(r.from)} · ${r.hours} h${r.source==='manual'?' · entered manually':r.source==='auto'?' · from clock-out':''}`;
   return `${fmtD(r.from)}${r.to!==r.from?' → '+fmtD(r.to):''} · ${r.days} ${r.days===1?'day':'days'}`;
 }
+const rqAge=t=>Math.floor((Date.now()-t)/864e5);
+const rqAgeTxt=t=>{ const d=rqAge(t); if(d>=1) return d+(d===1?' day':' days'); const h=Math.floor((Date.now()-t)/36e5); return h>=1?h+' h':'just now'; };
 function rqRow(r,mode){
   const s=RQ_STATUS[r.status]||[r.status,''];
   const who=mode!=='mine'?`<span style="color:var(--ink);font-size:14px"><b>${esc(r.name)}</b> <span class="muted">· ${esc(r.job||'')}</span></span>`:'';
   const title=r.kind==='leave'?esc(r.typeLabel):RQ_KIND[r.kind];
   const trail=r.approvals.map(a=>`${a.decision==='approved'?'✓':'✕'} ${esc(a.step)}: ${esc(a.by)}${a.note?' – '+esc(a.note):''}`).join(' · ');
   return `<div class="al" style="cursor:default;align-items:center"><span class="tx">${who}<b>${title}</b><span>${rqWhen(r)}${r.reason?' · '+bd(r.reason):''}${r.link?` · <a href="${esc(r.link)}" target="_blank" rel="noopener">attachment</a>`:''}</span>
-      ${r.status==='pending'&&r.waitingOn.length?`<span>Waiting for ${esc(r.step)}: ${r.waitingOn.map(esc).join(' or ')}</span>`:''}${trail?`<span style="font-size:12px">${trail}</span>`:''}</span>
+      ${r.status==='pending'&&r.waitingOn.length?`<span>Waiting for ${esc(r.step)}: ${r.waitingOn.map(esc).join(' or ')}${mode==='all'&&r.since?` · <b style="color:${rqAge(r.since)>=2?'var(--bad)':'inherit'}">${rqAgeTxt(r.since)}</b>`:''}</span>`:''}${trail?`<span style="font-size:12px">${trail}</span>`:''}</span>
     <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
       ${r.canDecide?`<button class="btn small primary" onclick="rqDecide('${r.id}','approve')">Approve</button><button class="btn small danger" onclick="rqDecide('${r.id}','reject')">Reject</button>`:`<span class="pill ${s[1]}">${s[0]}</span>`}
       ${r.canCancel?`<button class="btn small ghost" onclick="rqCancel('${r.id}')">Cancel</button>`:''}</span></div>`;
 }
 function renderRequests(){
   const M=S.rqMeta, L=S.rqList;
-  const tabs=[['mine','My requests',0],['approve','To approve',L.approve.length]].concat(L.team?[['team','Team',0]]:[]).concat(M.canSetup?[['setup','Setup',0]]:[]);
+  const tabs=[['mine','My requests',0],['approve','To approve',L.approve.length]].concat(L.all?[['all','All requests',L.all.filter(r=>r.status==='pending').length]]:[]).concat(L.team?[['team','Team',0]]:[]).concat(M.canSetup?[['setup','Setup',0]]:[]);
   if(!tabs.some(t=>t[0]===S.rqTab)) S.rqTab='mine';
   const T=S.rqTab;
   let body='';
@@ -57,6 +59,7 @@ function renderRequests(){
     </div>
     <div class="card flush">${L.mine.length?L.mine.map(r=>rqRow(r,'mine')).join(''):`<div class="empty"><b>No requests yet</b>Your leave, permissions and overtime show up here.</div>`}</div>`;
   }
+  if(T==='all') body=`<p class="muted" style="font-size:13px;margin:0 0 10px">Every request in the company. Waiting ones first, oldest on top. You can approve only when it reaches your step.</p><div class="card flush">${L.all.length?L.all.map(r=>rqRow(r,'all')).join(''):`<div class="empty"><b>No requests</b></div>`}</div>`;
   if(T==='approve') body=`<div class="card flush">${L.approve.length?L.approve.map(r=>rqRow(r,'approve')).join(''):`<div class="empty"><b>All clear</b>Nothing is waiting for your approval.</div>`}</div>
     ${L.decided.length?`<h3 style="margin:22px 0 10px" class="muted">You decided recently</h3><div class="card flush" style="opacity:.9">${L.decided.map(r=>rqRow(r,'decided')).join('')}</div>`:''}`;
   if(T==='team'){

@@ -42,6 +42,8 @@ function renderExec(X){
     ${X.actions.map(a=>`<button class="al sev-${a.sev}" onclick="goTo(S.execGo[${gid(a.go)}])"><span class="dot"></span><span class="tx"><b>${bd(a.title)}</b><span>${bd(a.detail)}</span></span></button>`).join('')}
   </div>`:`<div class="card" style="border-left:5px solid var(--ok)"><h2 style="margin:0 0 4px">Executive Action Center</h2><div class="muted">Nothing needs a decision right now.</div></div>`}
 
+  ${typeof mgmtHTML==='function'?mgmtHTML(X.mgmt).replace('class="card flush mg"','class="card flush"'):''}
+
   ${pulseCard(X.pulse)}
 
   ${X.noProjects?'':`  <div class="two" style="margin:0">

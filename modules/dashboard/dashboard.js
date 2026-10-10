@@ -21,6 +21,7 @@ function renderDash(r,keep){
     <div class="kpi"><span>Timers running</span><b style="color:var(--brand2)">${k.timers}</b><small>Across all projects</small></div>
   </div>
   ${canClientRep()?`<div id="crMini">${crCardHTML(S.cache['cr_'+crCurMonth()+'_'])}</div>`:''}
+  ${mgmtHTML(r.mgmt)}
   ${handoversHTML(r.handovers)}
   <div class="two">
     <div class="card flush">
@@ -78,4 +79,12 @@ function handoversHTML(H){
   return `<div class="card flush" style="margin-bottom:20px"><div class="chead"><span style="color:var(--brand2)">${ico('trend',20)}</span><h2>Handovers today</h2><span class="pill p-prog">${H.today.length}</span><span class="muted" style="font-size:12.5px">Who finished a task and who it unlocked</span></div>
     ${H.today.length?H.today.map(x=>row(x,false)).join(''):`<div class="empty" style="padding:18px"><b>No handovers yet today</b>When a task is done and opens the next one, it shows up here.</div>`}
     ${H.waiting.length?`<div class="chead" style="border-top:1px solid var(--line)"><h2 style="font-size:14px;color:var(--bad)">Handed over but not started</h2><span class="pill p-bad">${H.waiting.length}</span><span class="muted" style="font-size:12.5px">Ready for more than a day</span></div>${H.waiting.map(x=>row(x,true)).join('')}`:''}</div>`;
+}
+
+/* مستني على الإدارة: أي حاجة واقفة على حد من الـ C-level أو الـ Founders */
+function mgmtHTML(M){
+  if(!M) return '';
+  const IC={request:'cal',device:'device',review:'todo',task:'todo'};
+  return `<div class="card flush mg"><div class="chead"><span style="color:var(--warn)">${ico('clock',20)}</span><h2>${M.all?'Waiting on management':'Waiting on you'}</h2>${M.total?`<span class="pill p-absent">${M.total}</span>`:''}<span class="muted" style="font-size:12.5px">${M.all?'Anything stuck with C-level or founders · oldest first':'Things only you can move'}</span></div>
+    ${M.items.length?M.items.slice(0,8).map(x=>`<button class="al" onclick='goTo(${JSON.stringify(x.go).replace(/'/g,"&#39;")})'><span style="color:var(--muted);flex:none;margin-top:2px">${ico(IC[x.type]||'todo',18)}</span><span class="tx"><b>${bd(x.title)}</b><span>${bd(x.detail||'')} · on ${bd(x.whoNames.join(', '))}</span></span><span class="tg mg-age${x.days>=3?' old':x.days>=1?' mid':''}">${x.days?x.days+(x.days===1?' day':' days'):'today'}</span></button>`).join('')+(M.items.length>8?`<div class="muted" style="padding:10px 20px;font-size:12.5px">+${M.items.length-8} more</div>`:''):`<div class="empty"><b>Nothing stuck</b>Nothing is waiting on ${M.all?'management':'you'} right now.</div>`}</div>`;
 }

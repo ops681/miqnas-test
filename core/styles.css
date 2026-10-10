@@ -574,3 +574,7 @@ td.nw{white-space:nowrap}
 .ot-team.flat{padding-left:0;border-left:0;margin-left:0}
 .ot-team .ot-p{padding:6px 12px 6px 6px}
 .ot-team .av{width:28px;height:28px;font-size:11px}
+.mg{margin-bottom:16px}
+.mg-age{background:var(--soft,#F1F5F4);color:var(--muted)}
+.mg-age.mid{background:var(--yelbg);color:var(--yel)}
+.mg-age.old{background:var(--badbg);color:var(--bad)}
