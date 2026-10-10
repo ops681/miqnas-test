@@ -20,7 +20,7 @@ function renderDash(r,keep){
     ${showPeople?`<div class="kpi"><span>Clocked in</span><b>${k.clockedIn}/${k.clockers}</b><small>Right now</small></div>`:''}
     <div class="kpi"><span>Timers running</span><b style="color:var(--brand2)">${k.timers}</b><small>Across all projects</small></div>
   </div>
-  ${canClientRep()?`<div id="crMini">${crCardHTML(S.cache['cr_'+crCurMonth()+'_'])}</div>`:''}
+  ${canClientRep()?`<div id="crMini">${crCardHTML(r.crMini||S.cache['cr_'+crCurMonth()+'_'])}</div>`:''}
   ${mgmtHTML(r.mgmt)}
   ${handoversHTML(r.handovers)}
   <div class="two">
@@ -48,7 +48,7 @@ function renderDash(r,keep){
         <td><span class="pill ${h[1]}">${h[0]}</span></td><td style="font-size:13px">${p.blocker?bd(p.blocker):'—'}</td></tr>`; }).join('')}
     </table></div>`:`<div class="empty">No active projects.</div>`}
   </div>`;
-  crCardLoad();
+  if(!r.crMini) crCardLoad();   // السيرفر القديم: الكارت بيتجاب لوحده
   if(keep) window.scrollTo(0,y);
 }
 
