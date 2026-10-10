@@ -279,3 +279,22 @@ async function pwaInstall(){ if (!pwaPrompt) return; pwaPrompt.prompt(); try { a
 /* القايمة الجانبية على الموبايل */
 function sideOpen(on){ document.body.classList.toggle('side-open',!!on); const b=$('menuBtn'); if(b) b.setAttribute('aria-expanded',on?'true':'false'); }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.body.classList.contains('side-open')) sideOpen(false); });
+
+/* اسحب لتحت عشان تعمل ريفريش (موبايل) */
+(function(){
+  if(!('ontouchstart' in window)) return;
+  let y0=null, pull=0, busy=false, el=null;
+  const TH=70;
+  const ind=()=>{ if(!el){ el=document.createElement('div'); el.id='ptr'; el.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>'; document.body.appendChild(el); } return el; };
+  const blocked=()=>!S.token || $('appView').classList.contains('hidden') || document.body.classList.contains('side-open') || ($('modalRoot')&&$('modalRoot').children.length) || window.scrollY>0;
+  document.addEventListener('touchstart',e=>{ if(busy||blocked()||e.touches.length!==1){ y0=null; return; } y0=e.touches[0].clientY; pull=0; },{passive:true});
+  document.addEventListener('touchmove',e=>{ if(y0===null) return; if(window.scrollY>0){ y0=null; return; }
+    pull=Math.max(0,e.touches[0].clientY-y0); const d=Math.min(pull*0.5,90), i=ind();
+    i.style.opacity=Math.min(1,pull/TH); i.style.transform=`translate(-50%,${d}px) rotate(${pull*2}deg)`; i.classList.toggle('ready',pull*0.5>=TH*0.8); },{passive:true});
+  document.addEventListener('touchend',async()=>{ if(y0===null) return; y0=null; const i=ind();
+    if(pull*0.5<TH*0.8){ i.style.opacity=0; i.style.transform='translate(-50%,0)'; return; }
+    busy=true; i.classList.add('spin'); i.style.transform='translate(-50%,56px)';
+    try{ await refreshMe(); go(S.view); if(typeof loadNotifs==='function') loadNotifs(); }catch(e){}
+    setTimeout(()=>{ i.classList.remove('spin','ready'); i.style.opacity=0; i.style.transform='translate(-50%,0)'; busy=false; },700);
+  });
+})();
