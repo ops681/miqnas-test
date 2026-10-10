@@ -1,11 +1,12 @@
 /* ============ Organization ============
    الأقسام، المسميات الوظيفية، الأدوار والصلاحيات، المناصب، المجموعات.
    كله داتا بتتعدل من هنا، ومفيش حاجة منها مكتوبة في الكود. */
-const ORG_TABS=[['DEPTS','Departments'],['JOBS','Job Titles'],['ROLES','Roles & Permissions'],['SEATS','Seats'],['GROUPS','Groups']];
+const ORG_TABS=[['TREE','Structure'],['DEPTS','Departments'],['JOBS','Job Titles'],['ROLES','Roles & Permissions'],['SEATS','Seats'],['GROUPS','Groups']];
 const SLOT_NAMES={'':'— none —',sm:'Store Manager tasks',copy:'Copywriter tasks',uiux:'UI/UX tasks',designer:'Designer tasks',dev:'Developer tasks',fe:'Front End (UI/UX + Dev, Joker)'};
-S.orgTab='DEPTS'; S.orgDraft=null;
+S.orgTab='TREE'; S.orgDraft=null;
 
 function viewOrg(){
+  S.cache.orgTree=null;
   setTop('Organization','Departments, job titles, roles, seats and groups · no code changes needed');
   swr('org','orgGet',{},(o,fresh)=>{ if(fresh||!S.orgDraft) S.orgDraft=JSON.parse(JSON.stringify(o)); renderOrg(); });
 }
@@ -18,9 +19,10 @@ function renderOrg(){
   const permBoxes=(pfx,i,cur)=>`<div class="pfgrid" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px 16px">${o.permissions.map(p=>
     `<label class="check" style="margin:6px 0;align-items:flex-start" title="${esc(p.desc)}"><input type="checkbox" data-perm="${pfx}|${i}|${esc(p.code)}"${cur.indexOf(p.code)>=0?' checked':''}${ro}><span><b style="font-size:13px">${esc(p.name)}</b><br><span class="muted" style="font-size:12px">${esc(p.desc)}</span></span></label>`).join('')}</div>`;
   let body='';
+  if(T==='TREE') body=orgTreeHTML();
   if(T==='DEPTS') body=`<div class="tbl-wrap"><table style="min-width:700px"><tr><th>Code</th><th>Name</th><th>Business line</th><th>Department head</th><th></th></tr>
     ${o.depts.map((d,i)=>`<tr><td><input data-f="depts|${i}|id" value="${esc(d.id)}"${ro} dir="ltr"></td><td><input data-f="depts|${i}|name" value="${esc(d.name)}"${ro}></td><td><input data-f="depts|${i}|line" value="${esc(d.line)}"${ro} placeholder="Line 1"></td><td>${orgSelect(`dh_${i}`,users,d.head,'— none —')}</td><td>${ed?`<button class="btn small ghost danger" onclick="orgDel('depts',${i})">Remove</button>`:''}</td></tr>`).join('')}</table></div>
-    <p class="muted" style="font-size:13px">The department head approves leave and permission requests first, then HR. No head means requests go straight to HR.</p>`;
+    <p class="muted" style="font-size:13px">Requests go: Team Leader → Department head → Operations Manager → HR. A department without a head skips that step.</p>`;
   if(T==='JOBS') body=`<div class="tbl-wrap"><table style="min-width:760px"><tr><th>Job title</th><th>Department</th><th>Project tasks</th><th>Sees brief access</th><th></th></tr>
     ${o.jobs.map((j,i)=>`<tr><td><input data-f="jobs|${i}|name" value="${esc(j.name)}"${ro}></td><td>${orgSelect(`jd_${i}`,depts,j.dept,'—')}</td><td>${orgSelect(`js_${i}`,Object.keys(SLOT_NAMES).filter(k=>k).map(k=>[k,SLOT_NAMES[k]]),j.slot,SLOT_NAMES[''])}</td><td><input type="checkbox" data-b="jobs|${i}|access"${j.access?' checked':''}${ro}></td><td>${ed?`<button class="btn small ghost danger" onclick="orgDel('jobs',${i})">Remove</button>`:''}</td></tr>`).join('')}</table></div>
     <p class="muted" style="font-size:13px">"Project tasks" decides which slot of a project this job can fill. "Sees brief access" is the default for new employees with this job.</p>`;
@@ -39,10 +41,10 @@ function renderOrg(){
       <h3 style="margin:16px 0 4px">Extra permissions for members</h3><p class="muted" style="font-size:12.5px;margin:0">Added on top of each member's role. A group never removes permissions.</p>
       ${permBoxes('groups',i,g.perms)}</div>`).join('')}</div>`;
   const key={DEPTS:'depts',JOBS:'jobs',ROLES:'roles',SEATS:'seats',GROUPS:'groups'}[T];
-  $('main').innerHTML=`<div class="flt">${ORG_TABS.map(t=>`<button class="${T===t[0]?'on':''}" onclick="orgTab('${t[0]}')">${t[1]} <span>${o[{DEPTS:'depts',JOBS:'jobs',ROLES:'roles',SEATS:'seats',GROUPS:'groups'}[t[0]]].length}</span></button>`).join('')}</div>
-    ${ed?'':'<div class="card" style="margin-bottom:12px">View only. Changing the organization needs the Organization permission.</div>'}
+  $('main').innerHTML=`<div class="flt">${ORG_TABS.map(t=>`<button class="${T===t[0]?'on':''}" onclick="orgTab('${t[0]}')">${t[1]} ${t[0]==='TREE'?'':`<span>${o[{DEPTS:'depts',JOBS:'jobs',ROLES:'roles',SEATS:'seats',GROUPS:'groups'}[t[0]]].length}</span>`}</button>`).join('')}</div>
+    ${ed||T==='TREE'?'':'<div class="card" style="margin-bottom:12px">View only. Changing the organization needs the Organization permission.</div>'}
     ${body}
-    ${ed?`<div class="mfoot"><button class="btn" onclick="orgAdd('${key}')">+ Add</button><span class="spacer"></span><button class="btn" onclick="orgReset()">Discard changes</button><button class="btn primary" id="orgSave" onclick="orgSave()">Save ${ORG_TABS.find(t=>t[0]===T)[1]}</button></div><div class="err" id="orgErr"></div>`:''}`;
+    ${ed&&T!=='TREE'?`<div class="mfoot"><button class="btn" onclick="orgAdd('${key}')">+ Add</button><span class="spacer"></span><button class="btn" onclick="orgReset()">Discard changes</button><button class="btn primary" id="orgSave" onclick="orgSave()">Save ${ORG_TABS.find(t=>t[0]===T)[1]}</button></div><div class="err" id="orgErr"></div>`:''}`;
 }
 // كل تعديل في الشاشة بيتحفظ في المسودة لحد ما يدوس Save
 function orgCollect(){
@@ -73,4 +75,27 @@ async function orgSave(){
     S.cache.org=o; S.fetched.org=Date.now(); saveCache(); S.orgDraft=JSON.parse(JSON.stringify(o));
     toast('اتحفظ ✓'); renderOrg(); refreshMe();
   }catch(e){ $('orgErr').textContent=e.message; b.disabled=false; b.textContent='Save'; }
+}
+
+/* ----- الهيكل: شجرة مين تحت مين ----- */
+function orgTreeHTML(){
+  const t=S.cache.orgTree;
+  if(!t){ call('orgTree').then(r=>{ S.cache.orgTree=r; if(S.view==='org'&&S.orgTab==='TREE') renderOrg(); }).catch(e=>toast(e.message)); return LOADING; }
+  const P=t.people;
+  const chip=(k,extra)=>{ const x=P[k]; if(!x) return ''; const seats=(t.seats[k]||[]).join(' · ');
+    const tags=[x.tl&&extra==='ot-x'&&P[x.tl]?'Team Leader: '+P[x.tl].name:'', x.type==='part'?'Part-time':'', x.mode&&x.mode!=='remote'?({onsite:'Onsite',hybrid:'Hybrid'})[x.mode]:'', (x.lines||[]).filter(l=>l!=='Line 1').join(' + ')].filter(Boolean);
+    return `<div class="ot-p${extra?' '+extra:''}"><div class="av" data-u="${esc(k)}">${esc(initials(x.name))}</div><div class="ot-t"><b>${bd(x.name)}</b><small>${esc(seats||x.job||'')}</small>${tags.length?`<em>${esc(tags.join(' · '))}</em>`:''}</div></div>`; };
+  const lvl=(title,list,cls)=>list.length?`<div class="ot-lvl"><div class="ot-h">${title}</div><div class="ot-row">${list.map(k=>chip(k,cls)).join('')}</div></div>`:'';
+  return `<div class="ot">
+    ${lvl('Founders',t.founders,'ot-f')}
+    ${t.ceo&&t.founders.indexOf(t.ceo)<0?lvl('CEO',[t.ceo],'ot-c'):t.ceo?`<div class="ot-note">The CEO is also a founder.</div>`:''}
+    ${lvl('C-level',t.clevel,'ot-c')}
+    <div class="ot-lvl"><div class="ot-h">Departments</div><div class="ot-depts">${t.depts.map(d=>`<div class="card ot-d">
+      <div class="ot-dh"><b>${esc(d.name)}</b><span class="muted">${esc(d.line||'')}</span></div>
+      ${d.head?`<div class="ot-sub">Head</div>${chip(d.head,'ot-head')}`:'<div class="ot-sub">No head · requests skip this step</div>'}
+      ${d.leaders.map(l=>`<div class="ot-sub">Team Leader</div>${chip(l.u,'ot-tl')}<div class="ot-team">${l.team.map(k=>chip(k)).join('')}</div>`).join('')}
+      ${d.direct.length?`<div class="ot-sub">${d.leaders.length?'Others':'Team'}</div><div class="ot-team flat">${d.direct.map(k=>chip(k,'ot-x')).join('')}</div>`:''}
+    </div>`).join('')}</div></div>
+    <p class="muted" style="font-size:13px">Leave, permission and overtime requests go: Team Leader → Department head → Operations Manager → HR. Steps without a person are skipped. HR's own requests go to the CEO. Set the team leader from the Employees page, and the department head from Departments.</p>
+  </div>`;
 }

@@ -30,9 +30,12 @@ const IC = {
 const ico=(k,s)=>`<svg width="${s||18}" height="${s||18}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
 const initials = n => { n=String(n||'').trim(); const p=n.split(/\s+/); return (p.length>1? p[0][0]+p[1][0] : n.slice(0,2)).toUpperCase(); };
 
+// الخطوط: كل موظف بيشوف صفحات الـ Line بتاعه، والـ C-level بيشوف كل الخطوط
+const LINE_OF={projects:'Line 1',blockers:'Line 1',briefs:'Line 1',clientrep:'Line 1',crm:'Line 1',sales:'Sales',line2:'Line 2'};
+function inLine(u,id){ const l=LINE_OF[id]; if(!l||!u||u.clevel||u.founder||can('system.admin')) return true; return (u.lines&&u.lines.length?u.lines:['Line 1']).indexOf(l)>=0; }
 function navFor(u){
   const N=[];
-  const add=(id,label,icon,sec)=>N.push({id,label,icon,sec});
+  const add=(id,label,icon,sec)=>{ if(inLine(u,id)) N.push({id,label,icon,sec}); };
   add('desk','My Desk','home','Workspace');
   if(can('dashboard.view')) add('dash','Dashboard','dash','Workspace');
   if(u.clocks && !S.mobile) add('clock','Time Clock','clock','Workspace');

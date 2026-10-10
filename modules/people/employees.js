@@ -8,9 +8,9 @@ function viewUsers(){
 }
 function renderUsers(U,keep){
   const act=U.filter(u=>u.active), arch=U.filter(u=>!u.active);
-  const row=u=>{ const lock=!can('people.manage_admins')&&hasP(u,'system.admin'); const me=u.username===S.user.username;
+  const row=u=>{ const lock=u.canManage===false; const me=u.username===S.user.username;
     return `<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="av" data-u="${esc(u.username)}">${esc(initials(u.name))}</div><div><b>${esc(u.name)}</b><div class="sub2">${esc(u.username)}</div></div></div></td>
-    <td>${esc(u.roleName||u.role)}</td><td class="muted">${esc(u.job)}</td><td>${u.clocks?'✓':'—'}</td>
+    <td>${esc(u.roleName||u.role)}${u.founder?' <span class="pill p-yel" style="font-size:10.5px">Founder</span>':u.clevel?' <span class="pill p-prog" style="font-size:10.5px">C-level</span>':''}</td><td class="muted">${esc(u.job)}<div class="sub2">${esc([u.empType==='part'?'Part-time':'Full-time',({remote:'Remote',onsite:'Onsite',hybrid:'Hybrid'})[u.workMode]||'',(u.lines||[]).join(' + ')].filter(Boolean).join(' · '))}</div></td><td>${u.founder?'<span class="muted" style="font-size:12px">Founder</span>':u.clocks?'✓':'—'}</td>
     <td>${!hasP(u,'briefs.access_all')?(u.seeAccess?'✓':'—'):'<span class="muted" style="font-size:12px">Always</span>'}</td>
     <td class="muted" style="font-size:13px">${esc(u.lastLogin)||'—'}</td>
     <td style="white-space:nowrap">${lock?'':u.active?`<button class="btn small" onclick="editUser('${esc(u.username)}')">Edit</button> <button class="btn small" onclick="setPw('${esc(u.username)}')">Set Password</button> <button class="btn small" onclick="avEdit('${esc(u.username)}')">Photo</button>${me?'':` <button class="btn small danger" onclick="archiveUser('${esc(u.username)}')">Archive</button>`}`:`<button class="btn small" onclick="restoreUser('${esc(u.username)}')">Restore</button>`}</td></tr>`; };
@@ -28,7 +28,9 @@ async function editUser(un){
   const U=S.cache.users||[];
   const lowest=O.roles.slice().sort((a,b)=>a.level-b.level)[0]||{id:''};
   const u=un? U.find(x=>x.username===un) : {username:'',name:'',role:lowest.id,job:(O.jobs[0]||{}).name||'',clocks:true,seeAccess:false};
-  const roles=O.roles.filter(r=>can('people.manage_admins')||r.perms.indexOf('system.admin')<0||r.id===u.role).map(r=>[r.id,r.name]);
+  const roles=O.roles.filter(r=>can('system.admin')||r.perms.indexOf('system.admin')<0||r.id===u.role).map(r=>[r.id,r.name]);
+  const LINES=['Line 1','Line 2','Sales'], uL=u.lines&&u.lines.length?u.lines:['Line 1'];
+  const tlList=U.filter(x=>x.active&&x.username!==u.username&&!x.founder);
   const JOBS=O.jobs.map(j=>j.name);
   $('modalRoot').innerHTML=`<div class="modal"><div class="card">
     <h2>${un?'Edit Employee':'New Employee'}</h2>
@@ -37,14 +39,25 @@ async function editUser(un){
     ${un?'':`<label for="fP">Password</label><input id="fP" placeholder="6 characters or more" autocomplete="off" spellcheck="false">`}
     <label for="fR">Role</label><select id="fR">${roles.map(r=>`<option value="${r[0]}" ${u.role===r[0]?'selected':''}>${r[1]}</option>`).join('')}</select>
     <label for="fJ">Job</label><select id="fJ">${JOBS.concat(u.job&&!JOBS.includes(u.job)?[u.job]:[]).map(j=>`<option ${j===u.job?'selected':''}>${esc(j)}</option>`).join('')}</select>
-    <label class="check"><input type="checkbox" id="fC" ${u.clocks?'checked':''}>Clocks in / out</label>
+    ${u.founder?`<div class="muted" style="font-size:13px;margin:10px 0">Founders don't clock in.</div><input type="checkbox" id="fC" hidden>`:`<label class="check"><input type="checkbox" id="fC" ${u.clocks?'checked':''}>Clocks in / out</label>`}
+    <div class="pfgrid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:6px">
+      <div><label for="fT">Employment</label><select id="fT"><option value="full"${u.empType!=='part'?' selected':''}>Full-time · 8 h</option><option value="part"${u.empType==='part'?' selected':''}>Part-time · 4 h</option></select></div>
+      <div><label for="fW">Works</label><select id="fW">${[['remote','Remote'],['onsite','Onsite'],['hybrid','Hybrid']].map(m=>`<option value="${m[0]}"${(u.workMode||'remote')===m[0]?' selected':''}>${m[1]}</option>`).join('')}</select></div>
+    </div>
+    <label for="fL">Team Leader <span class="muted" style="font-weight:400;font-size:12px">· approves their leave first (optional)</span></label>
+    <select id="fL"><option value="">— No team leader —</option>${tlList.map(x=>`<option value="${esc(x.username)}"${u.teamLeader===x.username?' selected':''}>${esc(x.name)}${x.job?' · '+esc(x.job):''}</option>`).join('')}</select>
+    <label>Lines <span class="muted" style="font-weight:400;font-size:12px">· which business lines they work in</span></label>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:6px">${LINES.map(l=>`<label class="check" style="margin:0"><input type="checkbox" class="fLn" value="${l}"${uL.indexOf(l)>=0?' checked':''}>${l}</label>`).join('')}</div>
     <label class="check"><input type="checkbox" id="fX" ${u.seeAccess?'checked':''}>Sees the Access section in briefs <span class="muted" style="font-weight:400;font-size:12px">(if their role doesn't already)</span></label>
     <div class="err" id="fE"></div>
     <div class="mfoot"><button class="btn primary" id="fS">${un?'Save':'Create'}</button><button class="btn" onclick="closeModal()">Cancel</button></div>
   </div></div>`;
+  if(typeof pickify==='function') pickify($('fL'), tlList.map(x=>({u:x.username,name:x.name,job:x.job,dept:x.dept||''})));
   $('fS').onclick=async()=>{
     $('fE').textContent=''; $('fS').disabled=true;
-    const data={username:$('fU').value.trim().toLowerCase(),name:$('fN').value,role:$('fR').value,job:$('fJ').value,clocks:$('fC').checked,seeAccess:$('fX').checked};
+    const data={username:$('fU').value.trim().toLowerCase(),name:$('fN').value,role:$('fR').value,job:$('fJ').value,clocks:$('fC').checked,seeAccess:$('fX').checked,
+      profile:{teamLeader:$('fL').value,lines:[...document.querySelectorAll('.fLn:checked')].map(x=>x.value),empType:$('fT').value,workMode:$('fW').value}};
+    if(!data.profile.lines.length){ $('fE').textContent='اختار Line واحد على الأقل'; $('fS').disabled=false; return; }
     if(!un) data.password=$('fP').value;
     try{
       await call('saveUser',{isNew:!un,user:data});
