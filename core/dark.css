@@ -1,0 +1,60 @@
+/* ============ النايت مود ============
+   بيشتغل لما html عليه data-theme="dark". نفس ألوان بورتال الشركاء.
+   اللون الأساسي أخضر مِقناص، والبرتقالي للوجو والتنبيهات بس. الطباعة بتفضل فاتحة. */
+@media screen{
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0B1311; --card:#131E1B; --ink:#EEF3F1; --muted:#9DB0AA; --line:#22302C; --line2:#1C2925;
+  --ok:#3CC7AC; --okbg:#10302A; --bad:#F38A84; --badbg:#3A1A19; --warn:#F5A46E; --warnbg:#2E1D12; --yel:#F2C66B; --yelbg:#2B230F;
+  --blue:#9CC4FF; --bluebg:#14263F;
+  --side-bg:#0E1916; --hover:#18241F; --soft:#0F1815;
+}
+html[data-theme="dark"]{ --brand:#1F9A84; --brand2:#3CC7AC; --accent:#F08A4B; --accentInk:#F6B489; --on-brand:#F2FFFB; --brand-hover:#24AE95; --brand-soft:#10302A; --brand-line:#1D5247; }
+
+html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}
+html[data-theme="dark"] #side{background:var(--side-bg);border-left:1px solid var(--line)}
+html[data-theme="dark"] .nav{color:#9DB0AA}
+html[data-theme="dark"] .nav:hover{background:var(--hover);color:var(--ink)}
+html[data-theme="dark"] .nav.on{background:var(--brand-soft);color:var(--brand2);box-shadow:inset 0 0 0 1px var(--brand-line)}
+html[data-theme="dark"] #top{background:var(--bg);border-color:var(--line)}
+html[data-theme="dark"] .card,html[data-theme="dark"] .kpi,html[data-theme="dark"] .tbl-wrap,html[data-theme="dark"] .modal .card,html[data-theme="dark"] #bellPanel{background:var(--card);border-color:var(--line);box-shadow:none}
+html[data-theme="dark"] th{background:var(--soft);color:var(--muted)}
+html[data-theme="dark"] td{border-color:var(--line2)}
+html[data-theme="dark"] tr:hover td{background:var(--hover)}
+html[data-theme="dark"] .btn{background:var(--card);border-color:var(--line);color:var(--ink)}
+html[data-theme="dark"] .btn:hover{background:var(--hover)}
+html[data-theme="dark"] .btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+html[data-theme="dark"] .btn.primary:hover{background:var(--brand-hover)}
+html[data-theme="dark"] .btn.ghost{background:transparent}
+html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:var(--soft);border-color:var(--line);color:var(--ink)}
+html[data-theme="dark"] input::placeholder,html[data-theme="dark"] textarea::placeholder{color:#6F837D}
+html[data-theme="dark"] .p-out,html[data-theme="dark"] .tstat.p-out{background:#1A2420;color:#C9D6D2;border-color:#2E3D38}
+html[data-theme="dark"] .tstat.p-prog{background:var(--bluebg);border-color:#24426B}
+html[data-theme="dark"] .tstat.p-in{border-color:#1D5247}
+html[data-theme="dark"] .av{background:#1E2D29;color:var(--brand2)}
+html[data-theme="dark"] .modal{background:rgba(0,0,0,.6)}
+html[data-theme="dark"] .pbar,html[data-theme="dark"] .cr-track{background:var(--line)}
+html[data-theme="dark"] .toast{background:#EEF3F1;color:#0B1311}
+html[data-theme="dark"] #bell,html[data-theme="dark"] #themeBtn,html[data-theme="dark"] .chips button,html[data-theme="dark"] .btn.brk{background:var(--card);border-color:var(--line);color:var(--ink)}
+html[data-theme="dark"] .chips button.on{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+html[data-theme="dark"] .logo i{background:#F08A4B;color:#1A0E06}
+
+/* صفحات وأجزاء فيها ألوان فاتحة مكتوبة */
+html[data-theme="dark"] .login-wrap{background:var(--bg)}
+html[data-theme="dark"] .login{background:var(--card);border:1px solid var(--line);box-shadow:none}
+html[data-theme="dark"] .login label{color:var(--muted)}
+html[data-theme="dark"] .notice{background:var(--soft);border-color:var(--line);color:var(--ink)}
+html[data-theme="dark"] .al:hover{background:var(--hover)}
+html[data-theme="dark"] .al.unread{background:#14251F}
+html[data-theme="dark"] .p-lock,html[data-theme="dark"] .tl{background:#1A2420}
+html[data-theme="dark"] .tnotes,html[data-theme="dark"] .pfsec{background:var(--soft)}
+html[data-theme="dark"] .trow.running{background:#1F1A12}
+html[data-theme="dark"] .lnk{background:var(--soft);border-color:var(--line)}
+html[data-theme="dark"] .cr-tr:hover td{background:var(--hover)}
+html[data-theme="dark"] [style*="background:#F7FAF9"],html[data-theme="dark"] [style*="background:#F2F7E6"]{background:var(--soft)!important}
+html[data-theme="dark"] .bapp{--bg:#0B1311;--surface:#131E1B;--ink:#EEF3F1;--muted:#9DB0AA;--line:#22302C;--accent:#1F9A84;--accent-ink:#F2FFFB;--accent-soft:#10302A;
+  --warn:#F5A46E;--warn-soft:#2E1D12;--done:#3CC7AC;--done-soft:#10302A;--danger:#F38A84;--brand-deep:#0E1916;--logo-bg:#1E2D29;--field:#17221F;--warn-line:#5B3A22}
+/* ألوان مكتوبة مباشرة جوه الصفحات */
+html[data-theme="dark"] [style*="background:#fff"],html[data-theme="dark"] [style*="background:#FFF"],html[data-theme="dark"] [style*="background: #fff"]{background:var(--card)!important}
+html[data-theme="dark"] [style*="color:var(--ink)"]{color:var(--ink)}
+}

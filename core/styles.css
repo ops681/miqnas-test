@@ -75,6 +75,9 @@ input[type=checkbox]{width:18px;height:18px;padding:0;accent-color:var(--brand2)
 #top h1{margin:0;font-size:21px;font-weight:700}
 #pgSub{font-size:13px;color:var(--muted);margin-top:2px}
 #topActions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#themeBtn{width:42px;height:42px;border-radius:11px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer;color:var(--ink);flex:none}
+#themeBtn:hover,#bell:hover{border-color:var(--brand2)}
+@media print{#themeBtn{display:none}}
 #bell{position:relative;width:42px;height:42px;border-radius:11px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer;color:var(--ink)}
 #bell:hover{border-color:#B8C9C4}
 #bell .cnt{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#D92D20;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}

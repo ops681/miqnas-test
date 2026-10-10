@@ -23,6 +23,8 @@ const IC = {
   crown:'<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/>',
   crm:'<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M7.5 18c.9-2.2 2.6-3.3 4.5-3.3s3.6 1.1 4.5 3.3"/>',
   trend:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   warn:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>'
 };
 const ico=(k,s)=>`<svg width="${s||18}" height="${s||18}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
@@ -246,3 +248,9 @@ function startBellPolling(){
   const next=()=>{ S.bellT=setTimeout(()=>{ if(document.visibilityState==='visible' && S.token) refreshDash(); next(); }, 100000+Math.floor(Math.random()*40000)); };
   next();
 }
+
+/* النايت مود: زرار فوق جنب الإشعارات، والاختيار بيتحفظ على الجهاز */
+function themeIsDark(){ return document.documentElement.getAttribute('data-theme')==='dark'; }
+function themeBtn(){ const b=$('themeBtn'); if(!b) return; const d=themeIsDark(); b.innerHTML=ico(d?'sun':'moon',18); b.title=d?'Light mode':'Dark mode'; b.setAttribute('aria-label',b.title); }
+function themeToggle(){ const t=themeIsDark()?'light':'dark'; document.documentElement.setAttribute('data-theme',t); store('theme',t); themeBtn(); }
+document.addEventListener('DOMContentLoaded',themeBtn); setTimeout(themeBtn,0);

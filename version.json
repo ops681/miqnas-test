@@ -1,8 +1,9 @@
 {
- "v": "2026-10-10.10",
+ "v": "2026-10-10.11",
  "css": [
   "core/styles.css",
-  "modules/briefs/briefs.css"
+  "modules/briefs/briefs.css",
+  "core/dark.css"
  ],
  "js": [
   "core/config.js",
