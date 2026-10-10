@@ -55,7 +55,7 @@ function navFor(u){
   if(canAny(['attendance.view_all','leave.approve_hr'])) add('people','People Dashboard','dash','People');
   if(can('attendance.view_all')){ add('today','Attendance','cal','People'); add('monthly','Monthly Report','chart','People'); add('screen','Screen Report','monitor','People'); }
   if(can('people.manage')) add('users','Employees','users','People');
-  if(can('people.manage')||u.clevel||u.founder) add('devices','Devices','device','People');
+  if(can('people.manage')) add('devices','Devices','device','People');
   if(can('location.view')) add('locations','Locations','pin','People');
   if(canAny(['org.manage','people.manage'])) add('org','Organization','org','System');
   if(can('system.admin')) add('settings','Settings','gear','System');
