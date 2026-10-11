@@ -21,6 +21,7 @@ function renderPartners(r){
         <div><b style="color:var(--ok)">${p.launched}</b><span>Launched</span></div><div><b style="color:${p.blocked?'var(--bad)':'inherit'}">${p.blocked}</b><span>Blocked</span></div>
       </div>
       <div class="muted" style="font-size:12.5px">${p.thisMonth} new this month${p.hasUser===undefined?'':' · '+(p.hasUser?'Portal sign-in set':'<span style="color:var(--bad)">Portal locked: no username yet</span>')}</div>
+      ${p.noAm&&(r.ams||[]).length?`<div class="ptn-am"><span><b>${p.noAm}</b> store${p.noAm===1?'':'s'} without an Account Manager</span><div class="row" style="gap:6px"><select id="ptnAm_${esc(p.id)}" aria-label="Account Manager"><option value="">Choose…</option>${r.ams.map(a=>`<option value="${esc(a.username)}">${esc(a.name)}</option>`).join('')}</select><button class="btn small primary" onclick="ptnAssignAm('${esc(p.id)}')">Assign</button></div></div>`:p.noAm?`<div class="ptn-am"><span><b>${p.noAm}</b> store${p.noAm===1?'':'s'} without an Account Manager. Add an Account Manager from Employees, then assign them here.</span></div>`:''}
       <div class="ptn-a">${p.active?`<button class="btn primary small" onclick="ptAdmin('${esc(p.id)}')">Portal &amp; report</button>`:''}<button class="btn ghost small" onclick="ptnForm('${esc(p.id)}')">Edit</button></div>
     </div>`;
   $('main').innerHTML=`<div class="ptn-grid">${act.map(card).join('')||'<div class="card empty">No partners yet.</div>'}</div>
@@ -66,6 +67,14 @@ function ptnForm(id){
   setTimeout(()=>$(id?'ptnN':'ptnN').focus(),30);
 }
 
+// متاجر الشريك اللي مالهاش Account Manager (زي المتاجر اللي اتنقلت من سيستم تاني)
+async function ptnAssignAm(pid){
+  const am=$('ptnAm_'+pid).value; if(!am) return toast('اختار الـ Account Manager');
+  const p=(S.ptnAdm.partners||[]).find(x=>x.id===pid), who=(S.ptnAdm.ams||[]).find(a=>a.username===am);
+  if(!confirm(p.noAm+' متجر هيتسجلوا على '+(who?who.name:am)+'. متأكد؟')) return;
+  try{ const out=await call('partnerAssignAm',{partner:pid,am}); S.cache.partners=out; S.fetched.partners=Date.now(); renderPartners(out); toast('اتسجل '+out.assigned+' متجر ✓'); }
+  catch(e){ alert(e.message); }
+}
 /* ----- بورتال الشريك: اللينك + اليوزر والباسورد + التقرير الشهري ----- */
 async function ptAdmin(pid,regen){
   pid=pid||'Zid';

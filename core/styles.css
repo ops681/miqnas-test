@@ -701,3 +701,12 @@ td.nw{white-space:nowrap}
 .brand-prev img{width:auto!important;height:auto!important;max-width:100%!important;max-height:100%!important;object-fit:contain}
 .ptn-bl{background:#fff;border:1px solid var(--line);overflow:hidden;padding:3px}
 .ptn-bl img{width:100%;height:100%;object-fit:contain}
+
+/* Partners: stores without an Account Manager */
+.ptn-am{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:var(--warnbg);color:var(--warn);border:0;border-radius:10px;padding:8px 10px;font-size:13px}
+.ptn-am select{width:auto;min-width:140px;padding:6px 8px}
+/* First setup + move settings */
+.mv-sec{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.mv-sec:first-child{border-top:0}
+.mv-sec input{width:18px;height:18px;margin-top:2px;flex:none}
+.mv-sec small{display:block;color:var(--mut);font-size:12.5px;margin-top:2px}

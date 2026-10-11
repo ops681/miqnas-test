@@ -35,6 +35,7 @@ function boot(){
   let u=null; try{ u=JSON.parse(load('erp_user')||'null'); }catch(e){}
   // بيانات متخزنة من نسخة قديمة (من غير صلاحيات): نجيب الجديدة من السيرفر الأول
   if(u && !Array.isArray(u.perms)) u=null;
+  if(/[?&]setup\b/.test(location.search)){ firstSetupView(); return; }
   if(!S.token){ $('loginView').classList.remove('hidden'); return; }
   if(u){ S.user=u; startApp(); refreshMe(); }
   else refreshMe(true);
@@ -47,4 +48,24 @@ async function refreshMe(first){
     if(first||changed) startApp(); else { renderSide(); if(S.view==='clock') viewClock(); else if(gated() && FREE_VIEWS.indexOf(S.view)<0) go('clock'); else if(S.lockShown && !gated()) go(S.view); }
     if(S.status && S.status.clockedIn && !S.sharing && !S.mobile) showAlarm(true);
   }catch(e){ if(first){ $('loginView').classList.remove('hidden'); } }
+}
+
+/* ----- أول حساب أدمن في سيستم جديد (?setup + كود التجهيز من Apps Script) ----- */
+function firstSetupView(){
+  const lv=$('loginView'); lv.classList.remove('hidden');
+  lv.innerHTML=`<form class="login" id="fsForm">
+    <div class="logo">${typeof brandMark==='function'?brandMark('ERP'):'<i>M</i>Miqnas <span>ERP</span>'}</div>
+    <p>Set up the first admin account. You need the setup code from Apps Script.</p>
+    <label for="fsC">Setup code</label><input id="fsC" autocomplete="off" autocapitalize="characters" spellcheck="false" dir="ltr" required>
+    <label for="fsN">Your name</label><input id="fsN" autocomplete="name" required>
+    <label for="fsU">Username</label><input id="fsU" autocomplete="username" autocapitalize="none" spellcheck="false" dir="ltr" required>
+    <label for="fsP">Password (8+)</label><input id="fsP" type="password" autocomplete="new-password" dir="ltr" required minlength="8">
+    <button class="btn primary full" id="fsB">Create account</button><div class="err" id="fsE"></div></form>`;
+  $('fsForm').onsubmit=async e=>{ e.preventDefault(); $('fsE').textContent=''; $('fsB').disabled=true; $('fsB').textContent='Setting up...';
+    try{ const r=await call('firstSetup',{code:$('fsC').value,name:$('fsN').value,username:$('fsU').value,password:$('fsP').value,device:deviceId(),deviceLabel:deviceLabel()});
+      history.replaceState(null,'',location.pathname);
+      S.token=r.token; store('erp_token',r.token); S.mobile=!!r.mobile; S.user=r.user; S.cfg=r.cfg; store('erp_user',JSON.stringify(r.user));
+      lv.classList.add('hidden'); startApp(); refreshMe(); setTimeout(()=>toast('اتعمل حسابك ✓ ابدأ من Settings ← Move settings'),600); }
+    catch(err){ $('fsE').textContent=err.message; $('fsB').disabled=false; $('fsB').textContent='Create account'; } };
+  setTimeout(()=>$('fsC').focus(),30);
 }

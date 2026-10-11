@@ -25,7 +25,7 @@ function viewSettings(){
 }
 function renderSettings(v){
   $('main').innerHTML=`<div style="max-width:900px;display:grid;gap:18px">
-  <div id="setBrand"></div><div id="setPush"></div>
+  <div id="setBrand"></div><div id="setPush"></div><div id="setMove"></div>
   ${SET_GROUPS.map(g=>`<div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>${g[0]}</h2><div class="muted" style="font-size:13px">${g[1]}</div></div>
     ${g[2].map(it=>`<div class="set"><div class="tx"><label for="st_${it[0]}">${it[1]}</label><div>${it[2]}</div></div><input type="number" min="1" id="st_${it[0]}" value="${esc(v[it[0]])}"><span class="u">${it[3]}</span></div>`).join('')}</div>`).join('')}
   <div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>Sign-in security</h2><div class="muted" style="font-size:13px">Turn off only in an emergency</div></div>
@@ -40,7 +40,7 @@ function renderSettings(v){
   <div class="card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><div style="flex:1 1 320px"><h2 style="margin:0 0 4px">Work hours</h2><div class="muted" style="font-size:13px">Off for now, since the team's hours vary. Late-arrival alerts will use this later.</div></div>
     <label class="check" style="margin:0"><input type="checkbox" id="st_late_on" ${v.late_on?'checked':''} disabled>Late-arrival alerts</label></div>
   </div>`;
-  setBrandCard(); setPushCard();
+  setBrandCard(); setPushCard(); setMoveCard();
 }
 /* ----- هوية الشركة ----- */
 function setBrandCard(){
@@ -55,6 +55,41 @@ function setBrandCard(){
     $('brS').onclick=async()=>{ $('brS').disabled=true; try{ const r=await call('brandSave',{name:$('brN').value,logo:logo,removeLogo:!logo}); S.brand={ver:r.ver,name:r.name,logo:r.logo}; try{ store('erp_brand',JSON.stringify(S.brand)); }catch(e){} applyBrand(); toast('اتحفظت الهوية ✓ وهتظهر عند الكل'); draw(); }catch(e){ $('brE').textContent=e.message; $('brS').disabled=false; } };
   };
   draw();
+}
+/* ----- نقل الإعدادات لسيستم تاني (من التيست للسيستم الجديد) ----- */
+async function setMoveCard(){
+  let st; try{ st=await call('configImportState'); }catch(e){ return; }
+  const box=$('setMove'); if(!box) return;
+  const imp=st.imported?`<div class="notice">Settings were brought in on ${new Date(st.imported).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}.</div>`
+    :st.fresh?`<label class="btn" for="mvF" style="margin:0">Bring in settings from a file</label><input type="file" id="mvF" accept=".json,application/json" hidden>`
+    :'<span class="muted" style="font-size:12.5px">Bringing settings in works only on a new system with no projects yet.</span>';
+  box.innerHTML=`<div class="card"><h2 style="margin:0 0 4px">Move settings to another system</h2>
+    <div class="muted" style="font-size:13px;margin-bottom:12px">Copies the company identity, settings, workflow rules, roles and permissions, departments and partners with their stores. People are never copied: department heads, seats, groups and project teams come over empty.</div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" id="mvX">Download settings file</button>${imp}</div><div class="err" id="mvE"></div></div>`;
+  $('mvX').onclick=async()=>{ $('mvX').disabled=true; $('mvX').textContent='Preparing…';
+    try{ const d=await call('configExport'); const b=new Blob([JSON.stringify(d)],{type:'application/json'}), a=document.createElement('a');
+      a.href=URL.createObjectURL(b); a.download='miqnas-settings-'+new Date().toISOString().slice(0,10)+'.json'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
+      toast('اتنزل الملف ✓ خليه معاك ومتبعتهوش لحد'); }catch(e){ $('mvE').textContent=e.message; }
+    $('mvX').disabled=false; $('mvX').textContent='Download settings file'; };
+  if($('mvF')) $('mvF').onchange=async()=>{
+    const f=$('mvF').files[0]; if(!f) return;
+    let data; try{ data=JSON.parse(await f.text()); }catch(e){ $('mvE').textContent='الملف ده مش ملف إعدادات'; return; }
+    try{ const pv=await call('configImport',{data,dry:true}); mvPreview(data,pv); }catch(e){ $('mvE').textContent=e.message; }
+    $('mvF').value='';
+  };
+}
+function mvPreview(data,pv){
+  const S2=pv.summary, keys=Object.keys(S2).filter(k=>S2[k].has);
+  $('modalRoot').innerHTML=`<div class="modal"><div class="card" style="max-width:520px">
+    <h2 style="margin:0 0 4px">Bring in settings</h2><div class="muted" style="font-size:13px;margin-bottom:10px">From <b>${esc(pv.from||'')}</b>${pv.at?' · '+new Date(pv.at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):''}. Untick anything you don't want. This can be done only once.</div>
+    <div>${keys.map(k=>`<label class="mv-sec"><input type="checkbox" data-k="${k}" checked><span><b>${esc(S2[k].label)}</b><small>${esc(S2[k].detail||'')}</small></span></label>`).join('')}</div>
+    <div class="err" id="mvE2"></div>
+    <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancel</button><div class="spacer"></div><button class="btn primary" id="mvGo">Bring in</button></div></div></div>`;
+  $('mvGo').onclick=async()=>{ const sections=[...document.querySelectorAll('.mv-sec input:checked')].map(i=>i.dataset.k); if(!sections.length) return $('mvE2').textContent='اختار حاجة واحدة على الأقل';
+    $('mvGo').disabled=true; $('mvGo').textContent='Working…';
+    try{ const r=await call('configImport',{data,sections}); if(r.brand){ S.brand={ver:r.brand.ver,name:r.brand.name||'',logo:r.brand.logo||''}; try{ store('erp_brand',JSON.stringify(S.brand)); }catch(e){} applyBrand(); }
+      Object.keys(S.cache).forEach(k=>delete S.cache[k]); closeModal(); toast('اتنقلت الإعدادات ✓'); refreshMe(); viewSettings(); }
+    catch(e){ $('mvE2').textContent=e.message; $('mvGo').disabled=false; $('mvGo').textContent='Bring in'; } };
 }
 /* ----- إشعارات الموبايل (Firebase) ----- */
 async function setPushCard(){
