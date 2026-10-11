@@ -124,3 +124,9 @@ button,input,select{font:inherit;color:inherit}
 .pt-lbtn:disabled{opacity:.7}
 .pt-out{min-height:34px;border:1px solid var(--line);background:transparent;color:var(--mut);border-radius:999px;padding:0 14px;font-size:12.5px;cursor:pointer}
 .pt-out:hover{color:var(--ink)}
+/* لوجو مِقناص + حرف الشريك */
+.pt-logos{display:flex;align-items:center;flex:none}
+.pt-logos .pt-plogo{margin-inline-start:-8px;color:#fff;border:3px solid var(--bg)}
+.pt-lcard .pt-logos{justify-content:center;margin:0 auto 4px}
+.pt-lcard .pt-logos .pt-logo{margin:0}
+.pt-lcard .pt-logos .pt-plogo{margin-inline-start:-8px}

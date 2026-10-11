@@ -1,7 +1,7 @@
-/* ============ بورتال الشركاء (زد) ============
+/* ============ بورتال الشركاء (زد وأي شريك تاني) ============
    صفحة لوحدها: المفتاح في اللينك (?k=...) + يوزر وباسورد بتحددهم الإدارة. للاطلاع بس.
    البيانات جاية من السيرفر محسوبة من المشاريع والتاسكات والبلوكرز. */
-const PT = { key: new URLSearchParams(location.search).get('k') || '', t: '', all: false, month: '', q: '', f: 'all', data: null, open: '' };
+const PT = { key: new URLSearchParams(location.search).get('k') || '', t: '', info: null, all: false, month: '', q: '', f: 'all', data: null, open: '' };
 const pe = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const AR_M = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const mName = m => { const p = String(m).split('-'); return AR_M[+p[1] - 1] + ' ' + p[0]; };
@@ -28,16 +28,22 @@ function ptPost(body) {
   return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ k: PT.key, t: PT.t }, body)) })
     .then(r => r.json()).then(r => { if (!r || !r.ok) { const e = new Error((r && r.error) || 'حصل خطأ'); if (e.message === 'PT_LOGIN') e.login = true; throw e; } return r.data; });
 }
+const ptName = () => (PT.info && PT.info.name) || 'الشريك';
+function ptMark(info) {
+  const b = info && info.letter ? `<div class="pt-logo pt-plogo" style="background:${pe(info.color || '#7C5CFC')}" aria-hidden="true">${pe(info.letter)}</div>` : '';
+  return `<div class="pt-logos"><div class="pt-logo" aria-hidden="true">M</div>${b}</div>`;
+}
+function ptSetInfo(i) { if (!i) return; PT.info = i; document.title = 'مِقناص × ' + i.name + ' · بورتال الشركاء'; }
 function ptCall() { return ptPost({ action: 'portal', month: PT.month, all: PT.all }); }
 function ptLoad(quiet) {
   if (!PT.key) { ptErr('اللينك ناقص. اطلب اللينك الصحيح من مِقناص'); return; }
-  if (!PT.t) { ptLoginView(); return; }
+  if (!PT.t) { if (PT.info) ptLoginView(); else ptPost({ action: 'portalInfo' }).then(i => { ptSetInfo(i); ptLoginView(); }).catch(e => ptErr(e.message)); return; }
   if (!quiet && !PT.data) document.getElementById('pt').innerHTML = '<div class="pt-load">جاري التحميل...</div>';
-  ptCall().then(d => { PT.data = d; if (!PT.month) PT.month = d.month; ptRender(); }).catch(e => { if (e.login) { ptTok(null); PT.t = ''; PT.data = null; ptLoginView(); } else if (!PT.data) ptErr(e.message); });
+  ptCall().then(d => { PT.data = d; ptSetInfo(d.partnerInfo); if (!PT.month) PT.month = d.month; ptRender(); }).catch(e => { if (e.login) { ptTok(null); PT.t = ''; PT.data = null; ptLoad(); } else if (!PT.data) ptErr(e.message); });
 }
 function ptLoginView(msg) {
   document.getElementById('pt').innerHTML = `<div class="pt-login"><form class="pt-lcard" onsubmit="ptLogin(event)">
-    <div class="pt-logo" aria-hidden="true">M</div><b>مِقناص × زد</b><span>بورتال الشركاء · سجّل دخول عشان تكمل</span>
+    ${ptMark(PT.info)}<b>مِقناص × ${pe(ptName())}</b><span>بورتال الشركاء · سجّل دخول عشان تكمل</span>
     <label>اسم المستخدم<input id="ptU" autocomplete="username" dir="ltr" required></label>
     <label>كلمة المرور<input id="ptP" type="password" autocomplete="current-password" dir="ltr" required></label>
     <div class="pt-lerr" role="alert">${msg ? pe(msg) : ''}</div>
@@ -51,7 +57,7 @@ function ptLogin(ev) {
     .then(r => { PT.t = ptTok(r.t); ptLoad(); })
     .catch(e => ptLoginView(e.message));
 }
-function ptLogout() { ptPost({ action: 'portalLogout' }).catch(() => {}); ptTok(null); PT.t = ''; PT.data = null; ptLoginView(); }
+function ptLogout() { ptPost({ action: 'portalLogout' }).catch(() => {}); ptTok(null); PT.t = ''; PT.data = null; ptLoad(); }
 function ptReport() {
   const w = window.open('', '_blank');
   if (w) w.document.write('<p dir="rtl" style="font-family:sans-serif;padding:24px">جاري تجهيز التقرير...</p>');
@@ -74,8 +80,8 @@ function ptRender() {
   const counts = {}; PT_CHIPS.forEach(c => { counts[c[0]] = d.stores.filter(c[3]).length; });
   const focus = document.activeElement && document.activeElement.id === 'ptQ';
   document.getElementById('pt').innerHTML = `<div class="pt-wrap">
-  <header class="pt-head"><div class="pt-logo" aria-hidden="true">M</div>
-    <div class="pt-title"><b>مِقناص × زد</b><span>بورتال الشركاء · تقرير التسليم</span></div>
+  <header class="pt-head">${ptMark(PT.info)}
+    <div class="pt-title"><b>مِقناص × ${pe(ptName())}</b><span>بورتال الشركاء · تقرير التسليم</span></div>
     <span class="pt-upd">محدّث ${pe(ago(d.at))}</span><button type="button" class="pt-out" onclick="ptLogout()">خروج</button></header>
   <div class="pt-bar">
     <div class="pt-tabs" role="tablist"><button type="button" role="tab" aria-selected="${!d.all}" class="${d.all ? '' : 'on'}" onclick="ptSet('all',false)">متاجر الشهر</button><button type="button" role="tab" aria-selected="${d.all}" class="${d.all ? 'on' : ''}" onclick="ptSet('all',true)">كل المتاجر</button></div>
@@ -88,7 +94,7 @@ function ptRender() {
     <div class="pt-k main"><span>${d.all ? 'إجمالي المتاجر المحالة' : 'متاجر ' + pe(mName(d.month))}</span><b>${k.total}</b><small>${k.isNew} جديد${d.all ? '' : ' هذا الشهر'}</small></div>
     <div class="pt-k"><span>قيد التنفيذ</span><b style="color:var(--warn)">${k.delivery}</b></div>
     <div class="pt-k"><span>تم الإطلاق</span><b style="color:var(--ok)">${k.launched}</b>${k.onTimePct !== null ? `<small>${k.onTimePct}% في الموعد</small>` : ''}</div>
-    <div class="pt-k"><span>عوائق مفتوحة</span><b style="color:${k.blockClient + k.blockZid ? 'var(--bad)' : 'var(--ink)'}">${k.blockClient + k.blockZid}</b><small>${k.blockClient} العميل · ${k.blockZid} زد</small></div>
+    <div class="pt-k"><span>عوائق مفتوحة</span><b style="color:${k.blockClient + k.blockZid ? 'var(--bad)' : 'var(--ink)'}">${k.blockClient + k.blockZid}</b><small>${k.blockClient} العميل · ${k.blockZid} ${pe(ptName())}</small></div>
     <div class="pt-k"><span>متوسط التقدم</span><div class="meter"><b>${k.avgPct}%</b><span class="pt-track ok"><i style="width:${k.avgPct}%"></i></span></div></div>
     <div class="pt-k"><span>متوسط مدة التسليم</span><b>${k.avgDays === null ? '—' : k.avgDays + ' <small style="font-size:13px">يوم</small>'}</b></div>
   </section>
@@ -121,7 +127,7 @@ function ptDetail(s) {
     <section class="pt-sec">
       <div style="display:flex;flex-direction:column;gap:4px"><span class="num" style="font-size:12px;color:var(--mut)" dir="ltr">${[s.ref, s.storeId ? '#' + s.storeId : ''].filter(Boolean).map(pe).join(' · ')}</span>
         <h1 dir="auto">${pe(s.name)}</h1>${s.live || s.url ? `<a href="${pe(/^https?:/.test(s.live || s.url) ? (s.live || s.url) : 'https://' + (s.live || s.url))}" target="_blank" rel="noopener noreferrer" dir="ltr" style="font-size:13px">${pe(String(s.live || s.url).replace(/^https?:\/\//, ''))}</a>` : ''}</div>
-      <div class="pt-pills" style="justify-content:flex-start;margin:0"><span class="pill s-${s.status}">${pe(s.statusName)}</span>${s.sla === 'client' ? '<span class="pill p-block">SLA متوقف · من العميل</span>' : s.sla === 'zid' ? '<span class="pill p-block">SLA متوقف · من زد</span>' : ''}<span class="pill s-hold">${pe([s.from && s.from !== 'None' ? 'نقل من ' + s.from : 'متجر جديد', s.mode].filter(Boolean).join(' · '))}</span>${s.priority ? `<span class="pill s-hold">الأولوية: ${pe(s.priority)}</span>` : ''}</div>
+      <div class="pt-pills" style="justify-content:flex-start;margin:0"><span class="pill s-${s.status}">${pe(s.statusName)}</span>${s.sla === 'client' ? '<span class="pill p-block">SLA متوقف · من العميل</span>' : s.sla === 'zid' ? '<span class="pill p-block">SLA متوقف · من ' + pe(ptName()) + '</span>' : ''}<span class="pill s-hold">${pe([s.from && s.from !== 'None' ? 'نقل من ' + s.from : 'متجر جديد', s.mode].filter(Boolean).join(' · '))}</span>${s.priority ? `<span class="pill s-hold">الأولوية: ${pe(s.priority)}</span>` : ''}</div>
       <div class="pt-dates"><div><span>الإحالة</span><b dir="ltr">${dShort(s.referral)}</b></div><div><span>البدء</span><b dir="ltr">${dShort(s.start)}</b></div><div><span>المستهدف</span><b dir="ltr">${dShort(s.target)}</b></div><div><span>الإطلاق</span><b dir="ltr">${dShort(s.goLive)}</b></div></div>
       <div class="pt-prog"><div><span>التقدم الكلي</span><b>${s.pct}%</b></div><span class="pt-track${s.pct === 100 ? ' ok' : ''}" style="height:8px"><i style="width:${s.pct}%"></i></span></div>
     </section>
@@ -143,7 +149,7 @@ function ptExport() {
   const rows = L.map(s => [s.ref, s.name, s.storeId, s.url, s.live, s.statusName, SLA[s.sla] || s.sla, s.pct, s.stagesDone + '/' + s.stagesAll, s.referral, s.start, s.target, s.goLive, s.days, s.blockers.length, s.blockers.map(b => b.owner).join(' / '), s.from, s.mode, s.priority, s.lastText]);
   const txt = '﻿' + [head].concat(rows).map(r => r.map(csv).join(',')).join('\r\n');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' }));
-  a.download = 'Miqnas-Zid-' + (PT.data.all ? 'all' : PT.data.month) + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+  a.download = 'Miqnas-' + String((PT.info && PT.info.nameEn) || 'Partner').replace(/[^A-Za-z0-9]/g, '') + '-' + (PT.data.all ? 'all' : PT.data.month) + '.csv'; document.body.appendChild(a); a.click(); a.remove();
 }
 (function () {
   const m = location.hash.match(/s=([^&]+)/); if (m) PT.open = decodeURIComponent(m[1]);

@@ -25,7 +25,7 @@ async function viewProjects(){
 }
 function renderProjects(r,keep){
   const y=window.scrollY;
-  setTop('Projects', r.projects.length+' projects', (can('projects.manage_all')?'<button class="btn ghost" onclick="ptAdmin()">Zid Portal</button>':'')+(r.canCreate?'<button class="btn primary" onclick="projForm()">+ New Project</button>':''));
+  setTop('Projects', r.projects.length+' projects', (can('projects.manage_all')?'<button class="btn ghost" onclick="go(\'partners\')">Partners</button>':'')+(r.canCreate?'<button class="btn primary" onclick="projForm()">+ New Project</button>':''));
   {
     const P=r.projects, F=S.pFilter;
     const list=P.filter(p=>F==='all'||p.status===F);
@@ -93,7 +93,7 @@ function renderProject(r,keep){
           <div class="kv"><b>Start</b><span>${fmtDay(r.start_date)}</span></div>
           <div class="kv"><b>Target Launch</b><span>${r.overdue?`<span style="color:var(--bad);font-weight:600">${fmtDay(r.target_launch)} · Overdue</span>`:fmtDay(r.target_launch)}</span></div>
           ${r.go_live?`<div class="kv"><b>Go Live</b><span>${fmtDay(r.go_live)}</span></div>`:''}
-          ${D.partner?`<div class="kv"><b>Partner</b><span><span class="pill p-prog">${esc(D.partner)}</span> ${esc([D.partner_ref,D.priority,D.delivery_mode].filter(Boolean).join(' · '))}</span></div>`:''}
+          ${D.partner?`<div class="kv"><b>Partner</b><span><span class="pill p-prog">${esc(r.partnerName||D.partner)}</span> ${esc([D.partner_ref,D.priority,D.delivery_mode].filter(Boolean).join(' · '))}</span></div>`:''}
           ${D.referral_date?`<div class="kv"><b>Referral</b><span>${fmtDay(D.referral_date)}</span></div>`:''}
         </div>
         <div class="pbox"><h4>Team <span class="pill p-prog" style="margin-left:6px">${r.type===CP_TYPE?'Copy-Paste':esc(r.build_mode)}</span></h4>
@@ -269,6 +269,7 @@ async function projForm(id){
       sm:bySlot('sm'), copy:bySlot('copy'), uiux:bySlot('uiux'), designer:bySlot('designer'), dev:bySlot('dev'), fe:bySlot('fe'), joker:bySlot('joker'), joker_role:'uiux' };
     if(id){ const r=await call('projGet',{id}); d=Object.assign(d,r.data); if(!d.joker) d.joker=bySlot('joker'); if(!d.joker_role) d.joker_role='uiux'; }
     const isAdmin=can('projects.manage_all');
+    const PTN=meta.partners&&meta.partners.map?meta.partners.filter(p=>typeof p==='object'):[];
     const opt=(list,v,blank)=>(blank!==undefined?`<option value="">${blank}</option>`:'')+list.map(o=>{ const val=typeof o==='string'?o:o.u, lab=typeof o==='string'?o:o.name+(o.job?' · '+o.job:''); return `<option value="${esc(val)}"${val===v?' selected':''}>${esc(lab)}</option>`; }).join('');
     const teamSel=(k,label)=>{ const list=meta.team.filter(t=>(t.slots||[]).indexOf(k)>=0||t.u===d[k]);
       return `<div><label>${label}</label><select id="pf_${k}">${opt(list,d[k],'—')}</select></div>`; };
@@ -296,9 +297,11 @@ async function projForm(id){
         ${isAdmin?`<div><label>Account Manager</label><select id="pf_am">${opt(meta.ams,d.am,'—')}</select></div>`:''}
       </div>
       <h3>Partner</h3>
-      <label class="pf-chk"><input type="checkbox" id="pf_partner_on"${d.partner==='Zid'?' checked':''}> Referred by Zid <span class="muted">· shows in the Zid partner portal</span></label>
-      <div class="pfgrid m-partner${d.partner==='Zid'?'':' hidden'}">
-        <div><label>Zid Project ID</label><input id="pf_partner_ref" value="${esc(d.partner_ref||'')}" placeholder="ZID-028" dir="ltr"></div>
+      <div class="pfgrid"><div><label>Referred by a partner?</label><select id="pf_partner"><option value="">No partner</option>${PTN.map(p=>`<option value="${esc(p.id)}"${p.id===d.partner?' selected':''}>${esc(p.name)} · ${esc(p.nameEn)}</option>`).join('')}${d.partner&&!PTN.some(p=>p.id===d.partner)?`<option value="${esc(d.partner)}" selected>${esc(d.partner)} (stopped)</option>`:''}</select>
+        <div class="ptn-sug hidden" id="pf_ptn_sug"></div></div></div>
+      <div class="muted m-partner${d.partner?'':' hidden'}" style="font-size:12.5px;margin:-4px 0 8px">The store shows in this partner's portal.</div>
+      <div class="pfgrid m-partner${d.partner?'':' hidden'}">
+        <div><label>Partner Project ID</label><input id="pf_partner_ref" value="${esc(d.partner_ref||'')}" placeholder="Auto" dir="ltr"></div>
         <div><label>Referral Date</label><input type="date" id="pf_referral_date" value="${esc(d.referral_date||'')}"></div>
         <div><label>Priority</label><select id="pf_priority">${opt(meta.priorities||[],d.priority||'Normal')}</select></div>
         <div><label>Delivery Mode</label><select id="pf_delivery_mode">${opt(meta.deliveryModes||[],d.delivery_mode||'Professional Build')}</select></div>
@@ -329,8 +332,16 @@ async function projForm(id){
       document.querySelectorAll('.m-fe').forEach(e=>e.classList.toggle('hidden',m!=='Front End'));
       document.querySelectorAll('.m-joker').forEach(e=>e.classList.toggle('hidden',cp||m!=='Joker')); };
     $('pf_build_mode').onchange=mode; $('pf_type').addEventListener('change',mode); mode();
-    $('pf_partner_on').onchange=()=>document.querySelectorAll('.m-partner').forEach(e=>e.classList.toggle('hidden',!$('pf_partner_on').checked));
-    if(!id) $('pf_target_platform').addEventListener('change',()=>{ if($('pf_target_platform').value==='Zid' && !$('pf_partner_on').checked){ $('pf_partner_on').checked=true; $('pf_partner_on').onchange(); } });
+    // الشريك: لما يتختار يظهر المرجع الجاي، ولما المنصة المستهدفة تبقى منصة شريك نقترحه (من غير ما نختاره لوحدنا)
+    const ptnSet=()=>{ const v=$('pf_partner').value, p=PTN.find(x=>x.id===v);
+      document.querySelectorAll('.m-partner').forEach(e=>e.classList.toggle('hidden',!v));
+      if(p && !d.partner_ref) $('pf_partner_ref').placeholder=p.nextRef||'Auto';
+      if(v && !$('pf_referral_date').value && !id) $('pf_referral_date').value=new Date().toLocaleDateString('en-CA',{timeZone:'Africa/Cairo'});
+      ptnSug(); };
+    const ptnSug=()=>{ const el=$('pf_ptn_sug'), pl=$('pf_target_platform').value, p=!$('pf_partner').value&&PTN.find(x=>x.platform&&x.platform===pl);
+      el.classList.toggle('hidden',!p); el.innerHTML=p?`Is this store referred by <b>${esc(p.name)}</b>? <button type="button" class="btn small" id="pf_ptn_yes">Yes, pick ${esc(p.nameEn)}</button>`:'';
+      if(p) $('pf_ptn_yes').onclick=()=>{ $('pf_partner').value=p.id; ptnSet(); }; };
+    $('pf_partner').onchange=ptnSet; $('pf_target_platform').addEventListener('change',ptnSug); if(d.partner) ptnSet(); else ptnSug();
     ['cp','cp2','sm','copy','designer','uiux','dev','fe','joker','am'].forEach(k=>pickify($('pf_'+k), k==='am'?meta.ams.map(a=>Object.assign({job:'Account Manager'},meta.team.find(t=>t.u===a.u)||{},a)):meta.team));
     const normName=v=>String(v||'').toLowerCase().replace(/[\u064B-\u065F\u0670\u0640\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g,'').replace(/[\s\-_–—.]+/g,'');
     const dupCheck=()=>{ const v=normName($('pf_client').value), list=(S.cache.plist&&S.cache.plist.projects)||[];
@@ -343,6 +354,8 @@ async function projForm(id){
       const set=(k,v)=>{ if(v) $('pf_'+k).value=v; };
       set('client',b.store); dupCheck(); set('type',typeMap(b.f.project_type)); mode(); set('cur_platform',platMap(b.f.current_platform)); set('target_platform',platMap(b.f.target_platform));
       set('store_url',b.f.store_url); set('store_id',b.f.zid_id);
+      if(b.f.partner){ const p=PTN.find(x=>x.name===b.f.partner||x.nameEn===b.f.partner); if(p){ $('pf_partner').value=p.id; $('pf_partner').onchange(); } }
+      $('pf_target_platform').dispatchEvent(new Event('change'));
       if(b.f.logo_plan) $('pf_identity').value = b.f.logo_plan==='لوجو جديد' ? 'هوية جديدة' : 'هوية موجودة';
       if($('pf_am')){ const a=meta.ams.find(x=>x.u===b.owner); if(a) $('pf_am').value=a.u; }
       pkSyncAll(); toast('Filled from the brief');
@@ -350,7 +363,7 @@ async function projForm(id){
     $('pf_save').onclick=async()=>{
       $('pf_err').textContent=''; $('pf_save').disabled=true;
       const g=k=>{ const el=$('pf_'+k); return el? el.value : (d[k]||''); };
-      const data={ id:id||'' }; ['client','type','identity','status','cur_platform','target_platform','store_url','store_id','start_date','go_live','am','brief_id','build_mode','sm','copy','designer','uiux','dev','fe','joker','joker_role','cp','cp2'].forEach(k=>data[k]=g(k)); data.partner=$('pf_partner_on').checked?'Zid':''; ['partner_ref','referral_date','priority','delivery_mode','live_domain'].forEach(k=>data[k]=g(k));
+      const data={ id:id||'' }; ['client','type','identity','status','cur_platform','target_platform','store_url','store_id','start_date','go_live','am','brief_id','build_mode','sm','copy','designer','uiux','dev','fe','joker','joker_role','cp','cp2'].forEach(k=>data[k]=g(k)); data.partner=$('pf_partner').value; ['partner_ref','referral_date','priority','delivery_mode','live_domain'].forEach(k=>data[k]=g(k));
       try{ const r=await call('projSave',{project:data}); toast(id?'Saved ✓':'Project '+r.id+' created ✓'); viewProject(r.id); }
       catch(e){ $('pf_err').textContent=e.message; $('pf_save').disabled=false; }
     };
@@ -399,7 +412,7 @@ function wlOpen(un){
 /* ----- تحديثات الشريك (زد) على المشروع ----- */
 // بتظهر في بورتال زد تحت «آخر التحديثات» مع التحديثات التلقائية
 function pnHTML(r,list){
-  return `<div class="card" style="margin-top:14px"><div class="row" style="align-items:center;gap:8px"><h3 style="margin:0">Partner updates <span class="muted" style="font-weight:500;font-size:13px">· visible to Zid in the partner portal</span></h3></div>
+  return `<div class="card" style="margin-top:14px"><div class="row" style="align-items:center;gap:8px"><h3 style="margin:0">Partner updates <span class="muted" style="font-weight:500;font-size:13px">· visible to ${esc(r.partnerName||'the partner')} in their portal</span></h3></div>
     ${r.canEdit?`<div class="pn-form"><textarea id="pnT" rows="2" placeholder="اكتب تحديث للشريك… (مثلاً: تم إرسال التصميم للعميل)" dir="auto"></textarea><input id="pnN" placeholder="الخطوة الجاية (اختياري)" dir="auto"><button class="btn primary" onclick="pnAdd('${esc(r.id)}')">Post update</button></div>`:''}
     ${list===undefined?'<div class="muted" style="padding:8px 0">Loading...</div>':list.length?list.map(n=>`<div class="pn-row"><div class="pn-h"><b>${bd(n.by)}</b><span class="muted">${new Date(n.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</span>${n.mine||can('projects.manage_all')?`<button class="btn ghost small" onclick="pnDel('${esc(n.id)}','${esc(r.id)}')">Delete</button>`:''}</div><div dir="auto">${esc(n.text)}</div>${n.next?`<div class="muted" dir="auto" style="font-size:13px">الخطوة الجاية: ${esc(n.next)}</div>`:''}</div>`).join(''):'<div class="muted" style="padding:8px 0;font-size:13.5px">No updates yet. Stage changes and blockers already show in the portal automatically.</div>'}</div>`;
 }
@@ -408,54 +421,3 @@ function pnLoad(r){ call('partnerNotes',{project:r.id}).then(l=>pnPut(r,l)).catc
 async function pnAdd(id){ const t=$('pnT').value.trim(), n=$('pnN').value.trim(); if(t.length<3){ toast('اكتب التحديث'); return; }
   try{ const l=await call('partnerNoteAdd',{project:id,text:t,next:n}); pnPut(S.proj,l); toast('اتنشر للشريك ✓'); }catch(e){ alert(e.message); } }
 async function pnDel(nid,id){ if(!confirm('تمسح التحديث ده من البورتال؟')) return; try{ const l=await call('partnerNoteDelete',{id:nid}); pnPut(S.proj,l); }catch(e){ alert(e.message); } }
-
-/* ----- بورتال زد (للإدارة): اللينك + اليوزر والباسورد + التقرير الشهري ----- */
-async function ptAdmin(regen){
-  if(regen && !confirm('اللينك القديم هيقف خالص وفريق زد محتاج اللينك الجديد ويسجلوا دخول تاني. متأكد؟')) return;
-  try{
-    const r=await call('portalAdmin',regen?{regen:true}:{});
-    S.ptAdm=r; ptAdminRender();
-    if(regen) toast('اتعمل لينك جديد');
-  }catch(e){ alert(e.message); }
-}
-function ptAdminRender(){
-  const r=S.ptAdm; if(!r) return;
-  const url=location.origin+location.pathname.replace(/[^/]*$/,'')+'portal.html?k='+r.key;
-  const months=[]; { const [y0,m0]=String(r.first||'').split('-').map(Number); const now=new Date(); let y=y0||now.getFullYear(), m=m0||now.getMonth()+1; while(y<now.getFullYear()||(y===now.getFullYear()&&m<=now.getMonth()+1)){ months.push(y+'-'+String(m).padStart(2,'0')); m++; if(m>12){m=1;y++;} } }
-  const mn=m=>new Date(m+'-15').toLocaleDateString('en-GB',{month:'long',year:'numeric'});
-  $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:580px">
-    <h2 style="margin:0 0 6px">Zid partner portal</h2>
-    <p class="muted" style="margin:0 0 14px;font-size:13.5px">${r.stores} Zid stores. The Zid team opens this link and signs in with the username and password below. No phone numbers, passwords or team names are shown.</p>
-    <div class="pt-link"><input readonly value="${esc(url)}" dir="ltr" onclick="this.select()" aria-label="Portal link"><button class="btn primary" onclick="navigator.clipboard.writeText('${esc(url)}').then(()=>toast('اتنسخ اللينك'))">Copy</button></div>
-    <h3 style="margin:18px 0 6px;font-size:15px">Portal sign-in</h3>
-    <div class="muted" style="font-size:13px;margin-bottom:8px">${r.user&&r.hasPass?`Current username: <b dir="ltr">${esc(r.user)}</b>. Saving a new one signs everyone out of the portal.`:'<span style="color:var(--bad)">No username yet. The portal stays locked until you set one.</span>'}</div>
-    <div class="row" style="gap:8px;flex-wrap:wrap">
-      <input id="ptAu" placeholder="Username" dir="ltr" autocomplete="off" value="${esc(r.user||'')}" style="flex:1 1 150px" aria-label="Portal username">
-      <input id="ptAp" type="password" placeholder="New password (8+)" dir="ltr" autocomplete="new-password" style="flex:1 1 150px" aria-label="Portal password">
-      <button class="btn" onclick="const i=$('ptAp');i.type=i.type==='password'?'text':'password'">Show</button>
-      <button class="btn primary" onclick="ptCredsSave()">Save</button>
-    </div>
-    <h3 style="margin:18px 0 6px;font-size:15px">Monthly report (PDF)</h3>
-    <div class="row" style="gap:8px;flex-wrap:wrap">
-      <select id="ptRm" style="flex:1 1 180px" aria-label="Report month"><option value="all">All stores</option>${months.reverse().map((m,i)=>`<option value="${m}"${i===0?' selected':''}>${mn(m)}</option>`).join('')}</select>
-      <button class="btn primary" onclick="ptRepOpen()">Print / PDF</button>
-    </div>
-    <div class="muted" style="font-size:12.5px;margin-top:6px">A PDF of the previous month is also saved to Google Drive on the 1st of every month.</div>
-    <div class="mfoot"><button class="btn ghost danger" onclick="ptAdmin(true)">New link (stop the old one)</button><div class="spacer"></div><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Open portal</a><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div>`;
-}
-async function ptCredsSave(){
-  const user=$('ptAu').value.trim(), pass=$('ptAp').value;
-  if(!user||!pass) return alert('اكتب اليوزر والباسورد الجديد');
-  if(S.ptAdm&&S.ptAdm.hasPass&&!confirm('فريق زد هيحتاج اليوزر والباسورد الجداد ويسجلوا دخول تاني. متأكد؟')) return;
-  try{ S.ptAdm=await call('portalAdmin',{setCreds:true,user,pass}); ptAdminRender(); toast('اتحفظ اليوزر والباسورد'); }catch(e){ alert(e.message); }
-}
-async function ptRepOpen(){
-  const v=$('ptRm').value, w=window.open('','_blank');
-  if(w) w.document.write('<p style="font-family:sans-serif;padding:24px">Preparing report...</p>');
-  try{
-    const r=await call('partnerReport',v==='all'?{all:true}:{month:v});
-    if(!w) return alert('Allow pop-ups for this site and try again');
-    w.document.open(); w.document.write(r.html); w.document.close();
-    setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} },900);
-  }catch(e){ if(w) w.close(); alert(e.message); }
-}

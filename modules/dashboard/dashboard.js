@@ -21,6 +21,7 @@ function renderDash(r,keep){
     <div class="kpi"><span>Timers running</span><b style="color:var(--brand2)">${k.timers}</b><small>Across all projects</small></div>
   </div>
   ${canClientRep()?`<div id="crMini">${crCardHTML(r.crMini||S.cache['cr_'+crCurMonth()+'_'])}</div>`:''}
+  ${typeof ptnDashHTML==='function'?ptnDashHTML(r.partners):''}
   ${mgmtHTML(r.mgmt)}
   ${handoversHTML(r.handovers)}
   <div class="two">
