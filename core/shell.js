@@ -25,6 +25,7 @@ const IC = {
   trend:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
   moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  money:'<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9v.01M18 15v.01"/>',
   book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/><path d="M8 7h7M8 11h5"/>',
   link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   warn:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>'
@@ -33,7 +34,7 @@ const ico=(k,s)=>`<svg width="${s||18}" height="${s||18}" viewBox="0 0 24 24" fi
 const initials = n => { n=String(n||'').trim(); const p=n.split(/\s+/); return (p.length>1? p[0][0]+p[1][0] : n.slice(0,2)).toUpperCase(); };
 
 // الخطوط: كل موظف بيشوف صفحات الـ Line بتاعه، والـ C-level بيشوف كل الخطوط
-const LINE_OF={projects:'Line 1',partners:'Line 1',blockers:'Line 1',briefs:'Line 1',clientrep:'Line 1',crm:'Line 1',sales:'Sales',line2:'Line 2'};
+const LINE_OF={projects:'Line 1',partners:'Line 1',finance:'Line 1',blockers:'Line 1',briefs:'Line 1',clientrep:'Line 1',crm:'Line 1',sales:'Sales',line2:'Line 2'};
 function inLine(u,id){ const l=LINE_OF[id]; if(!l||!u||u.clevel||u.founder||can('system.admin')) return true; return (u.lines&&u.lines.length?u.lines:['Line 1']).indexOf(l)>=0; }
 function navFor(u){
   const N=[];
@@ -49,6 +50,7 @@ function navFor(u){
   if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) add('projects','Projects','folder','Workspace');
   if(canClientRep()) add('clientrep','Client Report','chart','Workspace');
   if(can('projects.manage_all')) add('partners','Partners','link','Workspace');
+  if(canFinance()) add('finance','Finance','money','Workspace');
   if(can('blockers.manage')) add('blockers','Blockers','flag','Workspace');
   if(can('briefs.use')) add('briefs','Briefs','brief','Workspace');
   if(can('executive.view')) add('exec','Executive','crown','Leadership');
@@ -136,7 +138,7 @@ function go(v,opts){
   window.scrollTo(0,0);
   if(gated() && FREE_VIEWS.indexOf(v)<0){ S.lockShown=true; viewLocked(v); return; }
   S.lockShown=false;
-  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,clientrep:()=>viewClientRep(opts),partners:viewPartners,knowledge:()=>viewKnowledge(opts),people:viewPeople,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
+  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,clientrep:()=>viewClientRep(opts),partners:viewPartners,knowledge:()=>viewKnowledge(opts),finance:()=>viewFinance(opts),people:viewPeople,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
   (map[v]||viewDash)();
 }
 function viewLocked(v){
@@ -161,7 +163,7 @@ const VIEW_DATA={
   desk:[['desk','deskGet']], dash:[['dash','dash']], mytasks:[['my','myTasks']], tasks:[['gt','gtList']], meetings:[['mt','mtList']],
   requests:[['rqMeta','reqMeta'],['rqList','reqList']], projects:[['plist','projList']], blockers:[['blockers','blockList']],
   briefs:[['briefs','briefList']], exec:[['exec','execDash']], today:[['board','board']], users:[['users','users']],
-  devices:[['devices','devicesList']], org:[['org','orgGet']], settings:[['settings','settingsGet']], crm:[['crm','crmList']], people:[['people','peopleDash']], partners:[['partners','partnersAdmin']], knowledge:[['kb','kbList']]
+  devices:[['devices','devicesList']], org:[['org','orgGet']], settings:[['settings','settingsGet']], crm:[['crm','crmList']], people:[['people','peopleDash']], partners:[['partners','partnersAdmin']], knowledge:[['kb','kbList']], finance:[['fin','finList']]
 };
 // تحميل كل الصفحات في الخلفية في طلب واحد، عشان أي صفحة تتفتح على طول من آخر داتا
 async function prefetch(force){
@@ -260,6 +262,7 @@ function goTo(g){
   if(g.view==='requests'){ go('requests',{tab:g.tab}); return; }
   if(g.view==='clientrep'){ go('clientrep',{month:g.month}); return; }
   if(g.view==='knowledge'){ go('knowledge',{tab:g.tab,id:g.id}); return; }
+  if(g.view==='finance'){ S.fin&&(S.fin.tab='contracts'); go('finance',{id:g.id}); return; }
   const a={go:g};
   if(a.go.view==='project'){ if(!canAny(['projects.view_all','projects.manage_all','projects.manage_own'])){ go('mytasks'); setTimeout(()=>viewProject(a.go.id),0); } else { go('projects'); viewProject(a.go.id); } }
   else go(a.go.view);

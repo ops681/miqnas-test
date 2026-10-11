@@ -80,6 +80,7 @@ function renderProject(r,keep){
     const D=r.data;
     $('main').innerHTML=`<div class="en">
     <button class="btn ghost small" onclick="${backTo[0]}">← ${backTo[1]}</button>
+    ${r.contract&&r.contract.status!=='signed'&&r.status==='Active'?`<div class="notice" style="margin:10px 0">${r.contract.status==='none'?'No contract on this project yet.':'The contract is not signed yet ('+esc(r.contract.status)+').'}${typeof canFinance==='function'&&can('finance.manage')||S.user.founder?` <button class="btn ghost small" onclick="${r.contract.id?`go('finance',{id:'${esc(r.contract.id)}'})`:`go('finance')`}">Open in Finance →</button>`:''}</div>`:''}
     <div class="card phead">
       <div class="row" style="align-items:center;gap:10px"><h2 style="margin:0">${esc(r.client)}</h2><span class="pill p-out">${esc(r.id)}</span><span class="pill ${PSTAT[r.status]||'p-out'}">${esc(r.status)}</span>${r.blockers&&r.blockers.length?blBadge({open:r.blockers.filter(b=>b.status!=='Resolved').length,total:r.blockers.length,days:r.blockers.reduce((s,b)=>s+b.days,0)}):''}<div class="spacer"></div>
         ${r.brief_id?`<button class="btn ghost small" onclick="openBriefFrom('${esc(r.brief_id)}','${esc(r.id)}')">Open Brief</button>`:''}

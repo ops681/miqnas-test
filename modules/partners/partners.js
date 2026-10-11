@@ -39,6 +39,7 @@ function ptnForm(id){
       <div><label>Reference prefix *</label><input id="ptnP" value="${esc(p.prefix)}" dir="ltr" placeholder="ZID" maxlength="8"><div class="muted" style="font-size:12px;margin-top:4px" id="ptnPh">Stores get ${esc(p.prefix||'ZID')}-001, ${esc(p.prefix||'ZID')}-002…</div></div>
       <div><label>Platform</label><select id="ptnPl"><option value="">—</option>${(r.platforms||[]).map(x=>`<option${x===p.platform?' selected':''}>${esc(x)}</option>`).join('')}</select><div class="muted" style="font-size:12px;margin-top:4px">When a project targets this platform, we suggest this partner.</div></div>
       <div><label>Portal letter</label><input id="ptnL" value="${esc(p.letter)}" dir="ltr" maxlength="2" placeholder="Z"></div>
+      <div><label>Partner fee per store</label><div class="row" style="gap:6px"><select id="ptnFt" style="flex:1"><option value="none"${(p.feeType||'none')==='none'?' selected':''}>No fee</option><option value="percent"${p.feeType==='percent'?' selected':''}>% of contract</option><option value="fixed"${p.feeType==='fixed'?' selected':''}>Fixed amount</option></select><input id="ptnFv" type="number" min="0" step="0.01" value="${esc(p.feeValue||'')}" style="width:100px" aria-label="Fee value"></div><div class="muted" style="font-size:12px;margin-top:4px">Filled into the partner's contracts in Finance.</div></div>
       <div><label>Color</label><div class="ptn-colors">${(r.colors||[]).map(c=>`<button type="button" class="ptn-c${c===p.color?' on':''}" style="background:${c}" data-c="${c}" aria-label="Color ${c}"></button>`).join('')}</div></div>
     </div>
     ${id?`<label class="pf-chk" style="margin-top:12px"><input type="checkbox" id="ptnA"${p.active?' checked':''}> Active <span class="muted">· stopping closes the portal; the stores stay in the system</span></label>`:''}
@@ -51,7 +52,7 @@ function ptnForm(id){
   $('ptnP').addEventListener('input',()=>{ $('ptnP').dataset.t=1; ph(); }); $('ptnE').addEventListener('input',ph); $('ptnL').addEventListener('input',()=>$('ptnL').dataset.t=1);
   $('ptnSave').onclick=async()=>{
     $('ptnErr').textContent=''; $('ptnSave').disabled=true;
-    const d={id:id||'',name:$('ptnN').value,nameEn:$('ptnE').value,prefix:$('ptnP').value,platform:$('ptnPl').value,letter:$('ptnL').value,color};
+    const d={id:id||'',name:$('ptnN').value,nameEn:$('ptnE').value,prefix:$('ptnP').value,platform:$('ptnPl').value,letter:$('ptnL').value,color,feeType:$('ptnFt').value,feeValue:$('ptnFv').value};
     if(id) d.active=$('ptnA').checked;
     if(id&&p.active&&!d.active&&!confirm('البورتال بتاع الشريك ده هيتقفل. متاجره هتفضل في السيستم. متأكد؟')){ $('ptnSave').disabled=false; return; }
     try{ const out=await call('partnerSave',{partner:d}); S.cache.partners=out; S.fetched.partners=Date.now(); closeModal(); renderPartners(out); toast(id?'اتحفظ ✓':'اتضاف الشريك ✓');

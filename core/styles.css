@@ -666,3 +666,7 @@ td.nw{white-space:nowrap}
 .kb-br b{font-size:13px;text-align:end}
 .kb-lg{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--brand2);margin:0 4px 0 0;vertical-align:-1px}
 .kb-lg.prev{background:var(--warn);height:4px;margin-left:10px;vertical-align:2px}
+
+/* Finance */
+.fin-k .kpi b{font-size:22px;white-space:nowrap}
+@media (max-width:700px){.fin-k .kpi b{font-size:18px}}

@@ -1,5 +1,5 @@
 {
- "v": "2026-10-11.4",
+ "v": "2026-10-11.5",
  "css": [
   "core/styles.css",
   "modules/briefs/briefs.css",
@@ -37,6 +37,7 @@
   "modules/clients/report.js",
   "modules/partners/partners.js",
   "modules/knowledge/knowledge.js",
+  "modules/finance/finance.js",
   "modules/soon/soon.js",
   "core/start.js"
  ]
