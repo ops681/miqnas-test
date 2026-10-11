@@ -670,3 +670,22 @@ td.nw{white-space:nowrap}
 /* Finance */
 .fin-k .kpi b{font-size:22px;white-space:nowrap}
 @media (max-width:700px){.fin-k .kpi b{font-size:18px}}
+
+/* Board */
+.br{display:flex;flex-direction:column;gap:22px}
+.br section{display:flex;flex-direction:column;gap:14px}
+.br .grid.kpis{margin:0}
+.br .two{margin:0}
+.br-h{margin:0;font-size:18px;color:var(--brand2);border-bottom:2px solid var(--line);padding-bottom:6px}
+.br h3{margin:0 0 12px;font-size:14.5px}
+.br-cols{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;align-items:end;height:170px}
+.br-col{display:flex;flex-direction:column;align-items:center;gap:6px;height:100%}
+.br-col b{font:600 13px 'Readex Pro',sans-serif}
+.br-bar{flex:1;width:100%;max-width:46px;display:flex;align-items:flex-end;background:var(--soft,#F4F8F7);border-radius:8px;overflow:hidden}
+.br-bar i{display:block;width:100%;background:var(--brand2);border-radius:8px 8px 0 0;min-height:2px}
+.br-col span{font-size:12px;color:var(--muted)}
+.br-t{width:100%;border-collapse:collapse;font-size:13.5px}
+.br-t th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+.br-t td{padding:7px 8px;border-bottom:1px solid var(--line2,#EEF2F1)}
+.br-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line2,#EEF2F1);font-size:14px}
+@media print{ body.printing-cr .br section{break-inside:avoid} body.printing-cr .br .two{grid-template-columns:1fr 1fr} }

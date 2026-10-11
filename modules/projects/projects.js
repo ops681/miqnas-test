@@ -84,7 +84,7 @@ function renderProject(r,keep){
     <div class="card phead">
       <div class="row" style="align-items:center;gap:10px"><h2 style="margin:0">${esc(r.client)}</h2><span class="pill p-out">${esc(r.id)}</span><span class="pill ${PSTAT[r.status]||'p-out'}">${esc(r.status)}</span>${r.blockers&&r.blockers.length?blBadge({open:r.blockers.filter(b=>b.status!=='Resolved').length,total:r.blockers.length,days:r.blockers.reduce((s,b)=>s+b.days,0)}):''}<div class="spacer"></div>
         ${r.brief_id?`<button class="btn ghost small" onclick="openBriefFrom('${esc(r.brief_id)}','${esc(r.id)}')">Open Brief</button>`:''}
-        ${r.canEdit?`<button class="btn ghost small" onclick="projForm('${esc(r.id)}')">Edit Project</button>`:''}
+        ${r.canEdit?`<button class="btn ghost small" onclick="projForm('${esc(r.id)}')">Edit Project</button><button class="btn ghost small" onclick="cpAdmin('${esc(r.id)}')">Client portal${r.clientPortal&&r.clientPortal.on?' ●':''}</button>`:''}
         ${r.isAdmin?`<button class="btn ghost small" style="color:var(--bad)" onclick="projDelete('${esc(r.id)}')">Delete</button>`:''}</div>
       <div class="pinfo">
         <div class="pbox"><h4>Store</h4>
@@ -107,14 +107,14 @@ function renderProject(r,keep){
     </div>
     ${projAccessHTML(r)}
     ${projBlockersHTML(r)}
-    ${D.partner?`<div id="pnBox">${pnHTML(r,S.pn&&S.pn[r.id])}</div>`:''}
+    ${D.partner||r.canEdit||(r.clientPortal&&r.clientPortal.on)?`<div id="pnBox">${pnHTML(r,S.pn&&S.pn[r.id])}</div>`:''}
     ${links.length?`<div class="card" style="margin-top:14px"><h3>Deliverables</h3><div class="links">${links.map(t=>`<a href="${esc(t.link)}" target="_blank" rel="noopener" class="lnk"><b>${esc(t.linkLabel||t.title)}</b><span>${bd(t.assigneeName)}</span></a>`).join('')}</div></div>`:''}
     ${groups.map(g=>{ const a=g.tasks.find(t=>t.assigneeName); const live=g.tasks.filter(t=>!t.na); const dn=live.filter(t=>t.status==='Done').length;
       return `<div class="card tgroup"><div class="tghead"><h3 style="margin:0">${ROLE_T[g.role]}</h3><span class="muted">${esc(a?a.assigneeName:'Unassigned')}</span><div class="spacer"></div><span class="muted" style="font-size:13px">${live.length?dn+'/'+live.length:'Not in scope'}</span></div>
       ${g.tasks.map(t=>taskRowHTML(t,r.id,r.me,r.isAdmin,r.canEdit)).join('')}</div>`; }).join('')}</div>`;
     if(keep) window.scrollTo(0,y);
     startTicks();
-    if(D.partner) pnLoad(r);
+    if(D.partner||r.canEdit) pnLoad(r);
   }
 }
 
@@ -442,13 +442,44 @@ function wlOpen(un){
 
 /* ----- تحديثات الشريك (زد) على المشروع ----- */
 // بتظهر في بورتال زد تحت «آخر التحديثات» مع التحديثات التلقائية
+const PN_TO={partner:'Partner',client:'Client',both:'Partner + client'};
 function pnHTML(r,list){
-  return `<div class="card" style="margin-top:14px"><div class="row" style="align-items:center;gap:8px"><h3 style="margin:0">Partner updates <span class="muted" style="font-weight:500;font-size:13px">· visible to ${esc(r.partnerName||'the partner')} in their portal</span></h3></div>
-    ${r.canEdit?`<div class="pn-form"><textarea id="pnT" rows="2" placeholder="اكتب تحديث للشريك… (مثلاً: تم إرسال التصميم للعميل)" dir="auto"></textarea><input id="pnN" placeholder="الخطوة الجاية (اختياري)" dir="auto"><button class="btn primary" onclick="pnAdd('${esc(r.id)}')">Post update</button></div>`:''}
-    ${list===undefined?'<div class="muted" style="padding:8px 0">Loading...</div>':list.length?list.map(n=>`<div class="pn-row"><div class="pn-h"><b>${bd(n.by)}</b><span class="muted">${new Date(n.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</span>${n.mine||can('projects.manage_all')?`<button class="btn ghost small" onclick="pnDel('${esc(n.id)}','${esc(r.id)}')">Delete</button>`:''}</div><div dir="auto">${esc(n.text)}</div>${n.next?`<div class="muted" dir="auto" style="font-size:13px">الخطوة الجاية: ${esc(n.next)}</div>`:''}</div>`).join(''):'<div class="muted" style="padding:8px 0;font-size:13.5px">No updates yet. Stage changes and blockers already show in the portal automatically.</div>'}</div>`;
+  const D=r.data||{}, hasP=!!D.partner;
+  const who=hasP?`${esc(r.partnerName||'the partner')} and/or the client`:'the client';
+  return `<div class="card" style="margin-top:14px"><div class="row" style="align-items:center;gap:8px"><h3 style="margin:0">Updates <span class="muted" style="font-weight:500;font-size:13px">· shown to ${who} in their portal</span></h3></div>
+    ${r.canEdit?`<div class="pn-form"><textarea id="pnT" rows="2" placeholder="اكتب تحديث… (مثلاً: تم إرسال التصميم للمراجعة)" dir="auto"></textarea><input id="pnN" placeholder="الخطوة الجاية (اختياري)" dir="auto">
+      <select id="pnTo" aria-label="Who sees it">${(hasP?['partner','client','both']:['client']).map(k=>`<option value="${k}">${PN_TO[k]}</option>`).join('')}</select><button class="btn primary" onclick="pnAdd('${esc(r.id)}')">Post update</button></div>`:''}
+    ${list===undefined?'<div class="muted" style="padding:8px 0">Loading...</div>':list.length?list.map(n=>`<div class="pn-row"><div class="pn-h"><b>${bd(n.by)}</b><span class="pill p-out" style="font-size:11px">${PN_TO[n.to]||'Partner'}</span><span class="muted">${new Date(n.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</span>${n.mine||can('projects.manage_all')?`<button class="btn ghost small" onclick="pnDel('${esc(n.id)}','${esc(r.id)}')">Delete</button>`:''}</div><div dir="auto">${esc(n.text)}</div>${n.next?`<div class="muted" dir="auto" style="font-size:13px">الخطوة الجاية: ${esc(n.next)}</div>`:''}</div>`).join(''):'<div class="muted" style="padding:8px 0;font-size:13.5px">No updates yet. Stage changes and blockers already show in the portals automatically.</div>'}</div>`;
 }
 function pnPut(r,list){ S.pn=S.pn||{}; S.pn[r.id]=list; const el=$('pnBox'); if(el && S.proj && S.proj.id===r.id) el.innerHTML=pnHTML(r,list); }
 function pnLoad(r){ call('partnerNotes',{project:r.id}).then(l=>pnPut(r,l)).catch(()=>{}); }
 async function pnAdd(id){ const t=$('pnT').value.trim(), n=$('pnN').value.trim(); if(t.length<3){ toast('اكتب التحديث'); return; }
-  try{ const l=await call('partnerNoteAdd',{project:id,text:t,next:n}); pnPut(S.proj,l); toast('اتنشر للشريك ✓'); }catch(e){ alert(e.message); } }
+  try{ const l=await call('partnerNoteAdd',{project:id,text:t,next:n,to:$('pnTo')?$('pnTo').value:''}); pnPut(S.proj,l); toast('اتنشر ✓'); }catch(e){ alert(e.message); } }
+
+/* ----- بورتال العميل (لينك + يوزر وباسورد للمشروع ده) ----- */
+async function cpAdmin(pid,extra){
+  try{ const r=await call('clientPortalAdmin',Object.assign({project:pid},extra||{})); S.cpAdm=r; cpAdminRender(); if(extra&&extra.regen) toast('اتعمل لينك جديد'); }catch(e){ alert(e.message); }
+}
+function cpAdminRender(){
+  const r=S.cpAdm, url=location.origin+location.pathname.replace(/[^/]*$/,'')+'client.html?k='+r.key;
+  $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:580px">
+    <h2 style="margin:0 0 6px">Client portal · ${esc(r.client)}</h2>
+    <p class="muted" style="margin:0 0 14px;font-size:13.5px">The client sees their store only: stages, what we need from them, updates you post for the client, and their payments. No team names, phone numbers or internal notes.</p>
+    <label class="pf-chk"><input type="checkbox" id="cpOn"${r.enabled?' checked':''} onchange="cpAdmin('${esc(r.project)}',{enable:this.checked})"> Portal is on</label>
+    <div class="pt-link" style="margin-top:10px"><input readonly value="${esc(url)}" dir="ltr" onclick="this.select()" aria-label="Client portal link"><button class="btn primary" onclick="navigator.clipboard.writeText('${esc(url)}').then(()=>toast('اتنسخ اللينك'))">Copy</button></div>
+    <h3 style="margin:18px 0 6px;font-size:15px">Client sign-in</h3>
+    <div class="muted" style="font-size:13px;margin-bottom:8px">${r.user&&r.hasPass?`Current username: <b dir="ltr">${esc(r.user)}</b>. Saving a new password signs the client out.`:'<span style="color:var(--bad)">No username yet. The client cannot sign in until you set one.</span>'}</div>
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <input id="cpU" placeholder="Username or client email" dir="ltr" autocomplete="off" value="${esc(r.user||'')}" style="flex:1 1 180px" aria-label="Client username">
+      <input id="cpP" type="password" placeholder="Password (8+)" dir="ltr" autocomplete="new-password" style="flex:1 1 150px" aria-label="Client password">
+      <button class="btn" onclick="const i=$('cpP');i.type=i.type==='password'?'text':'password'">Show</button>
+      <button class="btn primary" onclick="cpCreds()">Save</button>
+    </div>
+    <div class="mfoot"><button class="btn ghost danger" onclick="if(confirm('اللينك القديم هيقف والعميل محتاج اللينك الجديد. متأكد؟')) cpAdmin('${esc(r.project)}',{regen:true})">New link</button><div class="spacer"></div><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Open portal</a><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div>`;
+}
+async function cpCreds(){
+  const user=$('cpU').value.trim(), pass=$('cpP').value;
+  if(!user||!pass) return alert('اكتب اليوزر والباسورد');
+  await cpAdmin(S.cpAdm.project,{setCreds:true,user,pass}); toast('اتحفظ ✓');
+}
 async function pnDel(nid,id){ if(!confirm('تمسح التحديث ده من البورتال؟')) return; try{ const l=await call('partnerNoteDelete',{id:nid}); pnPut(S.proj,l); }catch(e){ alert(e.message); } }
