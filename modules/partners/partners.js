@@ -3,6 +3,9 @@
    في فورم المشروع والبريف. للإدارة بس (projects.manage_all). */
 function viewPartners(){
   setTop('Partners','');
+  // لو الصفحة لسه ماتحملتش: نرسم على طول من أرقام الداشبورد، والتفاصيل تكمل لما توصل
+  const dp=S.cache.dash&&S.cache.dash.partners;
+  if(!S.cache.partners && dp) S.cache.partners={partners:dp,platforms:[],colors:[],partial:true};
   swr('partners','partnersAdmin',{},renderPartners);
 }
 function ptnBadge(p,size){ size=size||40; return `<span class="ptn-b" style="width:${size}px;height:${size}px;background:${esc(p.color||'#7C5CFC')};font-size:${Math.round(size*0.42)}px" aria-hidden="true">${esc(p.letter||'')}</span>`; }
@@ -17,7 +20,7 @@ function renderPartners(r){
         <div><b>${p.stores}</b><span>Stores</span></div><div><b style="color:var(--warn)">${p.inProgress}</b><span>Active</span></div>
         <div><b style="color:var(--ok)">${p.launched}</b><span>Launched</span></div><div><b style="color:${p.blocked?'var(--bad)':'inherit'}">${p.blocked}</b><span>Blocked</span></div>
       </div>
-      <div class="muted" style="font-size:12.5px">${p.thisMonth} new this month · ${p.hasUser?'Portal sign-in set':'<span style="color:var(--bad)">Portal locked: no username yet</span>'}</div>
+      <div class="muted" style="font-size:12.5px">${p.thisMonth} new this month${p.hasUser===undefined?'':' · '+(p.hasUser?'Portal sign-in set':'<span style="color:var(--bad)">Portal locked: no username yet</span>')}</div>
       <div class="ptn-a">${p.active?`<button class="btn primary small" onclick="ptAdmin('${esc(p.id)}')">Portal &amp; report</button>`:''}<button class="btn ghost small" onclick="ptnForm('${esc(p.id)}')">Edit</button></div>
     </div>`;
   $('main').innerHTML=`<div class="ptn-grid">${act.map(card).join('')||'<div class="card empty">No partners yet.</div>'}</div>
@@ -25,6 +28,7 @@ function renderPartners(r){
     <p class="muted" style="font-size:13px;margin-top:16px">Pick a partner in a project (or in the brief) and the store shows up in that partner's portal. Each partner sees only its own stores. No phone numbers, passwords or team names are shown in any portal.</p>`;
 }
 function ptnForm(id){
+  if(S.ptnAdm&&S.ptnAdm.partial) return toast('ثانية واحدة، بيحمّل…');
   const r=S.ptnAdm||{partners:[],platforms:[],colors:[]}, p=(r.partners||[]).find(x=>x.id===id)||{name:'',nameEn:'',letter:'',color:(r.colors||[])[ (r.partners||[]).length % ((r.colors||[]).length||1) ]||'#7C5CFC',prefix:'',platform:'',active:true};
   $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:520px">
     <h2 style="margin:0 0 4px">${id?'Edit partner':'New partner'}</h2>
