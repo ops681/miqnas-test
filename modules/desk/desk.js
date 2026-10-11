@@ -18,6 +18,7 @@ function openNotif(src,i){
   if(n.go){ if(n.go.view==='briefs') go('briefs',{id:n.go.brief}); else goTo(n.go); }
 }
 function renderDesk(D){
+  S.deskLast=D;
   S.unread=D.unread; renderBell();
   const T=D.tasks, st=D.status;
   const tile=(label,val,sub,color,goV)=>`<${goV?`button onclick="go('${goV}')" style="text-align:left;cursor:pointer"`:'div'} class="kpi"><span>${label}</span><b style="color:${color||'var(--ink)'}">${val}</b><small>${sub||''}</small></${goV?'button':'div'}>`;
@@ -37,8 +38,9 @@ function renderDesk(D){
   ${readyCardHTML(D.readyNow).replace('margin-bottom:20px','margin:0')}
   ${tiles.length?`<div class="grid kpis" style="margin:0">${tiles.join('')}</div>`:''}
   <div class="two" style="margin:0">
+    ${todoCardHTML(D)}
     ${T?`<div class="card flush"><div class="chead"><h2>My next tasks</h2><span class="spacer"></span><button class="btn ghost small" onclick="go('${can('tasks.mine')?'mytasks':'tasks'}')">All my tasks →</button></div>
-      ${T.list.length?T.list.map(t=>{ const tag=t.running?['Running','p-in']:t.late?['Late','p-bad']:t.review?['In review','p-yel']:t.locked?['Waiting','p-yel']:t.status==='In Progress'?['In progress','p-in']:['Ready','p-absent'];
+      ${T.list.length?T.list.map(t=>{ const tag=t.running?['Running','p-in']:t.helping?['Helping','p-prog']:t.late?['Late','p-bad']:t.review?['In review','p-yel']:t.locked?['Waiting','p-yel']:t.status==='In Progress'?['In progress','p-in']:['Ready','p-absent'];
         return `<button class="al" onclick="${t.gid?`go('tasks',{id:'${esc(t.gid)}'})`:`go('mytasks')`}"><span class="tx"><b>${bd(t.title)}</b><span>${bd(t.client)}${t.deadline?' · due '+fmtD(t.deadline):''}</span></span><span class="pill ${tag[1]}">${tag[0]}</span></button>`; }).join('')
       :`<div class="empty"><b>Nothing open</b>You have no open tasks.</div>`}</div>`:''}
     ${PE?`<div class="card flush"><div class="chead"><h2>Not clocked in today</h2>${PE.workday&&PE.notIn.length?`<span class="pill p-absent">${PE.notIn.length}</span>`:''}<span class="spacer"></span><button class="btn ghost small" onclick="go('people')">People Dashboard →</button></div>
@@ -51,4 +53,36 @@ function renderDesk(D){
 }
 async function readAll(){
   try{ const r=await call('notifRead',{all:true}); S.unread=0; S.notifs=r.list; if(S.cache.desk){ S.cache.desk.notifs.forEach(n=>n.read=true); S.cache.desk.unread=0; } renderBell(); if(S.view==='desk') renderDesk(S.cache.desk); else openBell(); }catch(e){ toast(e.message); }
+}
+
+/* ============ To-do الشخصية (خاصة بصاحبها بس) ============ */
+function todoCardHTML(D){
+  const L=D.todos||[], P=D.todoProjects||[], open=L.filter(t=>!t.done);
+  return `<div class="card flush td-card"><div class="chead"><h2>My to-do</h2>${open.length?`<span class="pill p-out">${open.length}</span>`:''}<span class="spacer"></span><span class="muted" style="font-size:12px">Only you see this</span></div>
+    <form class="td-add" onsubmit="todoAdd(event)">
+      <input id="tdT" placeholder="Add something to do…" dir="auto" maxlength="300" aria-label="New to-do">
+      <input type="date" id="tdD" aria-label="Due date" title="Due date (optional)">
+      ${P.length?`<select id="tdP" aria-label="Project (optional)"><option value="">No project</option>${P.map(p=>`<option value="${esc(p.id)}">${esc(p.client)}</option>`).join('')}</select>`:''}
+      <button class="btn primary small" type="submit">Add</button></form>
+    ${L.length?`<div class="td-list">${L.map(t=>`<div class="td-row${t.done?' done':''}${t.late?' late':''}">
+      <button type="button" class="td-chk" role="checkbox" aria-checked="${t.done}" aria-label="${t.done?'Mark not done':'Mark done'}" onclick="todoToggle('${esc(t.id)}')">${t.done?'✓':''}</button>
+      <div class="td-tx"><span dir="auto">${esc(t.text)}</span>${t.due||t.client?`<small>${t.due?`<b class="${t.late?'late':t.today?'today':''}">${t.late?'Overdue · ':t.today?'Today · ':''}${fmtD(t.due)}</b>`:''}${t.due&&t.client?' · ':''}${t.client?esc(t.client):''}</small>`:''}</div>
+      <button type="button" class="td-del" aria-label="Delete" title="Delete" onclick="todoDel('${esc(t.id)}')">×</button></div>`).join('')}</div>`
+    :`<div class="empty"><b>Nothing here yet</b>Write the small things you don't want to forget.</div>`}</div>`;
+}
+function todoPut(r){ const D=S.deskLast; if(D){ D.todos=r.list; if(S.view==='desk') renderDesk(D); } }
+async function todoAdd(e){
+  e.preventDefault();
+  const text=$('tdT').value.trim(); if(!text) return;
+  const todo={text,due:$('tdD').value,project:$('tdP')?$('tdP').value:''};
+  const D=S.deskLast; if(D){ D.todos=[{id:'tmp',text,due:todo.due,project:todo.project,client:'',done:false,late:false}].concat(D.todos||[]); renderDesk(D); }
+  try{ todoPut(await call('todoSave',{todo})); setTimeout(()=>{ const i=$('tdT'); if(i) i.focus(); },30); }catch(err){ toast(err.message); if(D) viewDesk(); }
+}
+async function todoToggle(id){
+  const D=S.deskLast, t=D&&(D.todos||[]).find(x=>x.id===id); if(t){ t.done=!t.done; renderDesk(D); }
+  try{ todoPut(await call('todoToggle',{id})); }catch(e){ toast(e.message); viewDesk(); }
+}
+async function todoDel(id){
+  const D=S.deskLast; if(D){ D.todos=(D.todos||[]).filter(x=>x.id!==id); renderDesk(D); }
+  try{ todoPut(await call('todoDelete',{id})); }catch(e){ toast(e.message); viewDesk(); }
 }

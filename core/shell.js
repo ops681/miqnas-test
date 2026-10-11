@@ -113,7 +113,7 @@ function startApp(){
   const N=navFor(S.user);
   if(deep && N.some(n=>n.id==='briefs')) go('briefs',{id:deep});
   else if(gated() && FREE_VIEWS.indexOf(S.view)<0) go('clock');
-  else if(!S.view || !N.some(n=>n.id===S.view)) go(N[0].id==='clock' && can('tasks.mine') && S.status && S.status.clockedIn ? 'mytasks' : N[0].id);
+  else if(!S.view || !N.some(n=>n.id===S.view)) go((S.user.clevel||S.user.founder) && N.some(n=>n.id==='dash') ? 'dash' : N[0].id==='clock' && can('tasks.mine') && S.status && S.status.clockedIn ? 'mytasks' : N[0].id);
   else go(S.view);
   startBellPolling();
   startPrefetchLoop();

@@ -109,18 +109,23 @@ function renderProject(r,keep){
     ${links.length?`<div class="card" style="margin-top:14px"><h3>Deliverables</h3><div class="links">${links.map(t=>`<a href="${esc(t.link)}" target="_blank" rel="noopener" class="lnk"><b>${esc(t.linkLabel||t.title)}</b><span>${bd(t.assigneeName)}</span></a>`).join('')}</div></div>`:''}
     ${groups.map(g=>{ const a=g.tasks.find(t=>t.assigneeName); const live=g.tasks.filter(t=>!t.na); const dn=live.filter(t=>t.status==='Done').length;
       return `<div class="card tgroup"><div class="tghead"><h3 style="margin:0">${ROLE_T[g.role]}</h3><span class="muted">${esc(a?a.assigneeName:'Unassigned')}</span><div class="spacer"></div><span class="muted" style="font-size:13px">${live.length?dn+'/'+live.length:'Not in scope'}</span></div>
-      ${g.tasks.map(t=>taskRowHTML(t,r.id,r.me,r.isAdmin)).join('')}</div>`; }).join('')}</div>`;
+      ${g.tasks.map(t=>taskRowHTML(t,r.id,r.me,r.isAdmin,r.canEdit)).join('')}</div>`; }).join('')}</div>`;
     if(keep) window.scrollTo(0,y);
     startTicks();
     if(D.partner) pnLoad(r);
   }
 }
 
-function taskRowHTML(t,pid,me,isAdmin){
+function taskRowHTML(t,pid,me,isAdmin,canEdit){
   if(t.na) return `<div class="trow na"><div class="tmain"><div class="tt">${esc(t.title)}</div></div><div class="tside"><span class="pill p-na">N/A</span></div></div>`;
   const assigned=(t.assignees||[]).length>0;
   const mine=assigned && ((t.assignees||[]).indexOf(me)>=0||isAdmin);
   const P=`'${esc(pid)}','${esc(t.key)}'`;
+  // المشاركين: كل واحد ليه تايمر بتاعه، ومش بيغيّر الحالة
+  const HL=t.helperList||[], meH=HL.find(h=>h.u===me), helping=!!meH && (t.assignees||[]).indexOf(me)<0;
+  const canHelpers=t.status!=='Done' && !(t.locked&&!HL.length) && ((t.assignees||[]).indexOf(me)>=0||isAdmin||canEdit);
+  const hLive=h=>`<span class="ttime" data-live data-total="${h.ms}" data-since="${h.since||0}">${fmtDur(h.ms+(h.since?Date.now()-(S.skew||0)-h.since:0))}</span>`;
+  const helpersLine = HL.length||canHelpers ? `<div class="thelp">${HL.length?`<span class="muted">Helping:</span> ${HL.map(h=>`<span class="hchip${h.since?' on':''}">${bd(h.name)}${h.ms||h.since?' · '+hLive(h):''}</span>`).join('')}`:''}${canHelpers?`<button class="tnbtn" onclick="helpersEdit(${P})">${HL.length?'Edit helpers':'+ Add helpers'}</button>`:''}</div>` : '';
   const st=TSTAT[t.status]||TSTAT['Not Started'];
   const blocked=t.locked&&!isAdmin;
   let status;
@@ -129,10 +134,13 @@ function taskRowHTML(t,pid,me,isAdmin){
   } else status = `<span class="pill ${st[0]}">${st[1]}</span>`;
   const lock = t.locked ? `<span class="pill p-lock">🔒 Locked</span>` : '';
   let timer='';
-  if(mine && t.status!=='Done' && !blocked){
+  if(helping && t.status!=='Done' && !(t.locked&&!isAdmin)){
+    timer = meH.since ? `<button class="tb pause" onclick="tAct(${P},'hpause')">⏸ Stop my timer</button>` : `<button class="tb play" onclick="tAct(${P},'hstart')">▶ Start my timer</button>`;
+  } else if(mine && t.status!=='Done' && !blocked){
     timer = t.running ? `<button class="tb pause" onclick="tAct(${P},'pause')">⏸ Stop Timer</button>` : `<button class="tb play" onclick="tAct(${P},'start')">▶ Start Timer</button>`;
   }
-  const time = (t.liveMs||t.running) ? liveSpan(t) : (mine&&!blocked&&t.status!=='Done'?`<span class="ttime">00:00:00</span>`:'');
+  const time = helping ? hLive(meH) : (t.liveMs||t.running) ? liveSpan(t) : (mine&&!blocked&&t.status!=='Done'?`<span class="ttime">00:00:00</span>`:'');
+  if(helping) status = `<span class="pill p-prog" title="You are helping on this task">Helping</span> `+status;
   const dl = mine && t.status!=='Done'
     ? `<input type="date" class="tdl${t.late?' late':''}" value="${esc(t.deadline)}" title="Deadline" aria-label="Deadline" onchange="tAct(${P},'deadline',{deadline:this.value})">`
     : (t.deadline?`<span class="tdue${t.late?' late':''}">${t.late?'Overdue · ':'Due '}${fmtDay(t.deadline)}</span>`:'');
@@ -151,8 +159,8 @@ function taskRowHTML(t,pid,me,isAdmin){
       : `<div class="tlink"><span>${esc(t.linkLabel)}</span>${t.link?`<a href="${esc(t.link)}" target="_blank" rel="noopener">${esc(t.link)}</a>`:'<span class="muted">Not yet</span>'}</div>`;
   }
   const refs=(t.refs||[]).map(r=>`<div class="tlink tref"><span>${esc(r.label)}</span><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></div>`).join('');
-  return `<div class="trow${t.locked?' locked':''}${t.running?' running':''}${t.status==='Done'?' done':''}">
-    <div class="tmain"><div class="tt">${esc(t.title)}</div>${who}${wait}${refs}${link}${notes}</div>
+  return `<div class="trow${t.locked?' locked':''}${t.running||(meH&&meH.since)?' running':''}${t.status==='Done'?' done':''}">
+    <div class="tmain"><div class="tt">${esc(t.title)}</div>${who}${helpersLine}${wait}${refs}${link}${notes}</div>
     <div class="tside">${lock}${dl}${status}<span class="tsep"></span>${time}${timer}</div></div>`;
 }
 
@@ -192,6 +200,26 @@ function applyLocal(t,action,extra){
   else if(action==='pause') stop();
   else if(action==='status'||action==='force'){ t.status=extra.status; if(extra.status!=='In Progress') stop(); }
   else if(action==='link') t.link=extra.link;
+  else if(action==='hstart'||action==='hpause'){ const h=(t.helperList||[]).find(x=>x.u===S.user.username); if(h){ if(action==='hstart'&&!h.since) h.since=now; if(action==='hpause'&&h.since){ h.ms+=now-h.since; h.since=0; } } }
+}
+// إضافة/شيل المشاركين
+async function helpersEdit(pid,key){
+  const d=curData(pid), t=findTask(d,pid,key); if(!t) return;
+  let opts=[]; try{ opts=await call('helperOptions',{project:pid}); }catch(e){ return alert(e.message); }
+  let sel=(t.helperList||[]).map(h=>h.u);
+  const draw=()=>{ const avail=opts.filter(o=>sel.indexOf(o.u)<0&&(t.assignees||[]).indexOf(o.u)<0);
+    $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:480px">
+      <h2 style="margin:0 0 4px">Helpers · ${esc(t.title)}</h2>
+      <div class="muted" style="font-size:13px;margin-bottom:14px">Helpers see this task in their desk, log their own time and add notes. Only ${bd(t.assigneeName||'the owner')} can finish it.</div>
+      <div class="hsel">${sel.length?sel.map(u=>{ const o=opts.find(x=>x.u===u)||{name:u}; return `<span class="hchip on">${bd(o.name)}<button type="button" aria-label="Remove" onclick="S.hsRm('${esc(u)}')">×</button></span>`; }).join(''):'<span class="muted">No helpers yet</span>'}</div>
+      <div style="margin-top:12px"><label>Add a helper</label><select id="hsAdd"><option value="">Choose…</option>${avail.map(o=>`<option value="${esc(o.u)}">${esc(o.name)}${o.job?' · '+esc(o.job):''}</option>`).join('')}</select></div>
+      <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancel</button><div class="spacer"></div><button class="btn primary" id="hsSave">Save</button></div></div></div>`;
+    pickify($('hsAdd'), avail);
+    $('hsAdd').onchange=()=>{ const v=$('hsAdd').value; if(v&&sel.indexOf(v)<0){ if(sel.length>=6) return toast('أقصى عدد 6 مشاركين'); sel.push(v); draw(); } };
+    $('hsSave').onclick=async()=>{ $('hsSave').disabled=true; closeModal(); await tAct(pid,key,'helpers',{helpers:sel}); toast('اتحفظ ✓'); };
+  };
+  S.hsRm=u=>{ sel=sel.filter(x=>x!==u); draw(); };
+  draw();
 }
 S.pending=0;
 async function tAct(pid,key,action,extra){
@@ -230,14 +258,14 @@ function renderMyTasks(r,keep){
   setTop('My Tasks', r.projects.length+' active projects');
   {
     const all=r.projects.flatMap(p=>p.tasks);
-    const rank=t=>t.running?0:(t.status==='Done'?3:(t.locked?2:1));
+    const rank=t=>(t.running||(t.helperList||[]).some(h=>h.u===r.me&&h.since))?0:(t.status==='Done'?3:(t.locked?2:1));
     if(!r.projects.some(p=>p.id===S.myProj)){ const run=r.projects.find(p=>p.tasks.some(t=>t.running)); S.myProj=(run||r.projects[0]||{}).id; }
     const sel=S.myProj;
     $('main').innerHTML=`<div class="en">
     <div class="grid kpis">
       <div class="kpi"><b>${all.filter(t=>t.status!=='Done').length}</b><span>Open tasks</span></div>
       <div class="kpi"><b>${all.filter(t=>t.status!=='Done'&&!t.locked).length}</b><span>Ready to start</span></div>
-      <div class="kpi"><b style="color:var(--accent)">${all.filter(t=>t.running).length}</b><span>Running now</span></div>
+      <div class="kpi"><b style="color:var(--accent)">${all.filter(t=>t.helping?(t.helperList||[]).some(h=>h.u===r.me&&h.since):t.running).length}</b><span>Running now</span></div>
     </div>
     ${r.projects.length?`<div class="psel"><label for="mysel">Project</label><select id="mysel" onchange="S.myProj=this.value;renderMyTasks(S.cache.my)">${r.projects.map(p=>{ const open=p.tasks.filter(t=>t.status!=='Done').length, run=p.tasks.some(t=>t.running); return `<option value="${esc(p.id)}"${p.id===sel?' selected':''}>${run?'⏱ ':''}${esc(p.id)} · ${esc(p.client)} — ${open} open</option>`; }).join('')}</select></div>`:''}
     ${r.projects.length? r.projects.filter(p=>p.id===sel).map(p=>`
