@@ -39,7 +39,7 @@ function renderClientRep(r){
     return `<section class="cr-sec"><div class="cr-h"><h2>${title}</h2><span class="pill ${cls}">${L.length}</span>${hint?`<span class="muted">${hint}</span>`:''}</div>
     <div class="tbl-wrap"><table class="cr-t"><tr><th>Store / client</th>${r.scope==='all'?'<th>Account manager</th>':''}<th>Type</th><th>Platform</th><th>Start</th><th>Target</th><th>Launched</th><th>Progress</th><th>Delay</th><th>Status</th></tr>${L.map(rowHTML).join('')}</table></div></section>`; }).join('');
   $('main').innerHTML=`<div class="cr">
-    <div class="cr-print-h"><div class="logo"><i>M</i>Miqnas <span>ERP</span></div><div><b>Client Report · ${esc(r.monthName)}</b><small>${r.am?esc((r.ams.find(a=>a.u===r.am)||{}).name||'')+' · ':''}${r.scope==='own'?esc(S.user.name)+' · ':''}Printed ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</small></div></div>
+    <div class="cr-print-h"><div class="logo">${brandMark('ERP')}</div><div><b>Client Report · ${esc(r.monthName)}</b><small>${r.am?esc((r.ams.find(a=>a.u===r.am)||{}).name||'')+' · ':''}${r.scope==='own'?esc(S.user.name)+' · ':''}Printed ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</small></div></div>
     ${r.pdf?`<div class="card cr-pdf">${ico('brief',18)}<span>The PDF for ${esc(r.monthName)} was saved automatically in Google Drive.</span><a class="btn small" href="${esc(r.pdf)}" target="_blank" rel="noopener">Open PDF</a></div>`:''}
     <div class="grid kpis cr-k">
       ${tile('Clients this month',k.total,`${k.isNew} new`)}

@@ -689,3 +689,15 @@ td.nw{white-space:nowrap}
 .br-t td{padding:7px 8px;border-bottom:1px solid var(--line2,#EEF2F1)}
 .br-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line2,#EEF2F1);font-size:14px}
 @media print{ body.printing-cr .br section{break-inside:avoid} body.printing-cr .br .two{grid-template-columns:1fr 1fr} }
+
+/* هوية الشركة + قص الصور */
+.logo .logo-img{width:34px;height:34px;object-fit:contain;border-radius:8px;background:#fff;padding:2px;flex:none;margin-right:2px}
+.login .logo .logo-img{width:40px;height:40px}
+.cr-print-h .logo .logo-img{width:30px;height:30px}
+.crop-box{position:relative;margin:0 auto;overflow:hidden;border-radius:12px;background:#eef2f1;touch-action:none;cursor:grab;box-shadow:0 0 0 1px var(--line)}
+.crop-box:active{cursor:grabbing}
+.crop-box.round::after{content:'';position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.45);pointer-events:none}
+.brand-prev{width:96px!important;height:96px;max-width:96px;flex:0 0 96px!important;border-radius:14px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;overflow:hidden;padding:8px;box-sizing:border-box}
+.brand-prev img{width:auto!important;height:auto!important;max-width:100%!important;max-height:100%!important;object-fit:contain}
+.ptn-bl{background:#fff;border:1px solid var(--line);overflow:hidden;padding:3px}
+.ptn-bl img{width:100%;height:100%;object-fit:contain}

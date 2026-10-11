@@ -19,7 +19,7 @@ function renderBoard(r){
   const k=r.delivery, M=r.money, P=r.people, Q=r.problems, K=r.knowledge, cur=M?M.currency:'SAR';
   const sar=v=>(Number(v)||0).toLocaleString('en-US',{maximumFractionDigits:0})+' '+cur;
   const pct=(a,b)=>b?Math.round(a/b*100)+'%':'—';
-  $('main').innerHTML=`<div class="cr-print-h"><div class="logo"><i>M</i>Miqnas · Board report</div><div><b>${esc(r.monthName)}</b><span class="muted">Generated ${new Date(r.generated).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span></div></div>
+  $('main').innerHTML=`<div class="cr-print-h"><div class="logo">${brandMark('Board report')}</div><div><b>${esc(r.monthName)}</b><span class="muted">Generated ${new Date(r.generated).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span></div></div>
   <div class="br">
     <section><h2 class="br-h">Delivery</h2>
       <div class="grid kpis">${brK('Clients this month',k.total,k.isNew+' new')}${brK('Launched',k.launched,k.launched?pct(k.onTime,k.launched)+' on time':'', 'var(--ok)')}${brK('In progress',k.active,k.blocked+' blocked','var(--warn)')}${brK('Late',k.late,'Past target launch',k.late?'var(--bad)':'')}${brK('Avg days to launch',k.avgDays===null?'—':k.avgDays,'')}${brK('On hold / cancelled',k.hold+' / '+k.cancelled,'')}</div>

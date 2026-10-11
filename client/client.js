@@ -12,6 +12,9 @@ function cpPost(body) {
     .then(r => r.json()).then(r => { if (!r || !r.ok) { const e = new Error((r && r.error) || 'حصل خطأ'); if (e.message === 'PT_LOGIN') e.login = true; throw e; } return r.data; });
 }
 const cpEl = () => document.getElementById('pt');
+CP.brand = null; try { CP.brand = JSON.parse(localStorage.getItem('pt_brand') || 'null'); } catch (e) {}
+function cpMark() { return CP.brand && CP.brand.logo ? `<div class="pt-logo pt-img" aria-hidden="true"><img src="${ce(CP.brand.logo)}" alt=""></div>` : '<div class="pt-logo" aria-hidden="true">M</div>'; }
+function cpBrand() { cpPost({ action: 'brand' }).then(b => { CP.brand = b; try { localStorage.setItem('pt_brand', JSON.stringify(b)); } catch (e) {} if (CP.data) cpRender(); else if (!CP.t && CP.info) cpLoginView(); }).catch(() => {}); }
 function cpErr(msg) { cpEl().innerHTML = '<div class="pt-err"><div><div class="pt-logo" style="margin:0 auto 14px">M</div>' + ce(msg) + '</div></div>'; }
 function cpLoad(quiet) {
   if (!CP.key) return cpErr('اللينك ناقص. اطلب اللينك الصحيح من مِقناص');
@@ -22,7 +25,7 @@ function cpLoad(quiet) {
 }
 function cpLoginView(msg) {
   cpEl().innerHTML = `<div class="pt-login"><form class="pt-lcard" onsubmit="cpLogin(event)">
-    <div class="pt-logo" aria-hidden="true">M</div><b>${ce(CP.info ? CP.info.client : 'متجرك')}</b><span>متابعة متجرك مع مِقناص · سجّل دخول عشان تكمل</span>
+    ${cpMark()}<b>${ce(CP.info ? CP.info.client : 'متجرك')}</b><span>متابعة متجرك مع مِقناص · سجّل دخول عشان تكمل</span>
     <label>اسم المستخدم<input id="cpU" autocomplete="username" dir="ltr" required></label>
     <label>كلمة المرور<input id="cpP" type="password" autocomplete="current-password" dir="ltr" required></label>
     <div class="pt-lerr" role="alert">${msg ? ce(msg) : ''}</div>
@@ -43,7 +46,7 @@ function cpRender() {
   const host = String(d.live || d.url || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
   const open = d.payments.filter(p => p.status !== 'paid');
   cpEl().innerHTML = `<div class="pt-wrap"><div class="pt-d">
-    <header class="pt-head"><div class="pt-logo" aria-hidden="true">M</div><div class="pt-title"><b>${ce(d.client)}</b><span>متابعة متجرك مع مِقناص${d.am ? ' · مدير حسابك: ' + ce(d.am) : ''}</span></div><button type="button" class="pt-out" onclick="cpLogout()">خروج</button></header>
+    <header class="pt-head">${cpMark()}<div class="pt-title"><b>${ce(d.client)}</b><span>متابعة متجرك مع مِقناص${d.am ? ' · مدير حسابك: ' + ce(d.am) : ''}</span></div><button type="button" class="pt-out" onclick="cpLogout()">خروج</button></header>
     <section class="pt-sec">
       <div class="pt-pills" style="justify-content:flex-start;margin:0"><span class="pill s-${d.status}">${ce(d.statusName)}</span>${host ? `<a class="pill s-hold" href="${ce(/^https?:/.test(d.live || d.url) ? (d.live || d.url) : 'https://' + host)}" target="_blank" rel="noopener noreferrer" dir="ltr">${ce(host)}</a>` : ''}</div>
       <div class="pt-prog"><div><span>التقدم الكلي</span><b>${d.pct}%</b></div><span class="pt-track${d.pct === 100 ? ' ok' : ''}" style="height:10px"><i style="width:${d.pct}%"></i></span></div>
@@ -60,6 +63,6 @@ function cpRender() {
 }
 (function () {
   CP.t = cpTok();
-  cpLoad();
+  cpLoad(); cpBrand();
   setInterval(() => { if (document.visibilityState === 'visible' && CP.t && CP.data) cpLoad(true); }, 5 * 60000);
 })();

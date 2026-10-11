@@ -8,7 +8,7 @@ function viewPartners(){
   if(!S.cache.partners && dp) S.cache.partners={partners:dp,platforms:[],colors:[],partial:true};
   swr('partners','partnersAdmin',{},renderPartners);
 }
-function ptnBadge(p,size){ size=size||40; return `<span class="ptn-b" style="width:${size}px;height:${size}px;background:${esc(p.color||'#7C5CFC')};font-size:${Math.round(size*0.42)}px" aria-hidden="true">${esc(p.letter||'')}</span>`; }
+function ptnBadge(p,size){ size=size||40; if(p.logo) return `<span class="ptn-b ptn-bl" style="width:${size}px;height:${size}px" aria-hidden="true"><img src="${esc(p.logo)}" alt=""></span>`; return `<span class="ptn-b" style="width:${size}px;height:${size}px;background:${esc(p.color||'#7C5CFC')};font-size:${Math.round(size*0.42)}px" aria-hidden="true">${esc(p.letter||'')}</span>`; }
 function renderPartners(r){
   S.ptnAdm=r;
   const L=r.partners||[], act=L.filter(p=>p.active), off=L.filter(p=>!p.active);
@@ -40,12 +40,15 @@ function ptnForm(id){
       <div><label>Platform</label><select id="ptnPl"><option value="">—</option>${(r.platforms||[]).map(x=>`<option${x===p.platform?' selected':''}>${esc(x)}</option>`).join('')}</select><div class="muted" style="font-size:12px;margin-top:4px">When a project targets this platform, we suggest this partner.</div></div>
       <div><label>Portal letter</label><input id="ptnL" value="${esc(p.letter)}" dir="ltr" maxlength="2" placeholder="Z"></div>
       <div><label>Partner fee per store</label><div class="row" style="gap:6px"><select id="ptnFt" style="flex:1"><option value="none"${(p.feeType||'none')==='none'?' selected':''}>No fee</option><option value="percent"${p.feeType==='percent'?' selected':''}>% of contract</option><option value="fixed"${p.feeType==='fixed'?' selected':''}>Fixed amount</option></select><input id="ptnFv" type="number" min="0" step="0.01" value="${esc(p.feeValue||'')}" style="width:100px" aria-label="Fee value"></div><div class="muted" style="font-size:12px;margin-top:4px">Filled into the partner's contracts in Finance.</div></div>
+      <div><label>Logo</label><div class="row" style="gap:8px;align-items:center"><span id="ptnLg">${ptnBadge(p,40)}</span><label class="btn small" for="ptnLf" style="margin:0">${p.logo?'Change':'Upload'}</label><input type="file" id="ptnLf" accept="image/*" hidden>${p.logo?'<button type="button" class="btn ghost small" id="ptnLx">Remove</button>':''}</div><div class="muted" style="font-size:12px;margin-top:4px">Shows in their portal and reports. Without a logo, the letter and color are used.</div></div>
       <div><label>Color</label><div class="ptn-colors">${(r.colors||[]).map(c=>`<button type="button" class="ptn-c${c===p.color?' on':''}" style="background:${c}" data-c="${c}" aria-label="Color ${c}"></button>`).join('')}</div></div>
     </div>
     ${id?`<label class="pf-chk" style="margin-top:12px"><input type="checkbox" id="ptnA"${p.active?' checked':''}> Active <span class="muted">· stopping closes the portal; the stores stay in the system</span></label>`:''}
     <div class="err" id="ptnErr"></div>
     <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancel</button><div class="spacer"></div><button class="btn primary" id="ptnSave">${id?'Save':'Add partner'}</button></div></div></div>`;
-  let color=p.color;
+  let color=p.color, logoNew;
+  $('ptnLf').onchange=async()=>{ const f=$('ptnLf').files[0]; if(!f) return; try{ logoNew=await imgShrink(f,160); $('ptnLg').innerHTML=ptnBadge({logo:logoNew},40); }catch(e){ toast('مش قادر أقرا الصورة دي'); } };
+  if($('ptnLx')) $('ptnLx').onclick=()=>{ logoNew=''; $('ptnLg').innerHTML=ptnBadge(Object.assign({},p,{logo:''}),40); };
   document.querySelectorAll('.ptn-c').forEach(b=>b.onclick=()=>{ color=b.dataset.c; document.querySelectorAll('.ptn-c').forEach(x=>x.classList.toggle('on',x===b)); });
   if(!id) $('ptnE').addEventListener('input',()=>{ const v=$('ptnE').value.replace(/[^A-Za-z0-9]/g,'').toUpperCase(); if(!$('ptnP').dataset.t) $('ptnP').value=v.slice(0,4); if(!$('ptnL').dataset.t) $('ptnL').value=v.slice(0,1); });
   const ph=()=>{ const v=$('ptnP').value.toUpperCase().replace(/[^A-Z0-9]/g,'')||'ZID'; $('ptnPh').textContent=`Stores get ${v}-001, ${v}-002…`; };
@@ -53,6 +56,7 @@ function ptnForm(id){
   $('ptnSave').onclick=async()=>{
     $('ptnErr').textContent=''; $('ptnSave').disabled=true;
     const d={id:id||'',name:$('ptnN').value,nameEn:$('ptnE').value,prefix:$('ptnP').value,platform:$('ptnPl').value,letter:$('ptnL').value,color,feeType:$('ptnFt').value,feeValue:$('ptnFv').value};
+    if(logoNew!==undefined){ if(logoNew) d.logo=logoNew; else d.removeLogo=true; }
     if(id) d.active=$('ptnA').checked;
     if(id&&p.active&&!d.active&&!confirm('البورتال بتاع الشريك ده هيتقفل. متاجره هتفضل في السيستم. متأكد؟')){ $('ptnSave').disabled=false; return; }
     try{ const out=await call('partnerSave',{partner:d}); S.cache.partners=out; S.fetched.partners=Date.now(); closeModal(); renderPartners(out); toast(id?'اتحفظ ✓':'اتضاف الشريك ✓');

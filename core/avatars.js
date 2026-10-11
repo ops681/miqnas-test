@@ -20,26 +20,25 @@ function avApply(root){
   if(document.body) run(); else document.addEventListener('DOMContentLoaded',run);
 })();
 // تغيير الصورة: لنفسك، أو لأي حد لو معاك people.manage
-function avEdit(un){
+function avEdit(un,data){
   un=un||S.user.username;
   const mine=un===S.user.username;
   if(!mine && !can('people.manage')) return;
   const u=(S.cache.users||[]).find(x=>x.username===un)||(mine?S.user:{username:un,name:un});
-  const cur=S.av.list[un];
+  const cur=data||S.av.list[un];
   $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:420px">
     <h2 style="margin:0 0 4px">${mine?'Your photo':'Photo · '+bd(u.name)}</h2><div class="muted" style="font-size:13px;margin-bottom:14px">Everyone in the company sees this photo.${mine?'':' You are changing it as an admin.'}</div>
-    <div style="display:flex;align-items:center;gap:16px"><div class="av av-xl" id="avPrev"${cur?` style="background-image:url('${cur}')"`:''}>${cur?'':esc(initials(u.name))}</div>
-      <div style="display:grid;gap:8px"><label class="btn" for="avFile" style="margin:0">Choose photo</label><input type="file" id="avFile" accept="image/*" hidden>
-      ${cur?`<button class="btn ghost danger" onclick="avRemove('${esc(un)}')">Remove photo</button>`:''}</div></div>
+    <div style="display:flex;align-items:center;gap:16px"><div class="av av-xl" id="avPrev"${cur?` style="background-image:url('${cur}');background-size:cover;color:transparent"`:''}>${esc(initials(u.name))}</div>
+      <div style="display:grid;gap:8px"><label class="btn" for="avFile" style="margin:0">${data?'Choose another':'Choose photo'}</label><input type="file" id="avFile" accept="image/*" hidden>
+      ${S.av.list[un]&&!data?`<button class="btn ghost danger" onclick="avRemove('${esc(un)}')">Remove photo</button>`:''}</div></div>
     <div class="err" id="avErr"></div>
-    <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn primary" id="avSave" disabled>Save</button></div></div></div>`;
-  let data='';
+    <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn primary" id="avSave"${data?'':' disabled'}>Save</button></div></div></div>`;
   $('avFile').onchange=async()=>{
     const f=$('avFile').files[0]; if(!f) return;
-    try{ data=await avCrop(f); $('avPrev').style.backgroundImage=`url("${data}")`; $('avPrev').textContent=''; $('avSave').disabled=false; $('avErr').textContent=''; }
-    catch(e){ $('avErr').textContent='مش قادر أقرا الصورة دي. جرّب صورة تانية'; }
+    const d=await imgCrop(f,{round:true,size:256,maxLen:40000,title:mine?'Your photo':'Photo · '+u.name});
+    avEdit(un,d||data);
   };
-  $('avSave').onclick=async()=>{ $('avSave').disabled=true; $('avSave').textContent='Saving...';
+  $('avSave').onclick=async()=>{ if(!data) return; $('avSave').disabled=true; $('avSave').textContent='Saving...';
     try{ await call('avatarSave',{username:un,img:data}); S.av.list[un]=data; S.av.ver=''; try{ store('erp_av',JSON.stringify(S.av)); }catch(e){} avApply(document.body); closeModal(); toast('اتحفظت الصورة ✓'); avSync(); }
     catch(e){ $('avErr').textContent=e.message; $('avSave').disabled=false; $('avSave').textContent='Save'; } };
 }

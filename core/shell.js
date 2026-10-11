@@ -123,6 +123,7 @@ function startApp(){
   else go(S.view);
   startBellPolling();
   startPrefetchLoop();
+  if(S.pendingGo){ const g=S.pendingGo; S.pendingGo=null; try{ setTimeout(()=>goTo(JSON.parse(g)),300); }catch(e){} }
   setTimeout(prefetch, 600);
 }
 
@@ -243,7 +244,7 @@ async function alertUnseeAll(){
 // الجرس: "For you" (إشعارات شخصية) + "Alerts" (تنبيهات محسوبة)
 function openBell(){
   const L=alertsList(), N=S.notifs||[];
-  $('bellPanel').innerHTML=`<div class="bh">For you${S.unread?` <span class="pill p-bad" style="margin-left:8px">${S.unread} new</span>`:''}<span class="spacer"></span>${S.unread?`<button class="btn ghost small" onclick="event.stopPropagation();readAll()">Mark all read</button>`:''}<button class="btn ghost small" onclick="go('desk')">My Desk</button></div>`+
+  $('bellPanel').innerHTML=`<div class="bh">For you${S.unread?` <span class="pill p-bad" style="margin-left:8px">${S.unread} new</span>`:''}<span class="spacer"></span>${S.unread?`<button class="btn ghost small" onclick="event.stopPropagation();readAll()">Mark all read</button>`:''}<button class="btn ghost small" onclick="event.stopPropagation();closeBell();pushPanel()" title="Phone notifications">📱</button><button class="btn ghost small" onclick="go('desk')">My Desk</button></div>`+
     (N.length? N.slice(0,10).map((n,i)=>notifHTML(n,i,'bell')).join('') : `<div class="empty" style="padding:16px"><b>All caught up</b>Nothing new for you.</div>`)+
     `<div class="bh" style="border-top:1px solid var(--line)">Alerts<span class="spacer"></span>${hiddenNote((S.cache.dash||{}).alertsHidden)}${can('dashboard.view')?`<button class="btn ghost small" onclick="go('dash')">Open dashboard</button>`:''}</div>`+
     (L.length? L.slice(0,40).map(alertHTML).join('') : `<div class="empty" style="padding:16px"><b>All clear</b>No alerts right now.</div>`);

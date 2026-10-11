@@ -130,3 +130,5 @@ button,input,select{font:inherit;color:inherit}
 .pt-lcard .pt-logos{justify-content:center;margin:0 auto 4px}
 .pt-lcard .pt-logos .pt-logo{margin:0}
 .pt-lcard .pt-logos .pt-plogo{margin-inline-start:-8px}
+.pt-logo.pt-img{background:#fff;padding:4px;overflow:hidden}
+.pt-logo.pt-img img{width:100%;height:100%;object-fit:contain}

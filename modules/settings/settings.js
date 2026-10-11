@@ -25,6 +25,7 @@ function viewSettings(){
 }
 function renderSettings(v){
   $('main').innerHTML=`<div style="max-width:900px;display:grid;gap:18px">
+  <div id="setBrand"></div><div id="setPush"></div>
   ${SET_GROUPS.map(g=>`<div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>${g[0]}</h2><div class="muted" style="font-size:13px">${g[1]}</div></div>
     ${g[2].map(it=>`<div class="set"><div class="tx"><label for="st_${it[0]}">${it[1]}</label><div>${it[2]}</div></div><input type="number" min="1" id="st_${it[0]}" value="${esc(v[it[0]])}"><span class="u">${it[3]}</span></div>`).join('')}</div>`).join('')}
   <div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>Sign-in security</h2><div class="muted" style="font-size:13px">Turn off only in an emergency</div></div>
@@ -39,6 +40,40 @@ function renderSettings(v){
   <div class="card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><div style="flex:1 1 320px"><h2 style="margin:0 0 4px">Work hours</h2><div class="muted" style="font-size:13px">Off for now, since the team's hours vary. Late-arrival alerts will use this later.</div></div>
     <label class="check" style="margin:0"><input type="checkbox" id="st_late_on" ${v.late_on?'checked':''} disabled>Late-arrival alerts</label></div>
   </div>`;
+  setBrandCard(); setPushCard();
+}
+/* ----- هوية الشركة ----- */
+function setBrandCard(){
+  const B=S.brand||{}; let logo=B.logo||'';
+  const draw=()=>{ $('setBrand').innerHTML=`<div class="card"><h2 style="margin:0 0 4px">Company identity</h2><div class="muted" style="font-size:13px;margin-bottom:14px">Your logo and name show for everyone: the side menu, sign-in, the browser tab, portals and printed reports.</div>
+    <div class="row" style="gap:16px;align-items:center;flex-wrap:wrap"><div class="brand-prev">${logo?`<img src="${esc(logo)}" alt="Logo">`:'<span class="muted" style="font-size:12px">No logo</span>'}</div>
+      <div style="display:grid;gap:8px;flex:1 1 260px"><label>Company name</label><input id="brN" value="${esc(B.name||'')}" placeholder="Miqnas" maxlength="40">
+        <div class="row" style="gap:8px;flex-wrap:wrap"><label class="btn" for="brF" style="margin:0">${logo?'Change logo':'Upload logo'}</label><input type="file" id="brF" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>${logo?'<button class="btn ghost danger" id="brX">Remove logo</button>':''}<div class="spacer"></div><button class="btn primary" id="brS">Save identity</button></div>
+        <div class="muted" style="font-size:12px">PNG with a transparent background looks best. It is resized automatically.</div><div class="err" id="brE"></div></div></div></div>`;
+    $('brF').onchange=async()=>{ const f=$('brF').files[0]; if(!f) return; try{ logo=await imgShrink(f,256); draw(); }catch(e){ $('brE').textContent='مش قادر أقرا الصورة دي'; } };
+    if($('brX')) $('brX').onclick=()=>{ logo=''; draw(); };
+    $('brS').onclick=async()=>{ $('brS').disabled=true; try{ const r=await call('brandSave',{name:$('brN').value,logo:logo,removeLogo:!logo}); S.brand={ver:r.ver,name:r.name,logo:r.logo}; try{ store('erp_brand',JSON.stringify(S.brand)); }catch(e){} applyBrand(); toast('اتحفظت الهوية ✓ وهتظهر عند الكل'); draw(); }catch(e){ $('brE').textContent=e.message; $('brS').disabled=false; } };
+  };
+  draw();
+}
+/* ----- إشعارات الموبايل (Firebase) ----- */
+async function setPushCard(){
+  let c; try{ c=await call('pushSettingsGet'); }catch(e){ return; }
+  const site=location.origin+location.pathname.replace(/[^/]*$/,'');
+  $('setPush').innerHTML=`<div class="card"><h2 style="margin:0 0 4px">Phone notifications</h2>
+    <div class="muted" style="font-size:13px;margin-bottom:12px">${c.ready?`<b style="color:var(--ok)">On.</b> ${c.devices} phone${c.devices===1?'':'s'} registered. People turn it on from the bell on their phone.`:'Off. Connect a free Firebase project to send the bell notifications to phones, even when the app is closed.'}</div>
+    <details${c.ready?'':' open'}><summary style="cursor:pointer;font-weight:600">Firebase settings</summary>
+      <div class="pfgrid" style="margin-top:10px">
+        <div><label>apiKey</label><input id="pfA" dir="ltr" value="${esc(c.apiKey)}"></div><div><label>projectId</label><input id="pfP" dir="ltr" value="${esc(c.projectId)}"></div>
+        <div><label>messagingSenderId</label><input id="pfS" dir="ltr" value="${esc(c.senderId)}"></div><div><label>appId</label><input id="pfI" dir="ltr" value="${esc(c.appId)}"></div>
+        <div style="grid-column:1/-1"><label>Web Push key (VAPID public key)</label><input id="pfV" dir="ltr" value="${esc(c.vapidKey)}"></div>
+        <div style="grid-column:1/-1"><label>Service account key (JSON) ${c.hasKey?'<span class="pill p-in" style="font-size:11px">saved</span>':''}</label><textarea id="pfK" rows="3" dir="ltr" placeholder="${c.hasKey?'Saved. Paste a new key only to replace it.':'Paste the whole JSON file here'}"></textarea><div class="muted" style="font-size:12px">Kept secret on the server and never shown again.</div></div>
+        <div><label>Quiet from (hour)</label><input id="pfQ1" type="number" min="0" max="23" value="${c.quietFrom}"></div><div><label>Quiet until (hour)</label><input id="pfQ2" type="number" min="0" max="23" value="${c.quietTo}"></div>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:6px">No phone notifications between these hours. They still show in the bell.</div>
+      <div class="err" id="pfE"></div>
+      <div class="mfoot"><div class="spacer"></div><button class="btn primary" id="pfB">Save notification settings</button></div></details></div>`;
+  $('pfB').onclick=async()=>{ try{ await call('pushSettingsSave',{cfg:{apiKey:$('pfA').value,projectId:$('pfP').value,senderId:$('pfS').value,appId:$('pfI').value,vapidKey:$('pfV').value,serviceKey:$('pfK').value.trim(),quietFrom:$('pfQ1').value,quietTo:$('pfQ2').value,site}}); toast('اتحفظت ✓'); setPushCard(); }catch(e){ $('pfE').textContent=e.message; } };
 }
 async function saveSettings(){
   const v=Object.assign({}, S.cache.settings||{});

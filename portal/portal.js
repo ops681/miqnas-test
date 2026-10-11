@@ -29,9 +29,15 @@ function ptPost(body) {
     .then(r => r.json()).then(r => { if (!r || !r.ok) { const e = new Error((r && r.error) || 'حصل خطأ'); if (e.message === 'PT_LOGIN') e.login = true; throw e; } return r.data; });
 }
 const ptName = () => (PT.info && PT.info.name) || 'الشريك';
+// لوجو الشركة (من Settings) + لوجو الشريك (من صفحة Partners)
+PT.brand = null;
+try { PT.brand = JSON.parse(localStorage.getItem('pt_brand') || 'null'); } catch (e) {}
+function ptBrand() { return ptPost({ action: 'brand' }).then(b => { PT.brand = b; try { localStorage.setItem('pt_brand', JSON.stringify(b)); } catch (e) {} if (PT.data) ptRender(); else if (!PT.t && PT.info) ptLoginView(); }).catch(() => {}); }
 function ptMark(info) {
-  const b = info && info.letter ? `<div class="pt-logo pt-plogo" style="background:${pe(info.color || '#7C5CFC')}" aria-hidden="true">${pe(info.letter)}</div>` : '';
-  return `<div class="pt-logos"><div class="pt-logo" aria-hidden="true">M</div>${b}</div>`;
+  const B = PT.brand && PT.brand.logo ? `<div class="pt-logo pt-img" aria-hidden="true"><img src="${pe(PT.brand.logo)}" alt=""></div>` : '<div class="pt-logo" aria-hidden="true">M</div>';
+  const b = info && info.logo ? `<div class="pt-logo pt-plogo pt-img" aria-hidden="true"><img src="${pe(info.logo)}" alt=""></div>`
+    : info && info.letter ? `<div class="pt-logo pt-plogo" style="background:${pe(info.color || '#7C5CFC')}" aria-hidden="true">${pe(info.letter)}</div>` : '';
+  return `<div class="pt-logos">${B}${b}</div>`;
 }
 function ptSetInfo(i) { if (!i) return; PT.info = i; document.title = 'مِقناص × ' + i.name + ' · بورتال الشركاء'; }
 function ptCall() { return ptPost({ action: 'portal', month: PT.month, all: PT.all }); }
@@ -154,6 +160,6 @@ function ptExport() {
 (function () {
   const m = location.hash.match(/s=([^&]+)/); if (m) PT.open = decodeURIComponent(m[1]);
   PT.t = ptTok();
-  ptLoad();
+  ptLoad(); ptBrand();
   setInterval(() => { if (document.visibilityState === 'visible' && PT.t && PT.data) ptLoad(true); }, 5 * 60000);
 })();
