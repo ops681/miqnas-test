@@ -38,6 +38,7 @@ function renderDesk(D){
   ${readyCardHTML(D.readyNow).replace('margin-bottom:20px','margin:0')}
   ${tiles.length?`<div class="grid kpis" style="margin:0">${tiles.join('')}</div>`:''}
   <div class="two" style="margin:0">
+    ${typeof kbDeskHTML==='function'?kbDeskHTML(D.sopUnread):''}
     ${todoCardHTML(D)}
     ${T?`<div class="card flush"><div class="chead"><h2>My next tasks</h2><span class="spacer"></span><button class="btn ghost small" onclick="go('${can('tasks.mine')?'mytasks':'tasks'}')">All my tasks →</button></div>
       ${T.list.length?T.list.map(t=>{ const tag=t.running?['Running','p-in']:t.helping?['Helping','p-prog']:t.late?['Late','p-bad']:t.review?['In review','p-yel']:t.locked?['Waiting','p-yel']:t.status==='In Progress'?['In progress','p-in']:['Ready','p-absent'];

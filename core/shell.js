@@ -25,6 +25,7 @@ const IC = {
   trend:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
   moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/><path d="M8 7h7M8 11h5"/>',
   link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   warn:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>'
 };
@@ -44,6 +45,7 @@ function navFor(u){
   add('tasks','Tasks','todo','Workspace');
   add('meetings','Meetings','meet','Workspace');
   add('requests','Leave & Requests','cal','Workspace');
+  add('knowledge','Knowledge','book','Workspace');
   if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) add('projects','Projects','folder','Workspace');
   if(canClientRep()) add('clientrep','Client Report','chart','Workspace');
   if(can('projects.manage_all')) add('partners','Partners','link','Workspace');
@@ -79,6 +81,7 @@ function navBadge(id){
   if(id==='mytasks') return S.myBadge||0;
   if(id==='devices') return alertsList().filter(a=>a.tag==='DEVICE').length;
   if(id==='requests') return (S.cache.dash&&S.cache.dash.approvals)||0;
+  if(id==='knowledge') return ((S.cache.kb&&S.cache.kb.unread)||(S.deskLast&&S.deskLast.sopUnread)||[]).length;
   return 0;
 }
 function updateNavBadges(){
@@ -133,7 +136,7 @@ function go(v,opts){
   window.scrollTo(0,0);
   if(gated() && FREE_VIEWS.indexOf(v)<0){ S.lockShown=true; viewLocked(v); return; }
   S.lockShown=false;
-  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,clientrep:()=>viewClientRep(opts),partners:viewPartners,people:viewPeople,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
+  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,clientrep:()=>viewClientRep(opts),partners:viewPartners,knowledge:()=>viewKnowledge(opts),people:viewPeople,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
   (map[v]||viewDash)();
 }
 function viewLocked(v){
@@ -158,7 +161,7 @@ const VIEW_DATA={
   desk:[['desk','deskGet']], dash:[['dash','dash']], mytasks:[['my','myTasks']], tasks:[['gt','gtList']], meetings:[['mt','mtList']],
   requests:[['rqMeta','reqMeta'],['rqList','reqList']], projects:[['plist','projList']], blockers:[['blockers','blockList']],
   briefs:[['briefs','briefList']], exec:[['exec','execDash']], today:[['board','board']], users:[['users','users']],
-  devices:[['devices','devicesList']], org:[['org','orgGet']], settings:[['settings','settingsGet']], crm:[['crm','crmList']], people:[['people','peopleDash']], partners:[['partners','partnersAdmin']]
+  devices:[['devices','devicesList']], org:[['org','orgGet']], settings:[['settings','settingsGet']], crm:[['crm','crmList']], people:[['people','peopleDash']], partners:[['partners','partnersAdmin']], knowledge:[['kb','kbList']]
 };
 // تحميل كل الصفحات في الخلفية في طلب واحد، عشان أي صفحة تتفتح على طول من آخر داتا
 async function prefetch(force){
@@ -256,6 +259,7 @@ function goTo(g){
   if((g.view==='tasks'||g.view==='meetings') && g.id){ go(g.view,{id:g.id}); return; }
   if(g.view==='requests'){ go('requests',{tab:g.tab}); return; }
   if(g.view==='clientrep'){ go('clientrep',{month:g.month}); return; }
+  if(g.view==='knowledge'){ go('knowledge',{tab:g.tab,id:g.id}); return; }
   const a={go:g};
   if(a.go.view==='project'){ if(!canAny(['projects.view_all','projects.manage_all','projects.manage_own'])){ go('mytasks'); setTimeout(()=>viewProject(a.go.id),0); } else { go('projects'); viewProject(a.go.id); } }
   else go(a.go.view);

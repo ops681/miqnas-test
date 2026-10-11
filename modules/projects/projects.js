@@ -69,6 +69,7 @@ async function viewProject(id,keep){
   }catch(e){ if(!c) $('main').innerHTML=`<div class="card err">${esc(e.message)}</div>`; else toast(e.message); }
 }
 function renderProject(r,keep){
+  S.kbTaskMap=(arguments[0]&&arguments[0].sops)||S.kbTaskMap;
   const y=window.scrollY;
   setTop(r.client, r.id+' · '+r.type);
   S.proj=r;
@@ -122,6 +123,7 @@ function taskRowHTML(t,pid,me,isAdmin,canEdit){
   const mine=assigned && ((t.assignees||[]).indexOf(me)>=0||isAdmin);
   const P=`'${esc(pid)}','${esc(t.key)}'`;
   // المشاركين: كل واحد ليه تايمر بتاعه، ومش بيغيّر الحالة
+  const sopL=(S.kbTaskMap||{})[t.key], howTo=sopL&&!t.na?`<button class="tnbtn kb-how" onclick="kbOpen('${esc(sopL.id)}')" title="${esc(sopL.title)}">📘 How to</button>`:'';
   const HL=t.helperList||[], meH=HL.find(h=>h.u===me), helping=!!meH && (t.assignees||[]).indexOf(me)<0;
   const canHelpers=t.status!=='Done' && !(t.locked&&!HL.length) && ((t.assignees||[]).indexOf(me)>=0||isAdmin||canEdit);
   const hLive=h=>`<span class="ttime" data-live data-total="${h.ms}" data-since="${h.since||0}">${fmtDur(h.ms+(h.since?Date.now()-(S.skew||0)-h.since:0))}</span>`;
@@ -160,7 +162,7 @@ function taskRowHTML(t,pid,me,isAdmin,canEdit){
   }
   const refs=(t.refs||[]).map(r=>`<div class="tlink tref"><span>${esc(r.label)}</span><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></div>`).join('');
   return `<div class="trow${t.locked?' locked':''}${t.running||(meH&&meH.since)?' running':''}${t.status==='Done'?' done':''}">
-    <div class="tmain"><div class="tt">${esc(t.title)}</div>${who}${helpersLine}${wait}${refs}${link}${notes}</div>
+    <div class="tmain"><div class="tt">${esc(t.title)}${howTo}</div>${who}${helpersLine}${wait}${refs}${link}${notes}</div>
     <div class="tside">${lock}${dl}${status}<span class="tsep"></span>${time}${timer}</div></div>`;
 }
 
@@ -254,7 +256,7 @@ async function viewMyTasks(keep){
   }catch(e){ if(!c) $('main').innerHTML=`<div class="card err">${esc(e.message)}</div>`; else toast(e.message); }
 }
 function renderMyTasks(r,keep){
-  const y=window.scrollY;
+  const y=window.scrollY; S.kbTaskMap=r.sops||S.kbTaskMap;
   setTop('My Tasks', r.projects.length+' active projects');
   {
     const all=r.projects.flatMap(p=>p.tasks);
