@@ -108,7 +108,7 @@ function renderProject(r,keep){
     ${projAccessHTML(r)}
     ${projBlockersHTML(r)}
     ${D.partner||r.canEdit||(r.clientPortal&&r.clientPortal.on)?`<div id="pnBox">${pnHTML(r,S.pn&&S.pn[r.id])}</div>`:''}
-    ${links.length?`<div class="card" style="margin-top:14px"><h3>Deliverables</h3><div class="links">${links.map(t=>`<a href="${esc(t.link)}" target="_blank" rel="noopener" class="lnk"><b>${esc(t.linkLabel||t.title)}</b><span>${bd(t.assigneeName)}</span></a>`).join('')}</div></div>`:''}
+    ${links.length?`<div class="card" style="margin-top:14px"><h3>Deliverables</h3><div class="links">${links.map(t=>/^https?:\/\//i.test(t.link)?`<a href="${esc(t.link)}" target="_blank" rel="noopener" class="lnk"><b>${esc(t.linkLabel||t.title)}</b><span>${bd(t.assigneeName)}</span></a>`:`<div class="lnk lnk-t"><b>${esc(t.linkLabel||t.title)}</b><span>${bd(t.assigneeName)}</span><p dir="auto">${esc(t.link)}</p></div>`).join('')}</div></div>`:''}
     ${groups.map(g=>{ const a=g.tasks.find(t=>t.assigneeName); const live=g.tasks.filter(t=>!t.na); const dn=live.filter(t=>t.status==='Done').length;
       return `<div class="card tgroup"><div class="tghead"><h3 style="margin:0">${ROLE_T[g.role]}</h3><span class="muted">${esc(a?a.assigneeName:'Unassigned')}</span><div class="spacer"></div><span class="muted" style="font-size:13px">${live.length?dn+'/'+live.length:'Not in scope'}</span></div>
       ${g.tasks.map(t=>taskRowHTML(t,r.id,r.me,r.isAdmin,r.canEdit)).join('')}</div>`; }).join('')}</div>`;
@@ -158,8 +158,8 @@ function taskRowHTML(t,pid,me,isAdmin,canEdit){
   if(t.linkLabel){
     const id='lk_'+(pid+'_'+t.key).replace(/[^a-z0-9_]/gi,'_');
     link = mine
-      ? `<div class="tlink"><span>${esc(t.linkLabel)}</span><input id="${id}" value="${esc(t.link)}" placeholder="https://"><button class="tb ghost" onclick="tAct(${P},'link',{link:$('${id}').value})">Save</button></div>`
-      : `<div class="tlink"><span>${esc(t.linkLabel)}</span>${t.link?`<a href="${esc(t.link)}" target="_blank" rel="noopener">${esc(t.link)}</a>`:'<span class="muted">Not yet</span>'}</div>`;
+      ? `<div class="tlink"><span>${esc(t.linkLabel)}</span><textarea id="${id}" rows="1" class="tl-in" placeholder="Link or text" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight+2,220)+'px'">${esc(t.link)}</textarea><button class="tb ghost" onclick="tAct(${P},'link',{link:$('${id}').value})">Save</button></div>`
+      : `<div class="tlink"><span>${esc(t.linkLabel)}</span>${t.link?(/^https?:\/\//i.test(t.link)?`<a href="${esc(t.link)}" target="_blank" rel="noopener">${esc(t.link)}</a>`:`<span class="tl-txt" dir="auto">${esc(t.link)}</span>`):'<span class="muted">Not yet</span>'}</div>`;
   }
   const refs=(t.refs||[]).map(r=>`<div class="tlink tref"><span>${esc(r.label)}</span>${r.url?`<a href="${esc(r.url)}" target="_blank" rel="noopener" dir="ltr">${esc(r.text||r.url)}</a>`:`<span dir="ltr">${esc(r.text||'')}</span>`}${r.copy?`<button type="button" class="btn ghost small tcopy" aria-label="Copy" onclick="event.stopPropagation();navigator.clipboard.writeText(this.dataset.v).then(()=>toast('اتنسخ'))" data-v="${esc(r.text||r.url)}">Copy</button>`:''}</div>`).join('');
   return `<div class="trow${t.locked?' locked':''}${t.running||(meH&&meH.since)?' running':''}${t.status==='Done'?' done':''}">
@@ -277,7 +277,7 @@ function renderMyTasks(r,keep){
           ${p.brief_id?`<button class="btn ghost small" onclick="openBriefFrom('${esc(p.brief_id)}','')">Brief</button>`:''}
           <button class="btn ghost small" onclick="viewProject('${esc(p.id)}')">Full Project</button></div>
         <div style="display:flex;align-items:center;gap:8px;margin:2px 0 6px">${pbar(p.progress)}<span class="muted" style="font-size:12px">${p.progress}% of project</span></div>
-        ${p.links.length?`<div class="links sm">${p.links.map(l=>`<a href="${esc(l.link)}" target="_blank" rel="noopener" class="lnk"><b>${esc(l.title)}</b><span>${bd(l.by)}</span></a>`).join('')}</div>`:''}
+        ${p.links.length?`<div class="links sm">${p.links.map(l=>/^https?:\/\//i.test(l.link)?`<a href="${esc(l.link)}" target="_blank" rel="noopener" class="lnk"><b>${esc(l.title)}</b><span>${bd(l.by)}</span></a>`:`<div class="lnk lnk-t"><b>${esc(l.title)}</b><span>${bd(l.by)}</span><p dir="auto">${esc(l.link)}</p></div>`).join('')}</div>`:''}
         ${p.tasks.slice().sort((a,b)=>rank(a)-rank(b)).map(t=>taskRowHTML(t,p.id,r.me,false)).join('')}
       </div>`).join('') : '<div class="card muted">No tasks assigned to you right now.</div>'}</div>`;
     if(keep) window.scrollTo(0,y);
