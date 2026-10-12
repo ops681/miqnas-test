@@ -33,7 +33,7 @@ function rqRow(r,mode){
   const who=mode!=='mine'?`<span style="color:var(--ink);font-size:14px"><b>${esc(r.name)}</b> <span class="muted">· ${esc(r.job||'')}</span></span>`:'';
   const title=r.kind==='leave'?esc(r.typeLabel):RQ_KIND[r.kind];
   const trail=r.approvals.map(a=>`${a.decision==='approved'?'✓':'✕'} ${esc(a.step)}: ${esc(a.by)}${a.note?' – '+esc(a.note):''}`).join(' · ');
-  return `<div class="al" style="cursor:default;align-items:center"><span class="tx">${who}<b>${title}</b><span>${rqWhen(r)}${r.reason?' · '+bd(r.reason):''}${r.link?` · <a href="${esc(r.link)}" target="_blank" rel="noopener">attachment</a>`:''}</span>
+  return `<div class="al" style="cursor:default;align-items:center"><span class="tx">${who}<b>${title}</b><span>${rqWhen(r)}${r.reason?' · '+bd(r.reason):''}${r.link?(/^https?:\/\//i.test(r.link)?` · <a href="${esc(r.link)}" target="_blank" rel="noopener">attachment</a>`:` · ${bd(r.link)}`):''}</span>
       ${r.status==='pending'&&r.waitingOn.length?`<span>Waiting for ${esc(r.step)}: ${r.waitingOn.map(esc).join(' or ')}${mode==='all'&&r.since?` · <b style="color:${rqAge(r.since)>=2?'var(--bad)':'inherit'}">${rqAgeTxt(r.since)}</b>`:''}</span>`:''}${trail?`<span style="font-size:12px">${trail}</span>`:''}</span>
     <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
       ${r.canDecide?`<button class="btn small primary" onclick="rqDecide('${r.id}','approve')">Approve</button><button class="btn small danger" onclick="rqDecide('${r.id}','reject')">Reject</button>`:`<span class="pill ${s[1]}">${s[0]}</span>`}
@@ -111,7 +111,7 @@ function rqNew(kind){
     :`<label for="rqF">Day</label><input id="rqF" type="date" value="${M.today}">
       <div class="row"><div><label for="rqA">From</label><input id="rqA" type="time"></div><div><label for="rqB">To</label><input id="rqB" type="time"></div></div>`}
     <label for="rqR">Reason${isLeave?' (optional)':''}</label><input id="rqR" maxlength="500">
-    ${isLeave?`<label for="rqL">Link to a document (optional)</label><input id="rqL" placeholder="https://… e.g. sick note on Drive" dir="ltr">`:''}
+    ${isLeave?`<label for="rqL">Document or note (optional)</label><input id="rqL" placeholder="Link or text, e.g. sick note on Drive" dir="auto">`:''}
     <div class="muted" style="font-size:12.5px;margin-top:10px">Goes to: ${M.flow.map(f=>esc(f.step)).join(' → ')}</div>
     <div class="err" id="rqErr"></div>
     <div class="mfoot"><span class="spacer"></span><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="rqSB" onclick="rqSend('${kind}')">Send request</button></div></div></div>`;

@@ -44,7 +44,7 @@ function blCard(b){
       <span class="muted" style="font-size:13px">Since ${fmtD(b.start)}${open?'':' → '+fmtD(b.resolved)} · <b style="color:${open?'var(--bad)':'var(--ink)'}">${b.days} day${b.days===1?'':'s'}</b></span>
     </div>
     <div style="margin:12px 0 4px;font-size:14.5px;white-space:pre-wrap" dir="auto">${esc(b.details)}</div>
-    ${b.evidence?`<a href="${esc(b.evidence)}" target="_blank" rel="noopener" style="font-size:13px">Evidence ↗</a>`:''}
+    ${b.evidence?(/^https?:\/\//i.test(b.evidence)?`<a href="${esc(b.evidence)}" target="_blank" rel="noopener" style="font-size:13px">Evidence ↗</a>`:`<span style="font-size:13px;white-space:pre-wrap" dir="auto">Evidence: ${esc(b.evidence)}</span>`):''}
     ${b.updates.length?`<div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;display:grid;gap:6px">${b.updates.map(u=>`<div style="font-size:13px"><span class="muted">${new Date(u.at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${bd(u.by)}:</span> <span dir="auto">${esc(u.text)}</span></div>`).join('')}</div>`:''}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center">
       <input id="note_${esc(b.id)}" placeholder="Add a follow-up (e.g. sent a reminder to the client)" dir="auto" style="flex:1 1 280px;padding:8px 10px;font-size:13px">
@@ -67,7 +67,7 @@ async function blockForm(id, projectId){
     <label>Caused by</label><div class="chips" id="bCa">${['Client','Platform'].map(c=>`<button type="button" class="${b.cause===c?'on':''}" data-v="${c}">${c}</button>`).join('')}</div>
     <label for="bD">Details</label><textarea id="bD" rows="4" dir="auto" placeholder="مثال: طلبنا الأكسيس بتاع سلة يوم 3 أكتوبر ولسه مبعتش">${esc(b.details)}</textarea>
     <label for="bS">Started on</label><input type="date" id="bS" value="${esc(b.start)}">
-    <label for="bE">Evidence link (optional)</label><input id="bE" value="${esc(b.evidence)}" placeholder="https://drive.google.com/...">
+    <label for="bE">Evidence (optional)</label><input id="bE" value="${esc(b.evidence)}" placeholder="Link or text">
     <div class="err" id="bErr"></div>
     <div class="mfoot"><button class="btn primary" id="bSave">${id?'Save':'Add Blocker'}</button><button class="btn" onclick="closeModal()">Cancel</button></div>
   </div></div>`;
