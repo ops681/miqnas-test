@@ -25,7 +25,7 @@ function viewSettings(){
 }
 function renderSettings(v){
   $('main').innerHTML=`<div style="max-width:900px;display:grid;gap:18px">
-  <div id="setBrand"></div><div id="setPush"></div><div id="setMove"></div>
+  <div id="setBrand"></div><div id="setPush"></div><div id="setPlat"></div><div id="setMove"></div>
   ${SET_GROUPS.map(g=>`<div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>${g[0]}</h2><div class="muted" style="font-size:13px">${g[1]}</div></div>
     ${g[2].map(it=>`<div class="set"><div class="tx"><label for="st_${it[0]}">${it[1]}</label><div>${it[2]}</div></div><input type="number" min="1" id="st_${it[0]}" value="${esc(v[it[0]])}"><span class="u">${it[3]}</span></div>`).join('')}</div>`).join('')}
   <div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>Sign-in security</h2><div class="muted" style="font-size:13px">Turn off only in an emergency</div></div>
@@ -40,7 +40,7 @@ function renderSettings(v){
   <div class="card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><div style="flex:1 1 320px"><h2 style="margin:0 0 4px">Work hours</h2><div class="muted" style="font-size:13px">Off for now, since the team's hours vary. Late-arrival alerts will use this later.</div></div>
     <label class="check" style="margin:0"><input type="checkbox" id="st_late_on" ${v.late_on?'checked':''} disabled>Late-arrival alerts</label></div>
   </div>`;
-  setBrandCard(); setPushCard(); setMoveCard();
+  setBrandCard(); setPushCard(); setPlatCard(); setMoveCard();
 }
 /* ----- هوية الشركة ----- */
 function setBrandCard(){
@@ -55,6 +55,19 @@ function setBrandCard(){
     $('brS').onclick=async()=>{ $('brS').disabled=true; try{ const r=await call('brandSave',{name:$('brN').value,logo:logo,removeLogo:!logo}); S.brand={ver:r.ver,name:r.name,logo:r.logo}; try{ store('erp_brand',JSON.stringify(S.brand)); }catch(e){} applyBrand(); toast('اتحفظت الهوية ✓ وهتظهر عند الكل'); draw(); }catch(e){ $('brE').textContent=e.message; $('brS').disabled=false; } };
   };
   draw();
+}
+/* ----- المنصات (سلة، زد، ...) ----- */
+async function setPlatCard(r){
+  if(!r){ try{ r=await call('platformsAdmin'); }catch(e){ return; } }
+  const box=$('setPlat'); if(!box) return;
+  box.innerHTML=`<div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>Platforms</h2><div class="muted" style="font-size:13px">One list for projects, briefs and partners. Anyone who creates projects or briefs can add a new one from the form. Hidden platforms stay on the projects that already use them.</div></div>
+    ${r.platforms.map(x=>`<div class="set"><div class="tx"><label>${esc(x.name)}${x.active?'':' <span class="pill p-out" style="margin-inline-start:6px">Hidden</span>'}</label><div>${x.projects} project${x.projects===1?'':'s'}</div></div>
+      <div class="row" style="gap:6px"><button class="btn ghost small" data-pr="${esc(x.name)}">Rename</button><button class="btn ${x.active?'ghost danger':''} small" data-ph="${esc(x.name)}" data-on="${x.active?0:1}">${x.active?'Hide':'Show'}</button></div></div>`).join('')}
+    <div class="set"><div class="tx"><label>Add a platform</label></div><div class="row" style="gap:6px"><input id="plN" placeholder="Platform name" style="width:180px" maxlength="30"><button class="btn small primary" id="plA">Add</button></div></div></div>`;
+  const run=async(fn)=>{ try{ setPlatCard(await fn()); toast('اتحفظ ✓'); }catch(e){ alert(e.message); } };
+  box.querySelectorAll('[data-pr]').forEach(b=>b.onclick=()=>{ const nn=(prompt('الاسم الجديد',b.dataset.pr)||'').trim(); if(!nn||nn===b.dataset.pr) return; run(()=>call('platformEdit',{name:b.dataset.pr,rename:nn})); });
+  box.querySelectorAll('[data-ph]').forEach(b=>b.onclick=()=>run(()=>call('platformEdit',{name:b.dataset.ph,active:b.dataset.on==='1'})));
+  $('plA').onclick=()=>{ const n=$('plN').value.trim(); if(!n) return; run(async()=>{ await call('platformAdd',{name:n}); return call('platformsAdmin'); }); };
 }
 /* ----- نقل الإعدادات لسيستم تاني (من التيست للسيستم الجديد) ----- */
 async function setMoveCard(){

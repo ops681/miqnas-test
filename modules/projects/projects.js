@@ -45,7 +45,7 @@ function renderProjects(r,keep){
     ${list.length?`<div class="tbl-wrap"><table>
       <tr><th>Project</th><th>Client</th><th>Type</th><th>Account Manager</th><th>Start</th><th>Target Launch</th><th>Status</th><th style="min-width:150px">Progress</th><th>Hours</th></tr>
       ${list.map(p=>`<tr class="clk" onclick="viewProject('${esc(p.id)}')">
-        <td><b>${esc(p.id)}</b></td><td>${esc(p.client)}${p.blockers&&p.blockers.total?`<div style="margin-top:4px">${blBadge(p.blockers)}</div>`:''}</td><td>${esc(p.type)}</td><td>${esc(p.amName)||'—'}</td>
+        <td><b>${esc(p.id)}</b></td><td><span class="pi-row">${piTag(p.id,p.client,'pi-sm')}<span>${esc(p.client)}</span></span>${p.blockers&&p.blockers.total?`<div style="margin-top:4px">${blBadge(p.blockers)}</div>`:''}</td><td>${esc(p.type)}</td><td>${esc(p.amName)||'—'}</td>
         <td>${fmtDay(p.start_date)}</td><td>${p.overdue?`<span class="pill p-bad">${fmtDay(p.target_launch)} · Overdue</span>`:fmtDay(p.target_launch)}</td>
         <td><span class="pill ${PSTAT[p.status]||'p-out'}">${esc(p.status)}</span></td>
         <td><div style="display:flex;align-items:center;gap:8px">${pbar(p.progress)}<span class="muted" style="font-size:12px">${p.progress}%</span></div></td>
@@ -82,7 +82,7 @@ function renderProject(r,keep){
     <button class="btn ghost small" onclick="${backTo[0]}">← ${backTo[1]}</button>
     ${r.contract&&r.contract.status!=='signed'&&r.status==='Active'?`<div class="notice" style="margin:10px 0">${r.contract.status==='none'?'No contract on this project yet.':'The contract is not signed yet ('+esc(r.contract.status)+').'}${typeof canFinance==='function'&&can('finance.manage')||S.user.founder?` <button class="btn ghost small" onclick="${r.contract.id?`go('finance',{id:'${esc(r.contract.id)}'})`:`go('finance')`}">Open in Finance →</button>`:''}</div>`:''}
     <div class="card phead">
-      <div class="row" style="align-items:center;gap:10px"><h2 style="margin:0">${esc(r.client)}</h2><span class="pill p-out">${esc(r.id)}</span><span class="pill ${PSTAT[r.status]||'p-out'}">${esc(r.status)}</span>${r.blockers&&r.blockers.length?blBadge({open:r.blockers.filter(b=>b.status!=='Resolved').length,total:r.blockers.length,days:r.blockers.reduce((s,b)=>s+b.days,0)}):''}<div class="spacer"></div>
+      <div class="row" style="align-items:center;gap:10px">${r.canEdit?`<button type="button" class="pi-btn" title="Change icon" aria-label="Change project icon" onclick="piEdit('${esc(r.id)}','${esc(r.client).replace(/'/g,'')}')">${piTag(r.id,r.client,'pi-lg')}</button>`:piTag(r.id,r.client,'pi-lg')}<h2 style="margin:0">${esc(r.client)}</h2><span class="pill p-out">${esc(r.id)}</span><span class="pill ${PSTAT[r.status]||'p-out'}">${esc(r.status)}</span>${r.blockers&&r.blockers.length?blBadge({open:r.blockers.filter(b=>b.status!=='Resolved').length,total:r.blockers.length,days:r.blockers.reduce((s,b)=>s+b.days,0)}):''}<div class="spacer"></div>
         ${r.brief_id?`<button class="btn ghost small" onclick="openBriefFrom('${esc(r.brief_id)}','${esc(r.id)}')">Open Brief</button>`:''}
         ${r.canEdit?`<button class="btn ghost small" onclick="projForm('${esc(r.id)}')">Edit Project</button><button class="btn ghost small" onclick="cpAdmin('${esc(r.id)}')">Client portal${r.clientPortal&&r.clientPortal.on?' ●':''}</button>`:''}
         ${r.isAdmin?`<button class="btn ghost small" style="color:var(--bad)" onclick="projDelete('${esc(r.id)}')">Delete</button>`:''}</div>
@@ -273,7 +273,7 @@ function renderMyTasks(r,keep){
     ${r.projects.length?`<div class="psel"><label for="mysel">Project</label><select id="mysel" onchange="S.myProj=this.value;renderMyTasks(S.cache.my)">${r.projects.map(p=>{ const open=p.tasks.filter(t=>t.status!=='Done').length, run=p.tasks.some(t=>t.running); return `<option value="${esc(p.id)}"${p.id===sel?' selected':''}>${run?'⏱ ':''}${esc(p.id)} · ${esc(p.client)} — ${open} open</option>`; }).join('')}</select></div>`:''}
     ${r.projects.length? r.projects.filter(p=>p.id===sel).map(p=>`
       <div class="card tgroup">
-        <div class="tghead"><h3 style="margin:0">${esc(p.client)}</h3><span class="pill p-out">${esc(p.id)}</span>${p.status!=='Active'?`<span class="pill p-absent">${esc(p.status)}</span>`:''}<span class="muted" style="font-size:13px">${esc(p.type)} · Target ${fmtDay(p.target_launch)}</span><div class="spacer"></div>
+        <div class="tghead">${piTag(p.id,p.client)}<h3 style="margin:0">${esc(p.client)}</h3><span class="pill p-out">${esc(p.id)}</span>${p.status!=='Active'?`<span class="pill p-absent">${esc(p.status)}</span>`:''}<span class="muted" style="font-size:13px">${esc(p.type)} · Target ${fmtDay(p.target_launch)}</span><div class="spacer"></div>
           ${p.brief_id?`<button class="btn ghost small" onclick="openBriefFrom('${esc(p.brief_id)}','')">Brief</button>`:''}
           <button class="btn ghost small" onclick="viewProject('${esc(p.id)}')">Full Project</button></div>
         <div style="display:flex;align-items:center;gap:8px;margin:2px 0 6px">${pbar(p.progress)}<span class="muted" style="font-size:12px">${p.progress}% of project</span></div>
@@ -287,6 +287,13 @@ function renderMyTasks(r,keep){
 
 /* ----- Project form ----- */
 function platMap(v){ v=String(v||'').toLowerCase().trim(); if(!v) return ''; if(/زد|zid/.test(v)) return 'Zid'; if(/سل[ةه]|salla/.test(v)) return 'Salla'; if(/shopify|شوبي/.test(v)) return 'Shopify'; if(/woo|ووكو/.test(v)) return 'WooCommerce'; return 'Other'; }
+// المنصات: قايمة واحدة بتتعدل من السيستم (+ منصة جديدة من الفورم، والأدمن يغيّر الاسم أو يخفي من Settings)
+function platOpts(list,v){ const L=list.slice(); if(v&&L.indexOf(v)<0) L.push(v); return `<option value="">—</option>`+L.map(o=>`<option value="${esc(o)}"${o===v?' selected':''}>${esc(o)}</option>`).join('')+`<option value="__new">+ New platform…</option>`; }
+function platPick(v,L){ if(!v) return ''; if(L.indexOf(v)>=0) return v; const m=platMap(v); return L.indexOf(m)>=0?m:(L.indexOf('Other')>=0?'Other':''); }
+function platBind(el,meta){ let last=el.value; el.addEventListener('change',async e=>{ if(el.value!=='__new'){ last=el.value; return; } e.stopImmediatePropagation();
+  const name=(prompt('اسم المنصة الجديدة')||'').trim(); if(!name){ el.value=last; return; }
+  try{ const r=await call('platformAdd',{name}); meta.platforms=r.platforms; document.querySelectorAll('#main select[data-plat]').forEach(s2=>{ const keep=s2===el?r.name:s2.value; s2.innerHTML=platOpts(meta.platforms,keep); s2.value=keep; }); last=r.name; el.dispatchEvent(new Event('change')); toast('اتضافت المنصة ✓'); }
+  catch(err){ el.value=last; toast(err.message); } },true); }
 function typeMap(v){ return v==='نقل متجر كما هو' ? 'نقل كما هو' : v; }
 function calcLaunch(s){ const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/); if(!m) return ''; const d=new Date(Date.UTC(+m[1],+m[2]-1,+m[3])); d.setUTCDate(d.getUTCDate()-1); let c=0; while(c<7){ d.setUTCDate(d.getUTCDate()+1); if(d.getUTCDay()!==5) c++; } return d.toISOString().slice(0,10); }
 
@@ -319,8 +326,8 @@ async function projForm(id){
         <div><label>Project Type *</label><select id="pf_type">${opt(meta.types,d.type,'Select...')}</select></div>
         <div><label>Brand Identity</label><select id="pf_identity">${opt(meta.identities,d.identity)}</select></div>
         <div><label>Status</label><select id="pf_status">${opt(meta.statuses,d.status)}</select></div>
-        <div><label>Current Platform</label><select id="pf_cur_platform">${opt(meta.platforms,d.cur_platform,'—')}</select></div>
-        <div><label>Target Platform</label><select id="pf_target_platform">${opt(meta.platforms,d.target_platform,'—')}</select></div>
+        <div><label>Current Platform</label><select id="pf_cur_platform" data-plat>${platOpts(meta.platforms,d.cur_platform)}</select></div>
+        <div><label>Target Platform</label><select id="pf_target_platform" data-plat>${platOpts(meta.platforms,d.target_platform)}</select></div>
         <div><label>Current Store URL</label><input id="pf_store_url" value="${esc(d.store_url)}" placeholder="https://"></div>
         <div><label>Store ID</label><input id="pf_store_id" value="${esc(d.store_id)}"></div>
         <div><label>Start Date</label><input type="date" id="pf_start_date" value="${esc(d.start_date)}"><div class="muted" style="font-size:12.5px;margin-top:4px">Target Launch: <b id="pf_tl">${fmtDay(calcLaunch(d.start_date))}</b></div></div>
@@ -362,6 +369,7 @@ async function projForm(id){
       document.querySelectorAll('.m-split').forEach(e=>e.classList.toggle('hidden',m==='Front End'));
       document.querySelectorAll('.m-fe').forEach(e=>e.classList.toggle('hidden',m!=='Front End'));
       document.querySelectorAll('.m-joker').forEach(e=>e.classList.toggle('hidden',cp||m!=='Joker')); };
+    document.querySelectorAll('#main select[data-plat]').forEach(el=>platBind(el,meta));
     $('pf_build_mode').onchange=mode; $('pf_type').addEventListener('change',mode); mode();
     // الشريك: لما يتختار يظهر المرجع الجاي، ولما المنصة المستهدفة تبقى منصة شريك نقترحه (من غير ما نختاره لوحدنا)
     const ptnSet=()=>{ const v=$('pf_partner').value, p=PTN.find(x=>x.id===v);
@@ -383,7 +391,7 @@ async function projForm(id){
     $('pf_brief_id').onchange=()=>{
       const b=meta.briefs.find(x=>x.id===$('pf_brief_id').value); if(!b) return;
       const set=(k,v)=>{ if(v) $('pf_'+k).value=v; };
-      set('client',b.store); dupCheck(); set('type',typeMap(b.f.project_type)); mode(); set('cur_platform',platMap(b.f.current_platform)); set('target_platform',platMap(b.f.target_platform));
+      set('client',b.store); dupCheck(); set('type',typeMap(b.f.project_type)); mode(); set('cur_platform',platPick(b.f.current_platform,meta.platforms)); set('target_platform',platPick(b.f.target_platform,meta.platforms));
       set('store_url',b.f.store_url); set('store_id',b.f.zid_id);
       if(b.f.partner){ const p=PTN.find(x=>x.name===b.f.partner||x.nameEn===b.f.partner); if(p){ $('pf_partner').value=p.id; $('pf_partner').onchange(); } }
       $('pf_target_platform').dispatchEvent(new Event('change'));
@@ -435,7 +443,7 @@ function wlOpen(un){
   $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:560px">
     <div class="row" style="align-items:center;gap:12px"><div class="av" data-u="${esc(w.u)}">${esc(initials(w.name))}</div><div><h2 style="margin:0;font-size:18px">${bd(w.name)}</h2><div class="muted" style="font-size:13px">${esc(w.job||'')} · ${w.active||0} active ${(w.active||0)===1?'project':'projects'} · ${w.open} open tasks</div></div><div class="spacer"></div><button class="btn ghost small" onclick="closeModal()">Close</button></div>
     <div style="display:grid;gap:8px;margin-top:16px">${P.length?P.map(p=>`<button class="wl-proj" onclick="closeModal();goTo({view:'project',id:'${esc(p.id)}'})">
-      <div class="row" style="align-items:center;gap:8px"><b>${esc(p.client)}</b><span class="muted" style="font-size:12.5px">${esc(p.id)} · ${esc(p.type||'')}</span><div class="spacer"></div>${p.myPct===100?'<span class="pill p-in">Your part done</span>':p.running?'<span class="pill p-prog">Timer running</span>':''}</div>
+      <div class="row" style="align-items:center;gap:8px">${piTag(p.id,p.client,'pi-sm')}<b>${esc(p.client)}</b><span class="muted" style="font-size:12.5px">${esc(p.id)} · ${esc(p.type||'')}</span><div class="spacer"></div>${p.myPct===100?'<span class="pill p-in">Your part done</span>':p.running?'<span class="pill p-prog">Timer running</span>':''}</div>
       <div class="wl-bars"><span class="muted">Their part</span>${pbar(p.myPct)}<b>${p.myPct}%</b><span class="muted">${p.done}/${p.total} tasks</span></div>
       <div class="wl-bars"><span class="muted">Whole project</span>${pbar(p.projPct)}<b>${p.projPct}%</b><span></span></div></button>`).join(''):'<div class="muted">No active projects.</div>'}</div></div></div>`;
 }

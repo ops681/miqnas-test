@@ -43,7 +43,7 @@ function renderDash(r,keep){
     ${r.projects.length?`<div class="tbl-wrap"><table style="min-width:900px">
       <tr><th>Project</th><th>Account Manager</th><th>Target Launch</th><th style="width:28%">Progress vs expected</th><th>Health</th><th>Holding it up</th></tr>
       ${r.projects.map(p=>{ const h=HEALTH[p.health]; const left=p.daysLeft===null?'':p.daysLeft<0?`${-p.daysLeft} days late`:p.daysLeft===0?'Today':`${p.daysLeft} days left`;
-        return `<tr class="clk" onclick="go('projects');viewProject('${esc(p.id)}')"><td><b>${esc(p.client)}</b><div class="sub2">${esc(p.id)} · ${esc(p.type)}</div>${p.blockers&&p.blockers.total?`<div style="margin-top:4px">${blBadge(p.blockers)}</div>`:''}</td><td>${bd(p.am)||'—'}</td>
+        return `<tr class="clk" onclick="go('projects');viewProject('${esc(p.id)}')"><td><span class="pi-row">${piTag(p.id,p.client,'pi-sm')}<span><b>${esc(p.client)}</b><div class="sub2">${esc(p.id)} · ${esc(p.type)}</div>${p.blockers&&p.blockers.total?`<div style="margin-top:4px">${blBadge(p.blockers)}</div>`:''}</span></span></td><td>${bd(p.am)||'—'}</td>
         <td><b>${fmtD(p.target)}</b><div class="sub2" style="color:${p.daysLeft!==null&&p.daysLeft<0?'var(--bad)':p.daysLeft!==null&&p.daysLeft<=3?'var(--warn)':'var(--muted)'}">${left}</div></td>
         <td><div class="pv"><div class="pbar"><i style="width:${p.done}%;background:${h[2]}"></i><em style="left:calc(${p.expected}% - 1px)"></em></div><span>${p.done}% <small>/ ${p.expected}%</small></span></div></td>
         <td><span class="pill ${h[1]}">${h[0]}</span></td><td style="font-size:13px">${p.blocker?bd(p.blocker):'—'}</td></tr>`; }).join('')}

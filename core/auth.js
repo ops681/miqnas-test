@@ -44,7 +44,7 @@ async function refreshMe(first){
   try{
     const r=await call('me');
     const changed=!S.user || String(S.user.perms)!==String(r.user.perms) || S.user.clocks!==r.user.clocks || S.user.seeAccess!==r.user.seeAccess;
-    S.user=r.user; S.cfg=r.cfg; S.mobile=!!r.mobile; store('erp_mobile',S.mobile?'1':null); setStatus(r.status); store('erp_user',JSON.stringify(r.user)); avSync(r.avv); if(window.brandSync) brandSync(r.brv);
+    S.user=r.user; S.cfg=r.cfg; S.mobile=!!r.mobile; store('erp_mobile',S.mobile?'1':null); setStatus(r.status); store('erp_user',JSON.stringify(r.user)); avSync(r.avv); if(window.brandSync) brandSync(r.brv); if(window.piSync) piSync(r.piv);
     if(first||changed) startApp(); else { renderSide(); if(S.view==='clock') viewClock(); else if(gated() && FREE_VIEWS.indexOf(S.view)<0) go('clock'); else if(S.lockShown && !gated()) go(S.view); }
     if(S.status && S.status.clockedIn && !S.sharing && !S.mobile) showAlarm(true);
   }catch(e){ if(first){ $('loginView').classList.remove('hidden'); } }

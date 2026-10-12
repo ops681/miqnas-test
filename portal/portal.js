@@ -40,12 +40,16 @@ function ptMark(info) {
   return `<div class="pt-logos">${B}${b}</div>`;
 }
 function ptSetInfo(i) { if (!i) return; PT.info = i; document.title = 'مِقناص × ' + i.name + ' · بورتال الشركاء'; }
+// لوجوهات المتاجر: بتتجاب مرة وتتحفظ في البراوزر لحد ما نسختها تتغير
+PT.icons = { ver: '', list: {} }; try { const c = JSON.parse(localStorage.getItem('pt_icons') || 'null'); if (c && c.list) PT.icons = c; } catch (e) {}
+function ptIcons() { ptPost({ action: 'portalIcons' }).then(r => { if (r.ver === PT.icons.ver) return; PT.icons = r; try { localStorage.setItem('pt_icons', JSON.stringify(r)); } catch (e) {} if (PT.data) ptRender(); }).catch(() => {}); }
+function ptIco(s, big) { const im = PT.icons.list[s.id]; const w = big ? 56 : 34; return im ? `<span class="pt-ico" style="width:${w}px;height:${w}px"><img src="${pe(im)}" alt=""></span>` : ''; }
 function ptCall() { return ptPost({ action: 'portal', month: PT.month, all: PT.all }); }
 function ptLoad(quiet) {
   if (!PT.key) { ptErr('اللينك ناقص. اطلب اللينك الصحيح من مِقناص'); return; }
   if (!PT.t) { if (PT.info) ptLoginView(); else ptPost({ action: 'portalInfo' }).then(i => { ptSetInfo(i); ptLoginView(); }).catch(e => ptErr(e.message)); return; }
   if (!quiet && !PT.data) document.getElementById('pt').innerHTML = '<div class="pt-load">جاري التحميل...</div>';
-  ptCall().then(d => { PT.data = d; ptSetInfo(d.partnerInfo); if (!PT.month) PT.month = d.month; ptRender(); }).catch(e => { if (e.login) { ptTok(null); PT.t = ''; PT.data = null; ptLoad(); } else if (!PT.data) ptErr(e.message); });
+  ptCall().then(d => { const first = !PT.data; PT.data = d; ptSetInfo(d.partnerInfo); if (!PT.month) PT.month = d.month; ptRender(); if (first) ptIcons(); }).catch(e => { if (e.login) { ptTok(null); PT.t = ''; PT.data = null; ptLoad(); } else if (!PT.data) ptErr(e.message); });
 }
 function ptLoginView(msg) {
   document.getElementById('pt').innerHTML = `<div class="pt-login"><form class="pt-lcard" onsubmit="ptLogin(event)">
@@ -114,7 +118,7 @@ const DOM_TXT = { live: 'الدومين: متصل', prog: 'الدومين: قي�
 function ptCard(s) {
   const b = s.blockers[0];
   return `<button type="button" class="pt-card" onclick="ptOpen('${pe(s.id)}')">
-    <div class="pt-top"><b dir="auto">${pe(s.name)}</b>${s.url || s.live ? `<span class="u" dir="ltr">${pe(String(s.live || s.url).replace(/^https?:\/\//, '').replace(/\/$/, ''))}</span>` : ''}
+    <div class="pt-top"><span class="pt-nm">${ptIco(s)}<b dir="auto">${pe(s.name)}</b></span>${s.url || s.live ? `<span class="u" dir="ltr">${pe(String(s.live || s.url).replace(/^https?:\/\//, '').replace(/\/$/, ''))}</span>` : ''}
       ${s.storeId || s.ref ? `<span class="pt-id" dir="ltr">${s.storeId ? '#' + pe(s.storeId) : pe(s.ref)}</span>` : ''}
       <div class="pt-pills"><span class="pill s-${s.status}">${pe(s.statusName)}</span>${b ? `<span class="pill p-block">متوقف · ${pe(b.owner)} · ${b.days} ${b.days === 1 ? 'يوم' : 'أيام'}</span>` : ''}${s.domain ? `<span class="pill p-dom">${DOM_TXT[s.domain]}</span>` : ''}</div></div>
     <div class="pt-prog"><div><span>تقدّم مراحل التنفيذ</span><b dir="ltr">${s.pct}% · ${s.stagesDone}/${s.stagesAll}</b></div><span class="pt-track${s.pct === 100 ? ' ok' : ''}"><i style="width:${s.pct}%"></i></span></div>
@@ -132,7 +136,7 @@ function ptDetail(s) {
     <button type="button" class="pt-back" onclick="ptOpen('')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>كل المتاجر</button>
     <section class="pt-sec">
       <div style="display:flex;flex-direction:column;gap:4px"><span class="num" style="font-size:12px;color:var(--mut)" dir="ltr">${[s.ref, s.storeId ? '#' + s.storeId : ''].filter(Boolean).map(pe).join(' · ')}</span>
-        <h1 dir="auto">${pe(s.name)}</h1>${s.live || s.url ? `<a href="${pe(/^https?:/.test(s.live || s.url) ? (s.live || s.url) : 'https://' + (s.live || s.url))}" target="_blank" rel="noopener noreferrer" dir="ltr" style="font-size:13px">${pe(String(s.live || s.url).replace(/^https?:\/\//, ''))}</a>` : ''}</div>
+        <div class="pt-nm">${ptIco(s, true)}<h1 dir="auto">${pe(s.name)}</h1></div>${s.live || s.url ? `<a href="${pe(/^https?:/.test(s.live || s.url) ? (s.live || s.url) : 'https://' + (s.live || s.url))}" target="_blank" rel="noopener noreferrer" dir="ltr" style="font-size:13px">${pe(String(s.live || s.url).replace(/^https?:\/\//, ''))}</a>` : ''}</div>
       <div class="pt-pills" style="justify-content:flex-start;margin:0"><span class="pill s-${s.status}">${pe(s.statusName)}</span>${s.sla === 'client' ? '<span class="pill p-block">SLA متوقف · من العميل</span>' : s.sla === 'zid' ? '<span class="pill p-block">SLA متوقف · من ' + pe(ptName()) + '</span>' : ''}<span class="pill s-hold">${pe([s.from && s.from !== 'None' ? 'نقل من ' + s.from : 'متجر جديد', s.mode].filter(Boolean).join(' · '))}</span>${s.priority ? `<span class="pill s-hold">الأولوية: ${pe(s.priority)}</span>` : ''}</div>
       <div class="pt-dates"><div><span>الإحالة</span><b dir="ltr">${dShort(s.referral)}</b></div><div><span>البدء</span><b dir="ltr">${dShort(s.start)}</b></div><div><span>المستهدف</span><b dir="ltr">${dShort(s.target)}</b></div><div><span>الإطلاق</span><b dir="ltr">${dShort(s.goLive)}</b></div></div>
       <div class="pt-prog"><div><span>التقدم الكلي</span><b>${s.pct}%</b></div><span class="pt-track${s.pct === 100 ? ' ok' : ''}" style="height:8px"><i style="width:${s.pct}%"></i></span></div>

@@ -19,8 +19,8 @@ const SECTIONS = [
   {id:"drive", label:"لينك الدرايف الخاص بالعميل", type:"url"}]},
  {id:"scope", title:"Project Scope", items:[
   {id:"project_type", label:"نوع المشروع", type:"select", options:["نقل متجر","تحسين متجر","إنشاء متجر","نقل متجر كما هو"]},
-  {id:"current_platform", label:"المنصة الحالية", type:"text", hint:"مثال: سلة"},
-  {id:"target_platform", label:"المنصة اللي هينقل عليها", type:"text", hint:"مثال: زد"},
+  {id:"current_platform", label:"المنصة الحالية", type:"select", plat:true, options:()=>window.MQ_PLATFORMS||["Zid","Salla","Shopify","WooCommerce","Other","None"]},
+  {id:"target_platform", label:"المنصة اللي هينقل عليها", type:"select", plat:true, options:()=>window.MQ_PLATFORMS||["Zid","Salla","Shopify","WooCommerce","Other","None"]},
   {id:"partner", label:"العميل جاي من شريك؟", type:"select", options:()=>window.MQ_PARTNERS||[], optional:true, hideEmpty:true, hint:"لو شريك زي زد هو اللي بعت العميل. لما البريف يتحول لمشروع، المتجر هيظهر في بورتال الشريك"},
   {id:"store_url", label:"لينك المتجر الحالي", type:"url"},
   {id:"domain_owner", label:"الدومين مملوك لمين حاليًا؟", type:"text"},
@@ -28,7 +28,7 @@ const SECTIONS = [
   {id:"domain_change_details", label:"تفاصيل تغيير الدومين", type:"textarea", hint:"مثال: هيشتري دومين جديد من زد مجانًا أو من GoDaddy، ولسه ماستقرش", showIf:a=>a.domain_change==="أيوه"},
   {id:"domain_platform", label:"الدومين على أنهي منصة؟", type:"text", hint:"اليوزر والباسورد بيتكتبوا في قسم الأكسيس."},
   {id:"plan", label:"الباقة (Package / Plan)", type:"textarea", hint:"الباقة الحالية على المنصة، والباقة الخاصة بينا"},
-  {id:"plan_end", label:"تاريخ انتهاء باقة المنصة", type:"date", hint:"المنصة اللي بننقل منها، اشتراكها بينتهي إمتى؟"},
+  {id:"plan_end", label:"انتهاء باقة المنصة", type:"text", hint:"المنصة اللي بننقل منها، اشتراكها بينتهي إمتى؟ اكتبها زي ما العميل قالها"},
   {id:"complaints", label:"أهم شكاوي العملاء والمتجر", type:"textarea", hint:"مثال: العملاء بتشتكي من عدم وجود جدول مقاسات، أو استفسارات متكررة عن المنتجات"}]},
  {id:"access", title:"الأكسيس", items:[
   {id:"acc_salla", label:"سلة", type:"cred", optional:true},
@@ -37,7 +37,8 @@ const SECTIONS = [
   {id:"acc_email", label:"الإيميل", type:"cred", optional:true},
   {id:"acc_tabby", label:"تابي", type:"cred", optional:true},
   {id:"acc_tamara", label:"تمارا", type:"cred", optional:true},
-  {id:"acc_other", label:"حساب تاني", type:"cred", named:true, optional:true}]},
+  {id:"acc_other", label:"حساب منصة تانية", type:"cred", named:true, withLink:true, optional:true},
+  ...Array.from({length:14},(_,i)=>{const n=i+2,id="acc_x"+n; return {id, label:"حساب منصة إضافي", type:"cred", named:true, withLink:true, optional:true, showIf:a=>filled(a[id])||(Number(a._acc_n)||1)>=n};})]},
  {id:"products", group:"Store Manager", title:"المنتجات", items:[
   {id:"products_scope", label:"نقل المنتجات", type:"choice", options:["كل المنتجات","منتجات معينة"]},
   {id:"products_which", label:"أنهي منتجات؟", type:"textarea", showIf:a=>a.products_scope==="منتجات معينة"},
@@ -196,9 +197,9 @@ function field(it,a){
   switch(it.type){
     case "textarea": return `<textarea id="${id}" data-k="${it.id}" rows="2">${esc(v)}</textarea>`;
     case "url": return `<input type="url" dir="ltr" id="${id}" data-k="${it.id}" value="${esc(v)}" placeholder="https://">`;
-    case "cred": { const o=v||{}; return `<div class="credf">${it.named?`<input type="text" data-cred="${it.id}" data-part="n" value="${esc(o.n)}" placeholder="اسم المنصة" aria-label="اسم المنصة">`:""}<input type="text" dir="ltr" id="${id}" data-cred="${it.id}" data-part="u" value="${esc(o.u)}" placeholder="الإيميل أو اليوزر" aria-label="${esc(it.label)}: الإيميل أو اليوزر" autocomplete="off"><input type="text" dir="ltr" data-cred="${it.id}" data-part="p" value="${esc(o.p)}" placeholder="${o.pSet?"محفوظ · اكتب باسورد جديد لو عاوز تغيّره":"الباسورد"}" aria-label="${esc(it.label)}: الباسورد" autocomplete="off" spellcheck="false">${it.withLink?`<input type="url" dir="ltr" data-cred="${it.id}" data-part="l" value="${esc(o.l)}" placeholder="لينك منصة الدومين (اختياري)" aria-label="لينك منصة الدومين" style="grid-column:1/-1">`:""}</div>`; }
+    case "cred": { const o=v||{}; return `<div class="credf">${it.named?`<input type="text" data-cred="${it.id}" data-part="n" value="${esc(o.n)}" placeholder="اسم المنصة" aria-label="اسم المنصة">`:""}<input type="text" dir="ltr" id="${id}" data-cred="${it.id}" data-part="u" value="${esc(o.u)}" placeholder="الإيميل أو اليوزر" aria-label="${esc(it.label)}: الإيميل أو اليوزر" autocomplete="off"><input type="text" dir="ltr" data-cred="${it.id}" data-part="p" value="${esc(o.p)}" placeholder="${o.pSet?"محفوظ · اكتب باسورد جديد لو عاوز تغيّره":"الباسورد"}" aria-label="${esc(it.label)}: الباسورد" autocomplete="off" spellcheck="false">${it.withLink?`<input type="url" dir="ltr" data-cred="${it.id}" data-part="l" value="${esc(o.l)}" placeholder="${it.named?"لينك تسجيل الدخول (اختياري)":"لينك منصة الدومين (اختياري)"}" aria-label="${it.named?"لينك تسجيل الدخول":"لينك منصة الدومين"}" style="grid-column:1/-1">`:""}</div>`; }
     case "select": { const opts=[...(typeof it.options==="function"?it.options():it.options)]; if(filled(v)&&!opts.includes(v)) opts.push(v);
-      return `<select id="${id}" data-k="${it.id}"><option value=""${filled(v)?"":" selected"}>اختار...</option>${opts.map(o=>`<option value="${esc(o)}"${v===o?" selected":""}>${esc(o)}</option>`).join("")}</select>`; }
+      return `<select id="${id}" data-k="${it.id}"${it.plat?' data-plat="1"':""}><option value=""${filled(v)?"":" selected"}>اختار...</option>${opts.map(o=>`<option value="${esc(o)}"${v===o?" selected":""}>${esc(o)}</option>`).join("")}${it.plat&&canWrite?`<option value="__new">+ منصة جديدة…</option>`:""}</select>`; }
     case "number": return `<input type="number" min="0" inputmode="numeric" id="${id}" data-k="${it.id}" value="${esc(v)}">`;
     case "date": return `<input type="date" id="${id}" data-k="${it.id}" value="${esc(v)}">`;
     case "yn": case "choice": {
@@ -251,13 +252,19 @@ function sectionHTML(s,a){
       <div><label class="l" for="f_${it.id}">${esc(it.label)}</label>${it.hint?`<div class="h">${esc(it.hint)}</div>`:""}</div>
       <div class="a">${field(it,a)}</div></div>`;
   }).join("");
-  return `<section class="sec" id="s_${s.id}"><div class="sec-h">${s.group?`<span class="grp">${esc(s.group)}</span>`:""}<h2>${esc(s.title)}</h2><span class="cnt">${cntText(c)}</span></div><div class="card">${body}</div></section>`;
+  const accN=Number(a._acc_n)||1, more=s.id==="access"&&accN<15?`<div class="q" style="border-top:0"><div></div><div class="a"><button type="button" class="btn" id="accMore">+ إضافة حساب منصة</button></div></div>`:"";
+  return `<section class="sec" id="s_${s.id}"><div class="sec-h">${s.group?`<span class="grp">${esc(s.group)}</span>`:""}<h2>${esc(s.title)}</h2><span class="cnt">${cntText(c)}</span></div><div class="card">${body}${more}</div></section>`;
 }
 function bindForm(){
   app.querySelectorAll("[data-k]").forEach(el=>{
-    el.oninput=()=>{ draft.answers[el.dataset.k]=el.value; const q=el.closest(".q"); if(q) q.classList.toggle("empty",!filled(el.value)&&!q.hasAttribute("data-opt")); if(el.tagName==="TEXTAREA") autosize(el); changed(false); };
+    el.oninput=()=>{ if(el.value==="__new") return; draft.answers[el.dataset.k]=el.value; const q=el.closest(".q"); if(q) q.classList.toggle("empty",!filled(el.value)&&!q.hasAttribute("data-opt")); if(el.tagName==="TEXTAREA") autosize(el); changed(false); };
     if(el.tagName==="TEXTAREA") autosize(el);
   });
+  const am=$("#accMore"); if(am) am.onclick=()=>{ const a=draft.answers; let n=Number(a._acc_n)||1; for(let k=2;k<=15;k++) if(filled(a["acc_x"+k])) n=Math.max(n,k); a._acc_n=Math.min(15,n+1); changed(true); setTimeout(()=>{const el=document.querySelector(`[data-q="acc_x${a._acc_n}"] input`); if(el) el.focus();},30); };
+  app.querySelectorAll("select[data-plat]").forEach(el=>el.addEventListener("change",async()=>{ if(el.value!=="__new") return; const k=el.dataset.k, old=draft.answers[k]||"";
+    const name=(prompt("اسم المنصة الجديدة")||"").trim(); if(!name){ el.value=old; return; }
+    try{ const r=await window.erpCall("platformAdd",{name}); window.MQ_PLATFORMS=r.platforms; draft.answers[k]=r.name; toast("اتضافت المنصة ✓"); changed(true); }
+    catch(e){ el.value=old; toast(e.message); } },true));
   app.querySelectorAll("[data-one]").forEach(b=>b.onclick=()=>{const k=b.dataset.one; draft.answers[k]=draft.answers[k]===b.dataset.v?"":b.dataset.v; changed(true);});
   app.querySelectorAll("[data-many]").forEach(b=>b.onclick=()=>{const k=b.dataset.many, arr=[...(draft.answers[k]||[])], i=arr.indexOf(b.dataset.v); i<0?arr.push(b.dataset.v):arr.splice(i,1); draft.answers[k]=arr; changed(true);});
   app.querySelectorAll("[data-cred]").forEach(el=>el.oninput=()=>{const k=el.dataset.cred; draft.answers[k]={...(draft.answers[k]||{}),[el.dataset.part]:el.value}; changed(false);});
@@ -283,7 +290,9 @@ function setLogo(file){
       let url=c.toDataURL("image/png"); if(url.length>150000) url=c.toDataURL("image/webp",0.85); if(url.length>150000) url=c.toDataURL("image/jpeg",0.82);
       if(!okLogo(url)||url.length>200000){toast("الصورة كبيرة أوي، جرّب صورة أصغر");return;}
       const tk=Math.min(1,96/Math.max(w,h)), tc=document.createElement("canvas"); tc.width=Math.max(1,Math.round(w*tk)); tc.height=Math.max(1,Math.round(h*tk)); tc.getContext("2d").drawImage(c,0,0,tc.width,tc.height);
-      draft.logo=url; draft.thumb=tc.toDataURL("image/png"); if(draft.thumb.length>40000) draft.thumb=tc.toDataURL("image/jpeg",0.8); changed(true); };
+      draft.logo=url; draft.thumb=tc.toDataURL("image/png"); if(draft.thumb.length>15000) draft.thumb=tc.toDataURL("image/webp",0.85);
+      if(draft.thumb.length>15000||!/^data:image\/webp/.test(draft.thumb)&&draft.thumb.length>15000){ const g=tc.getContext("2d"); g.globalCompositeOperation="destination-over"; g.fillStyle="#fff"; g.fillRect(0,0,tc.width,tc.height); draft.thumb=tc.toDataURL("image/jpeg",0.85); }
+      changed(true); };
     img.onerror=()=>toast("ماقدرتش أفتح الصورة دي");
     img.src=rd.result; };
   rd.readAsDataURL(file);
@@ -473,13 +482,13 @@ async function exportCSV(){
 // قايمة البريفات المتخزنة (من التحميل في الخلفية) بتظهر على طول
 function primeList(r){
   if(!r||!r.briefs) return;
-  if(r.partners) window.MQ_PARTNERS=r.partners;
+  if(r.partners) window.MQ_PARTNERS=r.partners; if(r.platforms) window.MQ_PLATFORMS=r.platforms;
   const m=new Map(); for(const b of r.briefs){ const old=briefs.get(b.id); m.set(b.id, old&&!old.partial&&old.updatedAt>=b.updatedAt?old:b); }
   briefs=m; loaded=true;
 }
 async function loadList(){
   if(!me) return;
-  try{ const r=await api("listBriefs",session); if(r&&r.partners) window.MQ_PARTNERS=r.partners; try{ if(typeof S!=="undefined"&&S.cache){ S.cache.briefs=r; S.fetched.briefs=Date.now(); if(window.saveCache) saveCache(); } }catch(e){}
+  try{ const r=await api("listBriefs",session); if(r&&r.partners) window.MQ_PARTNERS=r.partners; if(r&&r.platforms) window.MQ_PLATFORMS=r.platforms; try{ if(typeof S!=="undefined"&&S.cache){ S.cache.briefs=r; S.fetched.briefs=Date.now(); if(window.saveCache) saveCache(); } }catch(e){}
     const m=new Map(); for(const b of r.briefs){ const old=briefs.get(b.id); m.set(b.id, old&&!old.partial&&old.updatedAt>=b.updatedAt?old:b); }
     briefs=m; loaded=true; if(route.v==="list"||(route.v==="view"&&!briefs.has(route.id))) render(); }
   catch(e){ if(!/SESSION|الجلسة/.test(e.message)){ loaded=true; if(route.v==="list") app.innerHTML=`<div class="note">ماقدرتش أحمّل البريفات. ${esc(e.message)}</div>`; } }

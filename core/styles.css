@@ -710,3 +710,14 @@ td.nw{white-space:nowrap}
 .mv-sec:first-child{border-top:0}
 .mv-sec input{width:18px;height:18px;margin-top:2px;flex:none}
 .mv-sec small{display:block;color:var(--mut);font-size:12.5px;margin-top:2px}
+
+/* Project icons */
+.pi{display:inline-grid;place-items:center;flex:none;width:30px;height:30px;border-radius:8px;background:var(--line) center/contain no-repeat;color:var(--mut);font:700 11.5px/1 system-ui,sans-serif;vertical-align:middle;overflow:hidden}
+.pi.has-img{color:transparent;background-color:#fff;border:1px solid var(--line)}
+.pi-sm{width:24px;height:24px;border-radius:6px;font-size:10px}
+.pi-lg{width:44px;height:44px;border-radius:11px;font-size:15px}
+.pi-xl{width:88px;height:88px;border-radius:18px;font-size:26px}
+.pi-row{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.pi-btn{padding:0;border:0;background:none;cursor:pointer;border-radius:12px;line-height:0}
+.pi-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tghead .pi{margin-inline-end:8px}

@@ -46,7 +46,7 @@ function cpRender() {
   const host = String(d.live || d.url || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
   const open = d.payments.filter(p => p.status !== 'paid');
   cpEl().innerHTML = `<div class="pt-wrap"><div class="pt-d">
-    <header class="pt-head">${cpMark()}<div class="pt-title"><b>${ce(d.client)}</b><span>متابعة متجرك مع مِقناص${d.am ? ' · مدير حسابك: ' + ce(d.am) : ''}</span></div><button type="button" class="pt-out" onclick="cpLogout()">خروج</button></header>
+    <header class="pt-head">${cpMark()}${d.logo ? `<span class="pt-ico" style="width:46px;height:46px"><img src="${ce(d.logo)}" alt=""></span>` : ''}<div class="pt-title"><b>${ce(d.client)}</b><span>متابعة متجرك مع مِقناص${d.am ? ' · مدير حسابك: ' + ce(d.am) : ''}</span></div><button type="button" class="pt-out" onclick="cpLogout()">خروج</button></header>
     <section class="pt-sec">
       <div class="pt-pills" style="justify-content:flex-start;margin:0"><span class="pill s-${d.status}">${ce(d.statusName)}</span>${host ? `<a class="pill s-hold" href="${ce(/^https?:/.test(d.live || d.url) ? (d.live || d.url) : 'https://' + host)}" target="_blank" rel="noopener noreferrer" dir="ltr">${ce(host)}</a>` : ''}</div>
       <div class="pt-prog"><div><span>التقدم الكلي</span><b>${d.pct}%</b></div><span class="pt-track${d.pct === 100 ? ' ok' : ''}" style="height:10px"><i style="width:${d.pct}%"></i></span></div>
