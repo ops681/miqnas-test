@@ -109,6 +109,11 @@ function setTop(title, sub, actions){
   $('pgTitle').textContent=title||''; $('pgSub').textContent=sub||''; $('topActions').innerHTML=actions||'';
 }
 
+// الصفحة اللي انت فيها بتتحفظ في التاب نفسه، فالـ Refresh بيرجعك عليها
+function navSave(){ try{ const o={}; const src=S.navOpts||{}; Object.keys(src).forEach(k=>{ const v=src[k]; if(v==null||['string','number','boolean'].indexOf(typeof v)>=0) o[k]=v; });
+  sessionStorage.setItem(KP+'nav',JSON.stringify({v:S.view,o:o,p:S.proj&&S.proj.id||''})); }catch(e){} }
+function navLoad(){ try{ return JSON.parse(sessionStorage.getItem(KP+'nav')||'null'); }catch(e){ return null; } }
+function navClear(){ try{ sessionStorage.removeItem(KP+'nav'); }catch(e){} }
 function startApp(){
   setTimeout(pwaBanner, 1500);
   $('loginView').classList.add('hidden'); $('appView').classList.remove('hidden');
@@ -117,10 +122,12 @@ function startApp(){
   renderBell();
   const deep=briefFromHash();
   const N=navFor(S.user);
+  const back=!S.view&&!deep?navLoad():null;
   if(deep && N.some(n=>n.id==='briefs')) go('briefs',{id:deep});
+  else if(back && back.v && N.some(n=>n.id===back.v) && !(gated() && FREE_VIEWS.indexOf(back.v)<0)){ go(back.v, back.o&&Object.keys(back.o).length?back.o:undefined); if(back.p && back.v==='projects' && typeof viewProject==='function') viewProject(back.p); }
   else if(gated() && FREE_VIEWS.indexOf(S.view)<0) go('clock');
   else if(!S.view || !N.some(n=>n.id===S.view)) go((S.user.clevel||S.user.founder) && N.some(n=>n.id==='dash') ? 'dash' : N[0].id==='clock' && can('tasks.mine') && S.status && S.status.clockedIn ? 'mytasks' : N[0].id);
-  else go(S.view);
+  else { const pj=S.proj&&S.proj.id; go(S.view, S.navOpts||undefined); if(pj && S.view==='projects' && typeof viewProject==='function') viewProject(pj); }
   startBellPolling();
   startPrefetchLoop();
   if(S.pendingGo){ const g=S.pendingGo; S.pendingGo=null; try{ setTimeout(()=>goTo(JSON.parse(g)),300); }catch(e){} }
@@ -133,7 +140,7 @@ window.addEventListener('hashchange',()=>{ const id=briefFromHash(); if(id && S.
 function go(v,opts){
   if(S.view==='briefs' && v!=='briefs' && window.BriefModule) BriefModule.leave();
   sideOpen(false);
-  S.view=v; S.vt++; S.proj=null;
+  S.view=v; S.vt++; S.proj=null; S.navOpts=opts&&typeof opts==='object'?opts:null; navSave();
   clearInterval(S.viewTimer);
   closeBell();
   $('nav').querySelectorAll('.nav').forEach(b=>b.classList.toggle('on',b.dataset.v===v));

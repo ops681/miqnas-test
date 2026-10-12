@@ -15,7 +15,7 @@ function pbar(p){ return `<div class="pbar"><i style="width:${p}%"></i></div>`; 
 S.cache={};
 function busyTyping(){ const a=document.activeElement; return a && $('main').contains(a) && (a.tagName==='INPUT'||a.tagName==='TEXTAREA'); }
 async function viewProjects(){
-  S.proj=null;
+  S.proj=null; if(typeof navSave==='function') navSave();
   if(S.cache.plist) renderProjects(S.cache.plist); else $('main').innerHTML=LOADING;
   try{
     const r=await call('projList'); S.skew=Date.now()-r.now; S.cache.plist=r;
@@ -59,7 +59,7 @@ function renderProjects(r,keep){
 /* ----- Project page ----- */
 async function viewProject(id,keep){
   const k='p:'+id, c=S.cache[k];
-  S.proj={id};
+  S.proj={id}; if(typeof navSave==='function') navSave();
   if(c) renderProject(c,keep); else if(!keep) $('main').innerHTML=LOADING;
   try{
     const r=await call('projGet',{id}); S.skew=Date.now()-r.now; S.cache[k]=r;

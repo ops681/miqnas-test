@@ -16,7 +16,7 @@ function forceLogin(msg, hard){
   if(S.sharing && !hard) return;
   if(hard && S.sharing){ try{ stopStream(); }catch(e){} }
   if(msg) $('lerr').textContent=msg;
-  S.token=null; store('erp_token',null); store('erp_user',null);
+  S.token=null; store('erp_token',null); store('erp_user',null); if(typeof navClear==='function') navClear();
   $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden');
 }
 
@@ -25,7 +25,7 @@ async function logout(){
   try{ call('logout'); }catch(e){}
   stopStream(false);
   store(cacheKey(),null);
-  S.token=null; store('erp_token',null); store('erp_user',null); store('erp_mobile',null);
+  S.token=null; store('erp_token',null); store('erp_user',null); store('erp_mobile',null); if(typeof navClear==='function') navClear();
   setTimeout(()=>location.reload(),150);
 }
 
