@@ -10,7 +10,7 @@ function coWorkedMs(){
 function coDur(ms){ const m=Math.max(0,Math.round(ms/6e4)), h=Math.floor(m/60), r=m%60;
   const w=(n,one,two,few,many)=>n===1?one:n===2?two:n<=10?n+' '+few:n+' '+many;
   const H=h?w(h,'ساعة','ساعتين','ساعات','ساعة'):'', M=(r||!h)?w(r,'دقيقة','دقيقتين','دقايق','دقيقة'):'';
-  return H&&M?H+' و'+M:(H||M); }
+  return m<1?'أقل من دقيقة':(H&&M?H+' و'+M:(H||M)); }
 function coTick(){
   const c=S.cfg||{}, st=S.status, u=S.user;
   const on=c.coOn && u && u.clocks && !S.mobile && st && st.clockedIn && !st.onBreak;
@@ -28,7 +28,7 @@ function coShow(w, shift){
   let b=$('coBar');
   if(!b){ b=document.createElement('div'); b.id='coBar'; b.className='co-bar'; b.setAttribute('role','alert'); const va=$('vaBar'); va? va.after(b) : document.body.prepend(b); }
   const left=shift-w, hrs=Math.round(shift/36e5*10)/10;
-  const msg=left>30000?`فاضل ${coDur(left)} على نهاية شيفتك (${hrs} ساعات) · متنساش تبصم خروج`:`شيفتك (${hrs} ساعات) خلص${left< -6e4?' من '+coDur(-left):''} · متنساش تبصم خروج`;
+  const msg=left>30000?`فاضل ${coDur(left)} على نهاية شيفتك (${coDur(shift)}) · متنساش تبصم خروج`:`شيفتك (${coDur(shift)}) خلص${left< -6e4?' من '+coDur(-left):''} · متنساش تبصم خروج`;
   const html=`<span class="co-ic">⏰</span><span class="co-tx" dir="rtl">${esc(msg)} <small>· اشتغلت النهارده ${esc(coDur(w))}</small></span><span class="spacer"></span>
     <button type="button" class="co-b2" onclick="coLater()">لسه شغال · فكّرني بعد ${Number((S.cfg||{}).coSnooze)||30} دقيقة</button><button type="button" class="co-b1" onclick="clockOut()">Clock Out</button>`;
   if(b.dataset.h!==html){ b.innerHTML=html; b.dataset.h=html; }
