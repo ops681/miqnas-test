@@ -124,12 +124,14 @@ const oneUrl=v=>/^https?:\/\/\S+$/i.test(String(v||'').trim());
 function taskRowHTML(t,pid,me,isAdmin,canEdit){
   if(t.na) return `<div class="trow na"><div class="tmain"><div class="tt">${esc(t.title)}</div></div><div class="tside"><span class="pill p-na">N/A</span></div></div>`;
   const assigned=(t.assignees||[]).length>0;
-  const mine=assigned && ((t.assignees||[]).indexOf(me)>=0||isAdmin);
+  // اتنين على نفس التاسك: اللي اختار اسمه هو اللي ماسكها، والتاني بيشوفها بس
+  const boss=isAdmin||canEdit, withOther=!!(t.multi && t.claim && t.claim!==me && !boss);
+  const mine=assigned && ((t.assignees||[]).indexOf(me)>=0||isAdmin) && !withOther;
   const P=`'${esc(pid)}','${esc(t.key)}'`;
   // المشاركين: كل واحد ليه تايمر بتاعه، ومش بيغيّر الحالة
   const sopL=(S.kbTaskMap||{})[t.key], howTo=sopL&&!t.na?`<button class="tnbtn kb-how" onclick="kbOpen('${esc(sopL.id)}')" title="${esc(sopL.title)}">📘 How to</button>`:'';
   const HL=t.helperList||[], meH=HL.find(h=>h.u===me), helping=!!meH && (t.assignees||[]).indexOf(me)<0;
-  const canHelpers=t.status!=='Done' && !(t.locked&&!HL.length) && ((t.assignees||[]).indexOf(me)>=0||isAdmin||canEdit);
+  const canHelpers=t.status!=='Done' && !(t.locked&&!HL.length) && !(t.multi && t.claim && t.claim!==me && !(isAdmin||canEdit)) && ((t.assignees||[]).indexOf(me)>=0||isAdmin||canEdit);
   const hLive=h=>`<span class="ttime" data-live data-total="${h.ms}" data-since="${h.since||0}">${fmtDur(h.ms+(h.since?Date.now()-(S.skew||0)-h.since:0))}</span>`;
   const helpersLine = HL.length||canHelpers ? `<div class="thelp">${HL.length?`<span class="muted">Helping:</span> ${HL.map(h=>`<span class="hchip${h.since?' on':''}">${bd(h.name)}${h.ms||h.since?' · '+hLive(h):''}</span>`).join('')}`:''}${canHelpers?`<button class="tnbtn" onclick="helpersEdit(${P})">${HL.length?'Edit helpers':'+ Add helpers'}</button>`:''}</div>` : '';
   const st=TSTAT[t.status]||TSTAT['Not Started'];
@@ -156,7 +158,9 @@ function taskRowHTML(t,pid,me,isAdmin,canEdit){
       <div class="tnadd"><input id="${nid}" dir="auto" maxlength="1000" placeholder="اكتب التعديل المطلوب أو اللي اتعمل"><button class="tb ghost" onclick="addNote(${P},'${nid}')">Add</button></div></div>`:'');
   const wl=t.waiting.slice(0,3).map(w=>esc(w.title)+(w.name?' ('+bd(w.name)+')':'')).join(', ')+(t.waiting.length>3?` +${t.waiting.length-3} more`:'');
   const wait = t.locked ? `<div class="twait">Waiting for: ${wl}</div>` : '';
-  const who = (t.assignees||[]).length>1 ? `<div class="twait">${bd(t.assigneeName)}</div>` : '';
+  const P2=`'${esc(pid)}','${esc(t.key)}'`;
+  const who = t.multi ? `<div class="tclaim"><span class="muted">${t.claim?'Working on it:':'Who\'s working on it?'}</span> ${(t.people||[]).map(x=>{ const on=t.claim===x.u, can=t.status!=='Done' && !t.running && (boss || (x.u===me && (!t.claim||t.claim===me))) ; return can?`<button type="button" class="cchip${on?' on':''}" title="${on?'Click to clear':'Click to pick'}" onclick="tClaim(${P2},'${on?'':esc(x.u)}')">${on?'✓ ':''}${bd(x.name)}</button>`:`<span class="cchip${on?' on':''}${t.claim&&!on?' off':''}">${on?'✓ ':''}${bd(x.name)}</span>`; }).join('')}</div>`
+    : (t.assignees||[]).length>1 ? `<div class="twait">${bd(t.assigneeName)}</div>` : '';
   let link='';
   if(t.linkLabel){
     const id='lk_'+(pid+'_'+t.key).replace(/[^a-z0-9_]/gi,'_');
@@ -165,7 +169,7 @@ function taskRowHTML(t,pid,me,isAdmin,canEdit){
       : `<div class="tlink"><span>${esc(t.linkLabel)}</span>${t.link?`<span class="tl-txt" dir="auto">${txtLinks(t.link)}</span>`:'<span class="muted">Not yet</span>'}</div>`;
   }
   const refs=(t.refs||[]).map(r=>`<div class="tlink tref"><span>${esc(r.label)}</span>${r.url?`<a href="${esc(r.url)}" target="_blank" rel="noopener" dir="ltr">${esc(r.text||r.url)}</a>`:`<span class="tl-txt" dir="auto">${txtLinks(r.text||'')}</span>`}${r.copy?`<button type="button" class="btn ghost small tcopy" aria-label="Copy" onclick="event.stopPropagation();navigator.clipboard.writeText(this.dataset.v).then(()=>toast('اتنسخ'))" data-v="${esc(r.text||r.url)}">Copy</button>`:''}</div>`).join('');
-  return `<div class="trow${t.locked?' locked':''}${t.running||(meH&&meH.since)?' running':''}${t.status==='Done'?' done':''}">
+  return `<div class="trow${withOther?' other':''}${t.locked?' locked':''}${t.running||(meH&&meH.since)?' running':''}${t.status==='Done'?' done':''}">
     <div class="tmain"><div class="tt">${esc(t.title)}${howTo}</div>${who}${helpersLine}${wait}${refs}${link}${notes}</div>
     <div class="tside">${lock}${dl}${status}<span class="tsep"></span>${time}${timer}</div></div>`;
 }
@@ -201,6 +205,8 @@ function findTask(d,pid,key){
 function applyLocal(t,action,extra){
   const now=Date.now()-S.skew;
   const stop=()=>{ if(t.running){ t.totalMs=(t.totalMs||0)+(now-t.runningSince); t.running=false; t.runningSince=0; t.liveMs=t.totalMs; } };
+  if(action==='claim'){ t.claim=extra.who||''; const p=(t.people||[]).find(x=>x.u===t.claim); t.claimName=p?p.name:''; return; }
+  if(action==='start' && t.multi && !t.claim && (t.assignees||[]).indexOf(S.user.username)>=0){ t.claim=S.user.username; }
   if(action==='start'){ if(!t.running){ t.running=true; t.runningSince=now; } if(t.status!=='In Progress') t.status='In Progress'; }
   else if(action==='deadline'){ t.deadline=extra.deadline; }
   else if(action==='pause') stop();
@@ -208,6 +214,7 @@ function applyLocal(t,action,extra){
   else if(action==='link') t.link=extra.link;
   else if(action==='hstart'||action==='hpause'){ const h=(t.helperList||[]).find(x=>x.u===S.user.username); if(h){ if(action==='hstart'&&!h.since) h.since=now; if(action==='hpause'&&h.since){ h.ms+=now-h.since; h.since=0; } } }
 }
+function tClaim(pid,key,who){ tAct(pid,key,'claim',{who}); }
 // إضافة/شيل المشاركين
 async function helpersEdit(pid,key){
   const d=curData(pid), t=findTask(d,pid,key); if(!t) return;
@@ -264,13 +271,13 @@ function renderMyTasks(r,keep){
   setTop('My Tasks', r.projects.length+' active projects');
   {
     const all=r.projects.flatMap(p=>p.tasks);
-    const rank=t=>(t.running||(t.helperList||[]).some(h=>h.u===r.me&&h.since))?0:(t.status==='Done'?3:(t.locked?2:1));
+    const rank=t=>(t.running||(t.helperList||[]).some(h=>h.u===r.me&&h.since))?0:(t.status==='Done'?4:t.withOther?3:(t.locked?2:1));
     if(!r.projects.some(p=>p.id===S.myProj)){ const run=r.projects.find(p=>p.tasks.some(t=>t.running)); S.myProj=(run||r.projects[0]||{}).id; }
     const sel=S.myProj;
     $('main').innerHTML=`<div class="en">
     <div class="grid kpis">
-      <div class="kpi"><b>${all.filter(t=>t.status!=='Done').length}</b><span>Open tasks</span></div>
-      <div class="kpi"><b>${all.filter(t=>t.status!=='Done'&&!t.locked).length}</b><span>Ready to start</span></div>
+      <div class="kpi"><b>${all.filter(t=>t.status!=='Done'&&!t.withOther).length}</b><span>Open tasks</span></div>
+      <div class="kpi"><b>${all.filter(t=>t.status!=='Done'&&!t.locked&&!t.withOther).length}</b><span>Ready to start</span></div>
       <div class="kpi"><b style="color:var(--accent)">${all.filter(t=>t.helping?(t.helperList||[]).some(h=>h.u===r.me&&h.since):t.running).length}</b><span>Running now</span></div>
     </div>
     ${r.projects.length?`<div class="psel"><label for="mysel">Project</label><select id="mysel" onchange="S.myProj=this.value;renderMyTasks(S.cache.my)">${r.projects.map(p=>{ const open=p.tasks.filter(t=>t.status!=='Done').length, run=p.tasks.some(t=>t.running); return `<option value="${esc(p.id)}"${p.id===sel?' selected':''}>${run?'⏱ ':''}${esc(p.id)} · ${esc(p.client)} — ${open} open</option>`; }).join('')}</select></div>`:''}
