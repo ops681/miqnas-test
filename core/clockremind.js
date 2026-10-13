@@ -1,7 +1,7 @@
 /* ============ تذكير بصمة الخروج ============ */
-// قبل نهاية ساعات الشيفت بكام دقيقة (من Settings) بيظهر شريط فوق + إشعار من المتصفح، ويفضل لحد ما يبصم خروج.
+// قبل نهاية ساعات الشيفت بكام دقيقة (من Settings) بيظهر كارت في نص الشاشة (بيتسحب) + إشعار من المتصفح، ويفضل لحد ما يبصم خروج.
 // "فكّرني بعد" بيخفيه شوية ويرجع تاني. الساعات من غير وقت البريك.
-// في View as الشريط بيظهر زي ما الموظف شايفه، بس إشعار المتصفح لأ (عشان مايجيلكش انت).
+// في View as الكارت بيظهر زي ما الموظف شايفه، بس إشعار المتصفح لأ (عشان مايجيلكش انت).
 function coWorkedMs(){
   const st=S.status; if(!st||!st.clockedIn) return 0;
   const now=Date.now()-(st._off||0);
@@ -25,17 +25,31 @@ function coTick(){
   if(c.coNotify && !VA_TAB && S.coEp!==ep){ S.coEp=ep; coNotify(shift-w); }
 }
 function coShow(w, shift){
-  let b=$('coBar');
-  if(!b){ b=document.createElement('div'); b.id='coBar'; b.className='co-bar'; b.setAttribute('role','alert'); const va=$('vaBar'); va? va.after(b) : document.body.prepend(b); }
-  const left=shift-w, hrs=Math.round(shift/36e5*10)/10;
-  const msg=left>30000?`فاضل ${coDur(left)} على نهاية شيفتك (${coDur(shift)}) · متنساش تبصم خروج`:`شيفتك (${coDur(shift)}) خلص${left< -6e4?' من '+coDur(-left):''} · متنساش تبصم خروج`;
-  const html=`<span class="co-ic">⏰</span><span class="co-tx" dir="rtl">${esc(msg)} <small>· اشتغلت النهارده ${esc(coDur(w))}</small></span><span class="spacer"></span>
-    <button type="button" class="co-b2" onclick="coLater()">لسه شغال · فكّرني بعد ${Number((S.cfg||{}).coSnooze)||30} دقيقة</button><button type="button" class="co-b1" onclick="clockOut()">Clock Out</button>`;
-  if(b.dataset.h!==html){ b.innerHTML=html; b.dataset.h=html; }
+  let b=$('coCard');
+  if(!b){
+    b=document.createElement('div'); b.id='coCard'; b.className='co-card'; b.setAttribute('role','alertdialog'); b.setAttribute('aria-label','متنساش تبصم خروج');
+    b.innerHTML=`<div class="co-h" title="اسحب من هنا"><span>⏰</span><span dir="rtl">متنساش تبصم خروج</span><span class="co-grip">⠿ اسحب</span></div>
+      <div class="co-bd" dir="rtl"><span class="co-tx"></span><small class="co-w"></small></div>
+      <div class="co-ft"><button type="button" class="co-b2" onclick="coLater()"></button><button type="button" class="co-b1" onclick="clockOut()">Clock Out</button></div>`;
+    document.body.appendChild(b); coDrag(b);
+  }
+  const left=shift-w;
+  const tx=left>30000?`فاضل <b>${esc(coDur(left))}</b> على نهاية شيفتك (${esc(coDur(shift))}).`:`شيفتك (${esc(coDur(shift))}) خلص${left< -6e4?' من <b>'+esc(coDur(-left))+'</b>':''}.`;
+  const q=(k,v,html)=>{ const e=b.querySelector(k); if(e && e.dataset.v!==v){ e.dataset.v=v; html? e.innerHTML=v : e.textContent=v; } };
+  q('.co-tx',tx,true); q('.co-w','اشتغلت النهارده '+coDur(w)); q('.co-b2','فكّرني بعد '+(Number((S.cfg||{}).coSnooze)||30)+' دقيقة');
   if(!/^⚠/.test(document.title)) document.title='⏰ متنساش تبصم خروج';
 }
+// السحب من شريط العنوان. المكان مش بيتحفظ: كل مرة الكارت بيظهر في النص
+function coDrag(b){
+  const h=b.querySelector('.co-h'); let sx=0, sy=0, ox=0, oy=0, on=false;
+  h.addEventListener('pointerdown',e=>{ if(e.button) return; const r=b.getBoundingClientRect(); b.style.transform='none'; b.style.left=r.left+'px'; b.style.top=r.top+'px'; sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top; on=true; b.classList.add('drag'); try{ h.setPointerCapture(e.pointerId); }catch(x){} e.preventDefault(); });
+  h.addEventListener('pointermove',e=>{ if(!on) return; const W=window.innerWidth, H=window.innerHeight, bw=b.offsetWidth, bh=b.offsetHeight;
+    b.style.left=Math.min(Math.max(8,ox+e.clientX-sx),W-bw-8)+'px'; b.style.top=Math.min(Math.max(8,oy+e.clientY-sy),H-bh-8)+'px'; });
+  const end=()=>{ on=false; b.classList.remove('drag'); };
+  h.addEventListener('pointerup',end); h.addEventListener('pointercancel',end);
+}
 function coHide(){
-  const b=$('coBar'); if(b) b.remove();
+  const b=$('coCard'); if(b) b.remove();
   if(/^⏰/.test(document.title)) document.title='Miqnas ERP';
 }
 function coLater(){ store('co_snz', String(Date.now()+(Number((S.cfg||{}).coSnooze)||30)*6e4)); coHide(); toast('هفكّرك تاني بعد '+((Number((S.cfg||{}).coSnooze)||30))+' دقيقة'); }

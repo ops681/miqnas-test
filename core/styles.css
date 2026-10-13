@@ -749,8 +749,14 @@ button.cchip{cursor:pointer}button.cchip:hover{border-color:var(--brand-line,#BF
 .va-bar.edit .btn{background:#8A1F17 !important;border-color:#8A1F17 !important;color:#FFFFFF !important}
 .va-bar.edit .btn.ghost{background:#FFFFFF !important;color:#8A1F17 !important;border-color:#E39A93 !important}
 
-.co-bar{position:sticky;top:0;z-index:998;display:flex;align-items:center;gap:12px;padding:10px 18px;background:#FFF1E6;border-bottom:1px solid #F5C9A3;color:#7A3A0C;font-size:14px;font-weight:600}
-.co-bar .co-ic{font-size:18px}.co-bar .spacer{flex:1}.co-bar small{font-weight:500;opacity:.85}
-.co-bar .co-b1{background:#C2410C;color:#fff;border:0;border-radius:9px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
-.co-bar .co-b2{background:#fff;color:#7A3A0C;border:1px solid #F0B98C;border-radius:9px;padding:7px 12px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
-@media (max-width:760px){.co-bar{flex-wrap:wrap}.co-bar .spacer{display:none}}
+.co-card{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);z-index:950;width:340px;max-width:calc(100vw - 32px);background:#fff;border:1px solid #F0C7A2;border-radius:16px;box-shadow:0 18px 50px rgba(15,40,40,.24),0 2px 8px rgba(0,0,0,.08);overflow:hidden;color:#1f2a29;animation:coIn .25s ease-out}
+.co-card.drag{box-shadow:0 24px 60px rgba(15,40,40,.32);opacity:.97}
+.co-card .co-h{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#FFF1E6;color:#7A3A0C;font-weight:700;font-size:15px;cursor:grab;user-select:none;touch-action:none}
+.co-card.drag .co-h{cursor:grabbing}
+.co-card .co-grip{margin-inline-start:auto;opacity:.6;font-size:12.5px;font-weight:600}
+.co-card .co-bd{padding:14px 16px 4px;font-size:14px;line-height:1.7}
+.co-card .co-bd small{display:block;color:#6b7a77;font-size:12.5px}
+.co-card .co-ft{display:flex;gap:8px;padding:12px 16px 16px}
+.co-card .co-b1{flex:1;background:#C2410C;color:#fff;border:0;border-radius:10px;padding:9px 12px;font:inherit;font-weight:700;cursor:pointer}
+.co-card .co-b2{flex:1;background:#fff;color:#7A3A0C;border:1px solid #F0B98C;border-radius:10px;padding:9px 10px;font:inherit;font-weight:600;font-size:13px;cursor:pointer}
+@keyframes coIn{from{opacity:0;margin-top:12px}to{opacity:1;margin-top:0}}
