@@ -748,3 +748,9 @@ button.cchip{cursor:pointer}button.cchip:hover{border-color:var(--brand-line,#BF
 .va-bar .btn.ghost{background:#FFFFFF !important;color:#5A4500 !important;border-color:#C9A64A !important}
 .va-bar.edit .btn{background:#8A1F17 !important;border-color:#8A1F17 !important;color:#FFFFFF !important}
 .va-bar.edit .btn.ghost{background:#FFFFFF !important;color:#8A1F17 !important;border-color:#E39A93 !important}
+
+.co-bar{position:sticky;top:0;z-index:998;display:flex;align-items:center;gap:12px;padding:10px 18px;background:#FFF1E6;border-bottom:1px solid #F5C9A3;color:#7A3A0C;font-size:14px;font-weight:600}
+.co-bar .co-ic{font-size:18px}.co-bar .spacer{flex:1}.co-bar small{font-weight:500;opacity:.85}
+.co-bar .co-b1{background:#C2410C;color:#fff;border:0;border-radius:9px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
+.co-bar .co-b2{background:#fff;color:#7A3A0C;border:1px solid #F0B98C;border-radius:9px;padding:7px 12px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+@media (max-width:760px){.co-bar{flex-wrap:wrap}.co-bar .spacer{display:none}}

@@ -142,6 +142,7 @@ async function breakEnd(){
   }catch(e){ alert(e.message); if(b){ b.disabled=false; b.textContent='Resume Work'; } }
 }
 async function clockIn(){
+  coAsk();
   const b=$('inBtn'); b.disabled=true; b.textContent='Choose what to share...';
   try{
     const mode=await startShare();
