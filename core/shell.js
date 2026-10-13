@@ -302,6 +302,7 @@ window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pwaPro
 if ('serviceWorker' in navigator && location.protocol === 'https:') { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); }
 function pwaWho(){ return S.user && (can('system.admin') || (can('projects.manage_own') && !can('projects.manage_all'))); }
 function pwaBanner(){
+  if(VA_TAB) return;
   const el = $('pwaBar'); if (el) el.remove();
   if (!S.user || !pwaWho() || isStandalone() || !isPhone() || load('pwa_hide') === '1') return;
   const ios = /iPhone|iPad/i.test(navigator.userAgent);

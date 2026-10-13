@@ -19,7 +19,7 @@ const canAny = list => list.some(can);
 // صفحات مفتوحة حتى قبل البصمة: البصمة نفسها وطلبات الإجازة والإذن
 const FREE_VIEWS = ['clock','requests'];
 // جلسة الموبايل (أدمن أو Account Manager) للمتابعة: مش محتاجة بصمة، والبصمة نفسها من اللابتوب بس
-const gated = () => !!(!S.mobile && S.user && S.user.clocks && S.cfg && S.cfg.clockFirst && S.status && !S.status.clockedIn);
+const gated = () => !VA_TAB && !!(!S.mobile && S.user && S.user.clocks && S.cfg && S.cfg.clockFirst && S.status && !S.status.clockedIn);
 // النص العربي جواه إنجليزي: لو الحروف العربي هي الأغلب في السطر يتعرض كله من اليمين للشمال (مايتشقلبش)
 const arDir = s => { s=String(s==null?'':s); const a=(s.match(/[\u0600-\u06FF]/g)||[]).length; return a>0 && a>=(s.match(/[A-Za-z]/g)||[]).length; };
 // بيعرض الأسامي العربي صح جوه الجمل الإنجليزي، والجمل العربي اللي فيها كلام إنجليزي صح برضه (سطر سطر)
@@ -31,8 +31,11 @@ const bdl = s => String(s==null?'':s).split('\n').map(L=>`<div ${bdd(L)}>${esc(L
 
 // نسخة التجربة: مفاتيح منفصلة عشان متختلطش بالسيستم الأصلي على نفس الدومين
 const KP = 'test_';
-function store(k,v){ try{ v==null? localStorage.removeItem(KP+k) : localStorage.setItem(KP+k,v);}catch(e){} }
-function load(k){ try{ return localStorage.getItem(KP+k);}catch(e){ return null; } }
+// View as: التاب ده مفتوح بعين موظف. التوكن بييجي في اللينك (#va=...) ويتحفظ في التاب ده بس، فتاب حسابك العادي مايتأثرش
+const VA_TAB = (()=>{ try{ const m=(location.hash||'').match(/^#va=([a-f0-9]{64})$/); if(m){ sessionStorage.setItem(KP+'va','1'); sessionStorage.setItem(KP+'va_erp_token',m[1]); sessionStorage.removeItem(KP+'va_erp_user'); history.replaceState(null,'',location.pathname+location.search); } return sessionStorage.getItem(KP+'va')==='1'; }catch(e){ return false; } })();
+const VA_SHARED = {erp_dev:1, theme:1, erp_av:1, erp_brand:1, erp_pi:1};
+function store(k,v){ try{ const va=VA_TAB&&!VA_SHARED[k], st=va?sessionStorage:localStorage, kk=KP+(va?'va_':'')+k; v==null? st.removeItem(kk) : st.setItem(kk,v);}catch(e){} }
+function load(k){ try{ const va=VA_TAB&&!VA_SHARED[k]; return (va?sessionStorage:localStorage).getItem(KP+(va?'va_':'')+k);}catch(e){ return null; } }
 // رقم الجهاز: بيتعمل مرة واحدة ويفضل في البراوزر حتى بعد الخروج
 function deviceId(){
   let d=load('erp_dev');
