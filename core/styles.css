@@ -760,3 +760,14 @@ button.cchip{cursor:pointer}button.cchip:hover{border-color:var(--brand-line,#BF
 .co-card .co-b1{flex:1;background:#C2410C;color:#fff;border:0;border-radius:10px;padding:9px 12px;font:inherit;font-weight:700;cursor:pointer}
 .co-card .co-b2{flex:1;background:#fff;color:#7A3A0C;border:1px solid #F0B98C;border-radius:10px;padding:9px 10px;font:inherit;font-weight:600;font-size:13px;cursor:pointer}
 @keyframes coIn{from{opacity:0;margin-top:12px}to{opacity:1;margin-top:0}}
+
+.ss-pop{position:fixed;z-index:1200;display:flex;flex-direction:column;background:var(--card,#fff);color:var(--ink,#1f2a29);border:1px solid var(--line,#DDE6E3);border-radius:12px;box-shadow:0 14px 40px rgba(10,30,30,.22);overflow:hidden}
+.ss-pop .ss-in{margin:8px;width:auto;padding:9px 12px;border:1px solid var(--line,#DDE6E3);border-radius:9px;font:inherit;font-size:14px;background:var(--bg,#F7FAF9);color:inherit;outline:none}
+.ss-pop .ss-in:focus{border-color:var(--brand2)}
+.ss-pop .ss-list{overflow:auto;padding:0 6px 6px;min-height:0;flex:1}
+.ss-pop .ss-o{padding:7px 10px;border-radius:8px;font-size:14px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss-pop .ss-o.act{background:var(--brand-soft,#E8F4F1)}
+.ss-pop .ss-o.sel{font-weight:700;color:var(--brand2)}
+.ss-pop .ss-g{padding:8px 10px 3px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted,#6b7a77)}
+.ss-pop .ss-none{padding:12px;color:var(--muted,#6b7a77);font-size:13.5px;text-align:center}
+[data-theme="dark"] .ss-pop .ss-o.act{background:rgba(94,196,170,.16)}

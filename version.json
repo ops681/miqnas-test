@@ -1,5 +1,5 @@
 {
- "v":"2026-10-14.6",
+ "v":"2026-10-14.7",
  "css": [
   "core/styles.css",
   "modules/briefs/briefs.css",
@@ -20,6 +20,7 @@
   "core/viewas.js",
   "core/clockremind.js",
   "core/picker.js",
+  "core/selsearch.js",
   "modules/dashboard/dashboard.js",
   "modules/attendance/clock.js",
   "modules/attendance/reports.js",
