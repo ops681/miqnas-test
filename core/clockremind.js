@@ -1,6 +1,7 @@
 /* ============ تذكير بصمة الخروج ============ */
 // قبل نهاية ساعات الشيفت بكام دقيقة (من Settings) بيظهر شريط فوق + إشعار من المتصفح، ويفضل لحد ما يبصم خروج.
 // "فكّرني بعد" بيخفيه شوية ويرجع تاني. الساعات من غير وقت البريك.
+// في View as الشريط بيظهر زي ما الموظف شايفه، بس إشعار المتصفح لأ (عشان مايجيلكش انت).
 function coWorkedMs(){
   const st=S.status; if(!st||!st.clockedIn) return 0;
   const now=Date.now()-(st._off||0);
@@ -12,7 +13,7 @@ function coDur(ms){ const m=Math.max(0,Math.round(ms/6e4)), h=Math.floor(m/60), 
   return H&&M?H+' و'+M:(H||M); }
 function coTick(){
   const c=S.cfg||{}, st=S.status, u=S.user;
-  const on=!VA_TAB && c.coOn && u && u.clocks && !S.mobile && st && st.clockedIn && !st.onBreak;
+  const on=c.coOn && u && u.clocks && !S.mobile && st && st.clockedIn && !st.onBreak;
   if(!on){ coHide(); S.coEp=0; return; }
   const shift=(Number(u.shift)||8)*36e5, before=(Number(c.coBefore)||5)*6e4, w=coWorkedMs();
   if(w < shift-before){ coHide(); S.coEp=0; return; }
@@ -21,7 +22,7 @@ function coTick(){
   coShow(w, shift);
   // إشعار المتصفح: مرة لما الشريط يظهر، ومرة كل ما "فكّرني بعد" يخلص
   const ep=snz||1;
-  if(c.coNotify && S.coEp!==ep){ S.coEp=ep; coNotify(shift-w); }
+  if(c.coNotify && !VA_TAB && S.coEp!==ep){ S.coEp=ep; coNotify(shift-w); }
 }
 function coShow(w, shift){
   let b=$('coBar');
