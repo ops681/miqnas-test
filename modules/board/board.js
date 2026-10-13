@@ -38,7 +38,7 @@ function renderBoard(r){
     ${Q||K?`<section><h2 class="br-h">Quality</h2>
       <div class="grid kpis">${Q?brK('Problems reported',Q.reported,(Q.reported-Q.prev>0?'+':'')+(Q.reported-Q.prev)+' vs last month',Q.reported>Q.prev?'var(--bad)':'')+brK('Problems solved',Q.solved,Q.avgDays===null?Q.open+' still open':Q.avgDays+' days on average · '+Q.open+' open','var(--ok)')+(Q.blockers?brK('Blockers opened',Q.blockers.total,Q.blockers.open+' open now'):'')+(Q.revisions!=null?brK('Client revisions',Q.revisions,'Revision notes on tasks'):'')+(Q.late!=null?brK('Late tasks now',Q.late,'',Q.late?'var(--bad)':''):''):''}
         ${K?brK('SOPs',K.sops,(K.readPct===null?'':K.readPct+'% read by their teams')+(K.reviewDue?' · '+K.reviewDue+' due for review':''),K.readPct!==null&&K.readPct<80?'var(--warn)':''):''}</div>
-      ${Q&&Q.top.length?`<div class="card"><h3>Most common problems</h3>${Q.top.map(x=>`<div class="br-row"><span dir="auto">${esc(x.name)}</span><b>${x.n}</b></div>`).join('')}</div>`:''}</section>`:''}
+      ${Q&&Q.top.length?`<div class="card"><h3>Most common problems</h3>${Q.top.map(x=>`<div class="br-row"><span ${bdd(x.name)}>${esc(x.name)}</span><b>${x.n}</b></div>`).join('')}</div>`:''}</section>`:''}
   </div>`;
 }
 function brPrint(){ document.body.classList.add('printing-cr'); setTimeout(()=>{ window.print(); setTimeout(()=>document.body.classList.remove('printing-cr'),500); },50); }

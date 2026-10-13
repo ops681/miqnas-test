@@ -175,6 +175,7 @@ tr.clk{cursor:pointer} tr.clk:hover td{background:#F4F8F7}
 .tnbtn{border:0;background:none;color:var(--brand2);font-size:12.5px;font-weight:600;cursor:pointer;padding:0;text-align:left}
 .tnotes{display:grid;gap:6px;background:#F7FAF9;border:1px dashed var(--line);border-radius:10px;padding:10px 12px;max-width:640px}
 .tnote{font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}.tnote span{color:var(--muted);font-size:12px}
+.tnote .tn-t{text-align:start}
 .tnadd{display:flex;gap:8px;flex-wrap:wrap}.tnadd input{flex:1;min-width:200px;padding:7px 10px;font-size:13px}
 .dupwarn{color:var(--bad);font-size:12.5px;margin-top:6px}
 .brkbox{margin-top:16px;padding:12px 14px;border-radius:10px;background:var(--bluebg);color:var(--blue);font-size:14px}
@@ -730,3 +731,5 @@ td.nw{white-space:nowrap}
 .tlink .tl-txt{white-space:pre-wrap;color:var(--ink)}
 .tlink.tref span[dir=ltr]{white-space:pre-wrap}
 .lnk.lnk-t p{margin:4px 0 0;white-space:pre-wrap;font-size:12.5px;color:var(--ink);max-height:120px;overflow:auto}
+
+textarea[dir="auto"],input[dir="auto"]{unicode-bidi:plaintext}

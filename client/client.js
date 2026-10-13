@@ -3,6 +3,8 @@
    بيستخدم نفس تصميم بورتال الشركاء (portal/portal.css). */
 const CP = { key: new URLSearchParams(location.search).get('k') || '', t: '', info: null, data: null };
 const ce = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// النص العربي اللي فيه كلام إنجليزي يتعرض من اليمين (مايتشقلبش)
+const cdir = s => { s = String(s == null ? '' : s); const a = (s.match(/[\u0600-\u06FF]/g) || []).length; return a > 0 && a >= (s.match(/[A-Za-z]/g) || []).length ? 'dir="rtl"' : 'dir="auto"'; };
 const cd = d => { if (!d) return '—'; const x = new Date(String(d).slice(0, 10) + 'T12:00:00'); return isNaN(x) ? '—' : x.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }); };
 const cm = (n, c) => (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' ' + (c || 'SAR');
 const cpKey = () => 'cp_t_' + CP.key.slice(0, 12);
@@ -52,12 +54,12 @@ function cpRender() {
       <div class="pt-prog"><div><span>التقدم الكلي</span><b>${d.pct}%</b></div><span class="pt-track${d.pct === 100 ? ' ok' : ''}" style="height:10px"><i style="width:${d.pct}%"></i></span></div>
       <div class="pt-dates"><div><span>البدء</span><b>${cd(d.start)}</b></div><div><span>الإطلاق المتوقع</span><b>${cd(d.target)}</b></div><div><span>الإطلاق</span><b>${cd(d.goLive)}</b></div><div><span>المراحل</span><b dir="ltr">${d.stagesDone} / ${d.stagesAll}</b></div></div>
     </section>
-    ${d.need.length ? `<section class="pt-sec pt-blk"><h2>مطلوب منك</h2>${d.need.map(n => `<p dir="auto">• ${ce(n.text)}${n.days ? ` <small style="opacity:.8">(من ${n.days} ${n.days === 1 ? 'يوم' : 'أيام'})</small>` : ''}</p>`).join('')}<p style="font-size:12.5px;opacity:.85">أول ما يوصلنا ده هنكمل على طول.</p></section>` : ''}
+    ${d.need.length ? `<section class="pt-sec pt-blk"><h2>مطلوب منك</h2>${d.need.map(n => `<p ${cdir(n.text)}>• ${ce(n.text)}${n.days ? ` <small style="opacity:.8">(من ${n.days} ${n.days === 1 ? 'يوم' : 'أيام'})</small>` : ''}</p>`).join('')}<p style="font-size:12.5px;opacity:.85">أول ما يوصلنا ده هنكمل على طول.</p></section>` : ''}
     <section class="pt-sec"><h2>مراحل التنفيذ <small>${d.stagesDone} / ${d.stagesAll}</small></h2>
       <div>${d.stages.map(x => `<div class="pt-st ${x.st}"><span class="d" aria-hidden="true">${x.st === 'done' ? '✓' : x.st === 'prog' ? '•' : x.st === 'wait' ? '…' : x.st === 'na' ? '–' : ''}</span><span>${ce(x.name)}</span><em>${CST[x.st]}</em></div>`).join('')}</div></section>
     ${d.payments.length ? `<section class="pt-sec"><h2>الدفعات <small>${open.length ? 'متبقي ' + cm(open.reduce((a, p) => a + p.amount, 0), d.currency) : 'كله اتدفع ✓'}</small></h2>
       ${d.payments.map(p => `<div class="pt-st ${p.status === 'paid' ? 'done' : p.status === 'overdue' ? 'prog' : ''}"><span class="d" aria-hidden="true">${p.status === 'paid' ? '✓' : ''}</span><span>${ce(p.label)} · <b dir="ltr">${cm(p.amount, d.currency)}</b><br><small style="color:var(--mut)">${p.status === 'paid' ? 'اتدفعت ' + cd(p.paidAt) : 'الاستحقاق ' + cd(p.due)}</small></span><em class="pill ${PST[p.status][1]}">${PST[p.status][0]}</em></div>`).join('')}</section>` : ''}
-    <section class="pt-sec"><h2>آخر التحديثات</h2>${d.log.length ? d.log.map(l => { const dt = new Date(l.at); return `<div class="pt-log"><div><b dir="ltr">${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}</b><span>${dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span></div><div><em>${ce(l.type)}</em><p dir="auto">${ce(l.text)}</p>${l.next ? `<small dir="auto">الخطوة الجاية: ${ce(l.next)}</small>` : ''}</div></div>`; }).join('') : '<div style="color:var(--mut);font-size:13px">لسه مفيش تحديثات</div>'}</section>
+    <section class="pt-sec"><h2>آخر التحديثات</h2>${d.log.length ? d.log.map(l => { const dt = new Date(l.at); return `<div class="pt-log"><div><b dir="ltr">${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}</b><span>${dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span></div><div><em>${ce(l.type)}</em><p ${cdir(l.text)}>${ce(l.text)}</p>${l.next ? `<small dir="auto">الخطوة الجاية: ${ce(l.next)}</small>` : ''}</div></div>`; }).join('') : '<div style="color:var(--mut);font-size:13px">لسه مفيش تحديثات</div>'}</section>
     <div class="pt-end">المعلومات دي بتتحدث تلقائياً من سيستم مِقناص · للاطلاع فقط</div>
   </div></div>`;
 }

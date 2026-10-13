@@ -56,13 +56,13 @@ async function kbOpen(id,ver){
       <div class="kb-ch"><span class="pill p-out">${esc(s.deptName)}</span><span class="muted" style="font-size:12.5px">v${s.version} · owner ${esc(s.ownerName)} · updated ${new Date(s.updatedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}${s.updatedByName&&s.updatedByName!==s.ownerName?' by '+esc(s.updatedByName):''}</span>${s.status!=='published'?`<span class="pill p-yel">${esc(s.status)}</span>`:''}</div>
       <h2 style="margin:8px 0 4px">${esc(s.title)}</h2>
       ${vnote}
-      ${body.intro?`<p class="kb-intro" dir="auto">${esc(body.intro).replace(/\n/g,'<br>')}</p>`:''}
-      <ol class="kb-steps">${body.steps.map(x=>`<li dir="auto">${esc(x.t).replace(/\n/g,'<br>')}${x.link?` <a href="${esc(x.link)}" target="_blank" rel="noopener">Open link ↗</a>`:''}</li>`).join('')}</ol>
-      ${body.tips?`<div class="kb-tips" dir="auto"><b>Notes &amp; tips</b><br>${esc(body.tips).replace(/\n/g,'<br>')}</div>`:''}
+      ${body.intro?`<p class="kb-intro"  style="white-space:normal">${bdl(body.intro)}</p>`:''}
+      <ol class="kb-steps">${body.steps.map(x=>`<li  style="white-space:normal">${bdl(x.t)}${x.link?` <a href="${esc(x.link)}" target="_blank" rel="noopener">Open link ↗</a>`:''}</li>`).join('')}</ol>
+      ${body.tips?`<div class="kb-tips"><b>Notes &amp; tips</b><div  style="white-space:normal">${bdl(body.tips)}</div></div>`:''}
       ${s.tasks.length?`<div class="muted" style="font-size:12.5px;margin-top:10px">Shown on these tasks: ${s.tasks.map(t=>esc(t.title)).join(' · ')}</div>`:''}
       ${s.readers?`<details class="kb-det"><summary>Read by ${s.readers.done.length} of ${s.readers.done.length+s.readers.pending.length}</summary><div style="font-size:13px;margin-top:6px">${s.readers.pending.length?`<b style="color:var(--warn)">Not yet:</b> ${s.readers.pending.map(bd).join(', ')}<br>`:''}${s.readers.done.length?`<b style="color:var(--ok)">Read:</b> ${s.readers.done.map(bd).join(', ')}`:''}</div></details>`:''}
       ${s.canEdit&&s.history.length>1?`<details class="kb-det"><summary>History (${s.history.length} versions)</summary>${s.history.map(h=>`<div class="kb-h"><span>v${h.version} · ${new Date(h.at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} · ${bd(h.by)}</span>${h.version!==s.version?`<button class="btn ghost small" onclick="kbOpen('${esc(id)}',${h.version})">View</button>`:'<span class="muted">current</span>'}</div>`).join('')}</details>`:''}
-      ${s.suggestions.length?`<details class="kb-det"${s.canEdit&&s.suggestions.some(g=>g.status==='open')?' open':''}><summary>Suggestions (${s.suggestions.filter(g=>g.status==='open').length} open)</summary>${s.suggestions.map(g=>`<div class="kb-sg"><div><b>${bd(g.by)}</b> <span class="muted">${new Date(g.at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${g.status}</span></div><div dir="auto">${esc(g.text)}</div>${s.canEdit&&g.status==='open'?`<div class="row" style="gap:6px;margin-top:6px"><button class="btn small" onclick="kbDecide('${esc(g.id)}',true)">Accept</button><button class="btn ghost small" onclick="kbDecide('${esc(g.id)}',false)">Not now</button></div>`:''}</div>`).join('')}</details>`:''}
+      ${s.suggestions.length?`<details class="kb-det"${s.canEdit&&s.suggestions.some(g=>g.status==='open')?' open':''}><summary>Suggestions (${s.suggestions.filter(g=>g.status==='open').length} open)</summary>${s.suggestions.map(g=>`<div class="kb-sg"><div><b>${bd(g.by)}</b> <span class="muted">${new Date(g.at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${g.status}</span></div><div ${bdd(g.text)}>${esc(g.text)}</div>${s.canEdit&&g.status==='open'?`<div class="row" style="gap:6px;margin-top:6px"><button class="btn small" onclick="kbDecide('${esc(g.id)}',true)">Accept</button><button class="btn ghost small" onclick="kbDecide('${esc(g.id)}',false)">Not now</button></div>`:''}</div>`).join('')}</details>`:''}
       <div class="mfoot">
         ${s.canEdit?`<button class="btn" onclick="kbEdit('${esc(id)}')">Edit</button>${s.status==='published'?`<button class="btn ghost" onclick="kbReviewed('${esc(id)}')" title="Still correct, no changes needed">Mark reviewed</button>`:''}`:''}
         ${s.status==='published'&&!s.canEdit?`<button class="btn ghost" onclick="kbSuggest('${esc(id)}')">Suggest an edit</button>`:''}
@@ -147,7 +147,7 @@ function kbRenderProblems(r){
   $('main').innerHTML=`${kbTabs()}
     <div class="kb-bar"><div class="chips">${[['active','Open'],['solved','Solved'],['all','All']].map(x=>`<button class="${f===x[0]?'on':''}" onclick="S.kb.prF='${x[0]}';kbRenderProblems(S.cache.pr)">${x[1]}</button>`).join('')}</div>
       <span class="muted" style="font-size:12.5px">${r.canDash?'You see your team’s problems':'You see the problems you reported'}</span></div>
-    ${L.length?`<div class="card flush">${L.map(p=>`<button class="al" onclick="prOpen('${esc(p.id)}')"><span class="tx"><b dir="auto">${esc(p.title)}</b><span>${esc(p.category)} · ${esc(p.deptName)}${p.client?' · '+esc(p.client):''} · ${bd(p.byName)} · ${new Date(p.at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${p.ownerName?' · owner '+bd(p.ownerName):''}</span></span><span class="pill p-out">${esc(p.severity)}</span><span class="pill ${PR_ST[p.status][1]}">${PR_ST[p.status][0]}</span></button>`).join('')}</div>`
+    ${L.length?`<div class="card flush">${L.map(p=>`<button class="al" onclick="prOpen('${esc(p.id)}')"><span class="tx"><b ${bdd(p.title)}>${esc(p.title)}</b><span>${esc(p.category)} · ${esc(p.deptName)}${p.client?' · '+esc(p.client):''} · ${bd(p.byName)} · ${new Date(p.at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${p.ownerName?' · owner '+bd(p.ownerName):''}</span></span><span class="pill p-out">${esc(p.severity)}</span><span class="pill ${PR_ST[p.status][1]}">${PR_ST[p.status][0]}</span></button>`).join('')}</div>`
       :`<div class="card empty"><b>No problems here</b>Report anything that keeps slowing the work down.</div>`}`;
 }
 function prForm(){
@@ -171,16 +171,16 @@ function prOpen(id){
   const sop=p.sop&&(r.sops||[]).find(s=>s.id===p.sop);
   $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:640px">
     <div class="kb-ch"><span class="pill ${PR_ST[p.status][1]}">${PR_ST[p.status][0]}</span><span class="pill p-out">${esc(p.severity)}</span><span class="muted" style="font-size:12.5px">${esc(p.category)} · ${esc(p.deptName)}${p.client?' · '+esc(p.client):''}</span></div>
-    <h2 style="margin:8px 0 4px" dir="auto">${esc(p.title)}</h2>
+    <h2 style="margin:8px 0 4px" ${bdd(p.title)}>${esc(p.title)}</h2>
     <div class="muted" style="font-size:12.5px">Reported by ${bd(p.byName)} · ${new Date(p.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}${p.solvedAt?' · solved '+new Date(p.solvedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' by '+bd(p.solvedByName):''}</div>
-    ${p.desc?`<p dir="auto" style="white-space:pre-wrap">${esc(p.desc)}</p>`:''}
+    ${p.desc?`<p style="white-space:normal">${bdl(p.desc)}</p>`:''}
     ${p.canManage?`<div class="pfgrid" style="margin-top:12px">
       <div><label>Status</label><select id="paS">${Object.keys(PR_ST).map(k=>`<option value="${k}"${k===p.status?' selected':''}>${PR_ST[k][0]}</option>`).join('')}</select></div>
       <div><label>Owner</label><select id="paO"><option value="">—</option>${(r.people||[]).map(x=>`<option value="${esc(x.u)}"${x.u===p.owner?' selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
       <div style="grid-column:1/-1"><label>Root cause</label><textarea id="paR" rows="2" dir="auto" placeholder="السبب الحقيقي ورا المشكلة">${esc(p.rootCause)}</textarea></div>
       <div style="grid-column:1/-1"><label>Fix</label><textarea id="paF" rows="2" dir="auto" placeholder="اتحلت إزاي، وإيه اللي هيمنع تكرارها">${esc(p.fix)}</textarea></div>
       <div style="grid-column:1/-1"><label>Related SOP</label><select id="paP"><option value="">—</option>${(r.sops||[]).map(s=>`<option value="${esc(s.id)}"${s.id===p.sop?' selected':''}>${esc(s.title)}</option>`).join('')}</select></div>
-    </div>`:`${p.rootCause?`<div class="kb-tips"><b>Root cause</b><br>${esc(p.rootCause)}</div>`:''}${p.fix?`<div class="kb-tips"><b>Fix</b><br>${esc(p.fix)}</div>`:''}${sop?`<div style="margin-top:8px"><button class="btn ghost small" onclick="go('knowledge',{id:'${esc(sop.id)}'})">📘 ${esc(sop.title)}</button></div>`:''}`}
+    </div>`:`${p.rootCause?`<div class="kb-tips"><b>Root cause</b><div  style="white-space:normal">${bdl(p.rootCause)}</div></div>`:''}${p.fix?`<div class="kb-tips"><b>Fix</b><div  style="white-space:normal">${bdl(p.fix)}</div></div>`:''}${sop?`<div style="margin-top:8px"><button class="btn ghost small" onclick="go('knowledge',{id:'${esc(sop.id)}'})">📘 ${esc(sop.title)}</button></div>`:''}`}
     <div class="err" id="paE"></div>
     <div class="mfoot">${p.canManage&&kbCanEditDept(p.dept)?`<button class="btn ghost" onclick="prToSop('${esc(p.id)}')">Write an SOP from this</button>`:''}<div class="spacer"></div><button class="btn ghost" onclick="closeModal()">Close</button>${p.canManage?`<button class="btn primary" id="paB">Save</button>`:''}</div></div></div>`;
   if(p.canManage){ pickify($('paO'), r.people||[]);
@@ -201,7 +201,7 @@ function kbBars(o,prev){
   const keys=Object.keys(o).concat(Object.keys(prev||{}).filter(k=>!(k in o))).sort((a,b)=>(o[b]||0)-(o[a]||0));
   if(!keys.length) return '<div class="muted" style="font-size:13px">Nothing this month.</div>';
   const mx=Math.max(1,...keys.map(k=>Math.max(o[k]||0,(prev||{})[k]||0)));
-  return `<div class="kb-bars">${keys.map(k=>`<div class="kb-br"><span dir="auto">${esc(k)}</span><div class="kb-bt"><i style="width:${(o[k]||0)/mx*100}%"></i>${prev?`<em style="width:${(prev[k]||0)/mx*100}%"></em>`:''}</div><b>${o[k]||0}${prev?`<small class="muted"> / ${prev[k]||0}</small>`:''}</b></div>`).join('')}</div>`;
+  return `<div class="kb-bars">${keys.map(k=>`<div class="kb-br"><span ${bdd(k)}>${esc(k)}</span><div class="kb-bt"><i style="width:${(o[k]||0)/mx*100}%"></i>${prev?`<em style="width:${(prev[k]||0)/mx*100}%"></em>`:''}</div><b>${o[k]||0}${prev?`<small class="muted"> / ${prev[k]||0}</small>`:''}</b></div>`).join('')}</div>`;
 }
 function kbRenderDash(r){
   S.cache.pr=r;

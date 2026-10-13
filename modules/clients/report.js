@@ -26,11 +26,11 @@ function renderClientRep(r){
      <button class="btn primary" onclick="crPrint()">Print / PDF</button>`);
   const tile=(lab,val,sub,cls)=>`<div class="kpi"><span>${lab}</span><b${cls?` style="color:${cls}"`:''}>${val}</b>${sub?`<small>${sub}</small>`:''}</div>`;
   const onPct=k.launched?Math.round(k.onTime/k.launched*100):0;
-  const brk=(title,list)=>{ const mx=Math.max(1,...list.map(g=>g.total)); return `<div class="card cr-brk"><h3>${title}</h3>${list.length?list.map(g=>`<div class="cr-bar"><span class="cr-bl" dir="auto">${esc(g.name)}</span><span class="cr-track"><i style="width:${g.total/mx*100}%"></i></span><b>${g.total}</b><small>${g.launched} launched${g.late?` · <em>${g.late} late</em>`:''}</small></div>`).join(''):'<div class="muted">—</div>'}</div>`; };
+  const brk=(title,list)=>{ const mx=Math.max(1,...list.map(g=>g.total)); return `<div class="card cr-brk"><h3>${title}</h3>${list.length?list.map(g=>`<div class="cr-bar"><span class="cr-bl" ${bdd(g.name)}>${esc(g.name)}</span><span class="cr-track"><i style="width:${g.total/mx*100}%"></i></span><b>${g.total}</b><small>${g.launched} launched${g.late?` · <em>${g.late} late</em>`:''}</small></div>`).join(''):'<div class="muted">—</div>'}</div>`; };
   const rowHTML=x=>`<tr onclick="goTo({view:'project',id:'${esc(x.id)}'})" class="cr-tr">
-    <td><b dir="auto">${esc(x.store)}</b>${x.isNew?' <span class="pill p-prog cr-new">New</span>':''}<div class="sub2" dir="auto">${esc(x.client||'')}</div></td>
-    ${r.scope==='all'?`<td dir="auto">${esc(x.amName||'—')}</td>`:''}
-    <td dir="auto">${esc(x.type)}</td><td class="nw">${esc([x.from,x.to].filter(Boolean).join(' → ')||'—')}</td>
+    <td><b ${bdd(x.store)}>${esc(x.store)}</b>${x.isNew?' <span class="pill p-prog cr-new">New</span>':''}<div class="sub2" ${bdd(x.client||'')}>${esc(x.client||'')}</div></td>
+    ${r.scope==='all'?`<td ${bdd(x.amName||'—')}>${esc(x.amName||'—')}</td>`:''}
+    <td ${bdd(x.type)}>${esc(x.type)}</td><td class="nw">${esc([x.from,x.to].filter(Boolean).join(' → ')||'—')}</td>
     <td class="nw">${crD(x.start)}</td><td class="nw">${crD(x.target)}</td><td class="nw">${x.goLive?crD(x.goLive):'—'}</td>
     <td><div class="cr-prog"><span class="cr-track"><i style="width:${x.progress}%"></i></span>${x.progress}%</div></td>
     <td class="nw">${x.late?`<span class="cr-late">${x.late} ${x.late===1?'day':'days'}</span>`:x.onTime?'<span class="cr-ok">On time</span>':'—'}${x.blockers?`<div class="sub2 cr-late">${x.blockers} blocker${x.blockers>1?'s':''}</div>`:''}</td>

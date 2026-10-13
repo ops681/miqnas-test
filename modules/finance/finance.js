@@ -58,10 +58,10 @@ function finOpen(id){
       ${c.partnerFee?`<div class="kpi"><span>Partner fee</span><b style="font-size:20px">${sar(c.partnerFee)}</b><small>${esc(c.partnerName)}</small></div>`:''}
     </div>
     <div class="tbl-wrap"><table><tr><th>#</th><th>Payment</th><th>Amount</th><th>Due</th><th>Status</th><th>Invoice</th>${r.canEdit?'<th></th>':''}</tr>
-      ${c.installments.map(i=>`<tr><td>${i.seq}</td><td>${esc(i.label)}${i.note?`<div class="sub2">${esc(i.note)}</div>`:''}</td><td>${sar(i.amount)}</td><td>${fmtD(i.due)}</td>
+      ${c.installments.map(i=>`<tr><td>${i.seq}</td><td>${esc(i.label)}${i.note?`<div class="sub2">${bd(i.note)}</div>`:''}</td><td>${sar(i.amount)}</td><td>${fmtD(i.due)}</td>
         <td><span class="pill ${FI_ST[i.status][1]}">${FI_ST[i.status][0]}</span>${i.paidAt?`<div class="sub2">${fmtD(i.paidAt)}${i.method?' · '+esc(i.method):''}</div>`:''}</td><td>${esc(i.invoice||'—')}</td>
         ${r.canEdit?`<td style="white-space:nowrap">${i.status==='paid'?`<button class="btn ghost small" onclick="finInst('unpay','${esc(i.id)}')">Undo</button>`:`<button class="btn small primary" onclick="finPay('${esc(c.id)}','${esc(i.id)}')">Mark paid</button> <button class="btn ghost small" onclick="finInstEdit('${esc(c.id)}','${esc(i.id)}')">Edit</button>`}</td>`:''}</tr>`).join('')}</table></div>
-    ${c.notes?`<div class="kb-tips" dir="auto">${esc(c.notes)}</div>`:''}
+    ${c.notes?`<div class="kb-tips">${bdl(c.notes)}</div>`:''}
     <div class="mfoot">${r.canEdit?`<button class="btn" onclick="finForm('${esc(c.id)}')">Edit contract</button><button class="btn ghost" onclick="finInstEdit('${esc(c.id)}','')">+ Add payment</button>`:''}<div class="spacer"></div><button class="btn primary" onclick="closeModal()">Close</button></div></div></div>`;
 }
 function finPay(cid,iid){

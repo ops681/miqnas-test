@@ -3,6 +3,8 @@
    البيانات جاية من السيرفر محسوبة من المشاريع والتاسكات والبلوكرز. */
 const PT = { key: new URLSearchParams(location.search).get('k') || '', t: '', info: null, all: false, month: '', q: '', f: 'all', data: null, open: '' };
 const pe = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// النص العربي اللي فيه كلام إنجليزي يتعرض من اليمين (مايتشقلبش)
+const pdir = s => { s = String(s == null ? '' : s); const a = (s.match(/[\u0600-\u06FF]/g) || []).length; return a > 0 && a >= (s.match(/[A-Za-z]/g) || []).length ? 'dir="rtl"' : 'dir="auto"'; };
 const AR_M = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const mName = m => { const p = String(m).split('-'); return AR_M[+p[1] - 1] + ' ' + p[0]; };
 const dShort = d => d ? String(d).slice(5) : '—';
@@ -118,14 +120,14 @@ const DOM_TXT = { live: 'الدومين: متصل', prog: 'الدومين: قي�
 function ptCard(s) {
   const b = s.blockers[0];
   return `<button type="button" class="pt-card" onclick="ptOpen('${pe(s.id)}')">
-    <div class="pt-top"><span class="pt-nm">${ptIco(s)}<b dir="auto">${pe(s.name)}</b></span>${s.url || s.live ? `<span class="u" dir="ltr">${pe(String(s.live || s.url).replace(/^https?:\/\//, '').replace(/\/$/, ''))}</span>` : ''}
+    <div class="pt-top"><span class="pt-nm">${ptIco(s)}<b ${pdir(s.name)}>${pe(s.name)}</b></span>${s.url || s.live ? `<span class="u" dir="ltr">${pe(String(s.live || s.url).replace(/^https?:\/\//, '').replace(/\/$/, ''))}</span>` : ''}
       ${s.storeId || s.ref ? `<span class="pt-id" dir="ltr">${s.storeId ? '#' + pe(s.storeId) : pe(s.ref)}</span>` : ''}
       <div class="pt-pills"><span class="pill s-${s.status}">${pe(s.statusName)}</span>${b ? `<span class="pill p-block">متوقف · ${pe(b.owner)} · ${b.days} ${b.days === 1 ? 'يوم' : 'أيام'}</span>` : ''}${s.domain ? `<span class="pill p-dom">${DOM_TXT[s.domain]}</span>` : ''}</div></div>
     <div class="pt-prog"><div><span>تقدّم مراحل التنفيذ</span><b dir="ltr">${s.pct}% · ${s.stagesDone}/${s.stagesAll}</b></div><span class="pt-track${s.pct === 100 ? ' ok' : ''}"><i style="width:${s.pct}%"></i></span></div>
     <div class="pt-foot">
       <div><span>تاريخ البدء</span><b class="num" dir="ltr">${dShort(s.start)}</b><small>${s.goLive ? 'الإطلاق ' + dShort(s.goLive) : 'المستهدف ' + dShort(s.target)}</small></div>
       <div class="pt-ring ${s.health}" aria-label="${s.days === null ? '' : s.days + ' يوم'}"><b>${s.days === null ? '—' : s.days}</b><span>يوم</span></div>
-      <div><span>آخر تحديث</span><b>${pe(ago(s.lastAt))}</b><small dir="auto">${pe(s.lastText)}</small></div>
+      <div><span>آخر تحديث</span><b>${pe(ago(s.lastAt))}</b><small ${pdir(s.lastText)}>${pe(s.lastText)}</small></div>
     </div></button>`;
 }
 const ST_TXT = { done: 'مكتمل', prog: 'قيد التنفيذ', wait: 'عند العميل', todo: 'لم يبدأ', na: 'لا ينطبق' };
@@ -136,16 +138,16 @@ function ptDetail(s) {
     <button type="button" class="pt-back" onclick="ptOpen('')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>كل المتاجر</button>
     <section class="pt-sec">
       <div style="display:flex;flex-direction:column;gap:4px"><span class="num" style="font-size:12px;color:var(--mut)" dir="ltr">${[s.ref, s.storeId ? '#' + s.storeId : ''].filter(Boolean).map(pe).join(' · ')}</span>
-        <div class="pt-nm">${ptIco(s, true)}<h1 dir="auto">${pe(s.name)}</h1></div>${s.live || s.url ? `<a href="${pe(/^https?:/.test(s.live || s.url) ? (s.live || s.url) : 'https://' + (s.live || s.url))}" target="_blank" rel="noopener noreferrer" dir="ltr" style="font-size:13px">${pe(String(s.live || s.url).replace(/^https?:\/\//, ''))}</a>` : ''}</div>
+        <div class="pt-nm">${ptIco(s, true)}<h1 ${pdir(s.name)}>${pe(s.name)}</h1></div>${s.live || s.url ? `<a href="${pe(/^https?:/.test(s.live || s.url) ? (s.live || s.url) : 'https://' + (s.live || s.url))}" target="_blank" rel="noopener noreferrer" dir="ltr" style="font-size:13px">${pe(String(s.live || s.url).replace(/^https?:\/\//, ''))}</a>` : ''}</div>
       <div class="pt-pills" style="justify-content:flex-start;margin:0"><span class="pill s-${s.status}">${pe(s.statusName)}</span>${s.sla === 'client' ? '<span class="pill p-block">SLA متوقف · من العميل</span>' : s.sla === 'zid' ? '<span class="pill p-block">SLA متوقف · من ' + pe(ptName()) + '</span>' : ''}<span class="pill s-hold">${pe([s.from && s.from !== 'None' ? 'نقل من ' + s.from : 'متجر جديد', s.mode].filter(Boolean).join(' · '))}</span>${s.priority ? `<span class="pill s-hold">الأولوية: ${pe(s.priority)}</span>` : ''}</div>
       <div class="pt-dates"><div><span>الإحالة</span><b dir="ltr">${dShort(s.referral)}</b></div><div><span>البدء</span><b dir="ltr">${dShort(s.start)}</b></div><div><span>المستهدف</span><b dir="ltr">${dShort(s.target)}</b></div><div><span>الإطلاق</span><b dir="ltr">${dShort(s.goLive)}</b></div></div>
       <div class="pt-prog"><div><span>التقدم الكلي</span><b>${s.pct}%</b></div><span class="pt-track${s.pct === 100 ? ' ok' : ''}" style="height:8px"><i style="width:${s.pct}%"></i></span></div>
     </section>
-    ${s.blockers.map(b => `<section class="pt-sec pt-blk"><h2><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F7A29D" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>عائق مفتوح · ${b.days} ${b.days === 1 ? 'يوم' : 'أيام'}</h2><p dir="auto">${pe(b.text)}</p><div class="pt-pills" style="justify-content:flex-start;margin:0"><span class="pill p-block">المسؤول: ${pe(b.owner)}</span><span class="pill p-block">${pe(b.cat)}</span>${b.since ? `<span class="pill p-block">منذ ${dShort(b.since)}</span>` : ''}</div></section>`).join('')}
+    ${s.blockers.map(b => `<section class="pt-sec pt-blk"><h2><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F7A29D" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>عائق مفتوح · ${b.days} ${b.days === 1 ? 'يوم' : 'أيام'}</h2><p ${pdir(b.text)}>${pe(b.text)}</p><div class="pt-pills" style="justify-content:flex-start;margin:0"><span class="pill p-block">المسؤول: ${pe(b.owner)}</span><span class="pill p-block">${pe(b.cat)}</span>${b.since ? `<span class="pill p-block">منذ ${dShort(b.since)}</span>` : ''}</div></section>`).join('')}
     <section class="pt-sec"><h2>مراحل التنفيذ <small>${done} / ${s.stages.filter(x => x.st !== 'na').length}</small></h2>
       <div>${s.stages.map(x => `<div class="pt-st ${x.st}"><span class="d" aria-hidden="true">${x.st === 'done' ? '✓' : x.st === 'prog' ? '•' : x.st === 'wait' ? '…' : x.st === 'na' ? '–' : ''}</span><span>${pe(x.name)}</span><em>${ST_TXT[x.st]}</em></div>`).join('')}</div></section>
     ${s.qa.length ? `<section class="pt-sec"><h2>فحص النقل التقني <small>${qaDone} / ${s.qa.length}</small></h2><div class="pt-qa">${s.qa.map(q => `<div class="${q.st}"><i aria-hidden="true"></i>${pe(q.name)}</div>`).join('')}</div></section>` : ''}
-    <section class="pt-sec"><h2>آخر التحديثات</h2>${s.log.length ? s.log.map(l => { const dt = new Date(l.at); return `<div class="pt-log"><div><b dir="ltr">${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}</b><span>${dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span></div><div><em>${pe(l.type)}</em><p dir="auto">${pe(l.text)}</p>${l.next ? `<small dir="auto">الخطوة الجاية: ${pe(l.next)}</small>` : ''}</div></div>`; }).join('') : '<div style="color:var(--mut);font-size:13px">لسه مفيش تحديثات</div>'}</section>
+    <section class="pt-sec"><h2>آخر التحديثات</h2>${s.log.length ? s.log.map(l => { const dt = new Date(l.at); return `<div class="pt-log"><div><b dir="ltr">${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}</b><span>${dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span></div><div><em>${pe(l.type)}</em><p ${pdir(l.text)}>${pe(l.text)}</p>${l.next ? `<small dir="auto">الخطوة الجاية: ${pe(l.next)}</small>` : ''}</div></div>`; }).join('') : '<div style="color:var(--mut);font-size:13px">لسه مفيش تحديثات</div>'}</section>
     <div class="pt-end">المعلومات دي بتتحدث تلقائياً من سيستم مِقناص · للاطلاع فقط</div>
   </div></div>`;
   window.scrollTo(0, 0);

@@ -9,7 +9,7 @@ function viewClock(){
     <div class="big-time" id="elapsed">${inn?'00:00:00':'--:--'}</div>
     <div class="muted">Today's hours: <b>${(st.closedHoursToday||0).toFixed(2)}</b></div>
     ${inn ? (st.onBreak
-        ? `<div class="brkbox" dir="auto">On break since <b>${new Date(st.breakSince).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</b> · ${esc(st.breakReason)}</div><button class="btn primary" id="resumeBrk">Resume Work</button> <button class="btn out" id="outBtn">Clock Out</button>`
+        ? `<div class="brkbox" dir="auto">On break since <b>${new Date(st.breakSince).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</b> · ${bd(st.breakReason)}</div><button class="btn primary" id="resumeBrk">Resume Work</button> <button class="btn out" id="outBtn">Clock Out</button>`
         : `<button class="btn brk" id="brkBtn">Break</button> <button class="btn out" id="outBtn">Clock Out</button><div id="shareBox"></div>`)
       : `<button class="btn primary" id="inBtn">Clock In</button>`}
     <div class="notice" dir="rtl">

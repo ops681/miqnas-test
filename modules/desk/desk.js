@@ -68,7 +68,7 @@ function todoCardHTML(D){
       <button class="btn primary small" type="submit">Add</button></form>
     ${L.length?`<div class="td-list">${L.map(t=>`<div class="td-row${t.done?' done':''}${t.late?' late':''}">
       <button type="button" class="td-chk" role="checkbox" aria-checked="${t.done}" aria-label="${t.done?'Mark not done':'Mark done'}" onclick="todoToggle('${esc(t.id)}')">${t.done?'✓':''}</button>
-      <div class="td-tx"><span dir="auto">${esc(t.text)}</span>${t.due||t.client?`<small>${t.due?`<b class="${t.late?'late':t.today?'today':''}">${t.late?'Overdue · ':t.today?'Today · ':''}${fmtD(t.due)}</b>`:''}${t.due&&t.client?' · ':''}${t.client?esc(t.client):''}</small>`:''}</div>
+      <div class="td-tx"><span ${bdd(t.text)}>${esc(t.text)}</span>${t.due||t.client?`<small>${t.due?`<b class="${t.late?'late':t.today?'today':''}">${t.late?'Overdue · ':t.today?'Today · ':''}${fmtD(t.due)}</b>`:''}${t.due&&t.client?' · ':''}${t.client?esc(t.client):''}</small>`:''}</div>
       <button type="button" class="td-del" aria-label="Delete" title="Delete" onclick="todoDel('${esc(t.id)}')">×</button></div>`).join('')}</div>`
     :`<div class="empty"><b>Nothing here yet</b>Write the small things you don't want to forget.</div>`}</div>`;
 }

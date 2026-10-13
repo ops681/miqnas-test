@@ -20,8 +20,14 @@ const canAny = list => list.some(can);
 const FREE_VIEWS = ['clock','requests'];
 // جلسة الموبايل (أدمن أو Account Manager) للمتابعة: مش محتاجة بصمة، والبصمة نفسها من اللابتوب بس
 const gated = () => !!(!S.mobile && S.user && S.user.clocks && S.cfg && S.cfg.clockFirst && S.status && !S.status.clockedIn);
-// بيعرض الأسامي العربي صح جوه الجمل الإنجليزي
-const bd = s => esc(s).replace(/[\u0600-\u06FF](?:[\u0600-\u06FF\s\d.,،:()\-\/]*[\u0600-\u06FF])?/g, m=>'<bdi>'+m+'</bdi>');
+// النص العربي جواه إنجليزي: لو الحروف العربي هي الأغلب في السطر يتعرض كله من اليمين للشمال (مايتشقلبش)
+const arDir = s => { s=String(s==null?'':s); const a=(s.match(/[\u0600-\u06FF]/g)||[]).length; return a>0 && a>=(s.match(/[A-Za-z]/g)||[]).length; };
+// بيعرض الأسامي العربي صح جوه الجمل الإنجليزي، والجمل العربي اللي فيها كلام إنجليزي صح برضه (سطر سطر)
+const bd = s => String(s==null?'':s).split('\n').map(L => arDir(L) ? '<bdi dir="rtl">'+esc(L)+'</bdi>' : esc(L).replace(/[\u0600-\u06FF](?:[\u0600-\u06FF\s\d.,،:()\-\/]*[\u0600-\u06FF])?/g, m=>'<bdi>'+m+'</bdi>')).join('\n');
+// اتجاه الصندوق اللي فيه نص مكتوب: عربي → يمين، غير كده تلقائي
+const bdd = s => arDir(s) ? 'dir="rtl"' : 'dir="auto"';
+// نص طويل متعدد السطور: كل سطر بياخد اتجاهه لوحده
+const bdl = s => String(s==null?'':s).split('\n').map(L=>`<div ${bdd(L)}>${esc(L)||'&nbsp;'}</div>`).join('');
 
 // نسخة التجربة: مفاتيح منفصلة عشان متختلطش بالسيستم الأصلي على نفس الدومين
 const KP = 'test_';

@@ -119,7 +119,7 @@ function renderProject(r,keep){
 }
 
 // نص فيه لينكات: كل لينك بيبقى قابل للضغط، وكل سطر في مكانه
-function txtLinks(v){ const L=String(v||'').split(/\r?\n/); const f=x=>esc(x).replace(/https?:\/\/[^\s<>"']+/gi,u=>`<a href="${u}" target="_blank" rel="noopener" dir="ltr">${u}</a>`); return L.length>1?L.map(x=>`<div dir="auto">${f(x)||'&nbsp;'}</div>`).join(''):f(L[0]); }
+function txtLinks(v){ const L=String(v||'').split(/\r?\n/); const f=x=>esc(x).replace(/https?:\/\/[^\s<>"']+/gi,u=>`<a href="${u}" target="_blank" rel="noopener" dir="ltr">${u}</a>`); return L.length>1?L.map(x=>`<div ${bdd(x)}>${f(x)||'&nbsp;'}</div>`).join(''):(arDir(L[0])?`<bdi dir="rtl">${f(L[0])}</bdi>`:f(L[0])); }
 const oneUrl=v=>/^https?:\/\/\S+$/i.test(String(v||'').trim());
 function taskRowHTML(t,pid,me,isAdmin,canEdit){
   if(t.na) return `<div class="trow na"><div class="tmain"><div class="tt">${esc(t.title)}</div></div><div class="tside"><span class="pill p-na">N/A</span></div></div>`;
@@ -152,7 +152,7 @@ function taskRowHTML(t,pid,me,isAdmin,canEdit){
     : (t.deadline?`<span class="tdue${t.late?' late':''}">${t.late?'Overdue · ':'Due '}${fmtDay(t.deadline)}</span>`:'');
   const nk=pid+'|'+t.key, nOpen=S.openNotes.has(nk), nid='nt_'+(pid+'_'+t.key).replace(/[^a-z0-9_]/gi,'_');
   const notes = `<button class="tnbtn" onclick="toggleNotes('${esc(nk)}')">${nOpen?'▾':'▸'} Revisions${t.notes.length?' ('+t.notes.length+')':''}</button>`+
-    (nOpen?`<div class="tnotes">${t.notes.length?t.notes.map(n=>`<div class="tnote" dir="auto"><span>${bd(n.by)} · ${new Date(n.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span><br>${esc(n.text)}</div>`).join(''):'<div class="muted" style="font-size:12.5px">No revisions yet.</div>'}
+    (nOpen?`<div class="tnotes">${t.notes.length?t.notes.map(n=>`<div class="tnote"><span>${bd(n.by)} · ${new Date(n.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span><div class="tn-t">${bdl(n.text)}</div></div>`).join(''):'<div class="muted" style="font-size:12.5px">No revisions yet.</div>'}
       <div class="tnadd"><input id="${nid}" dir="auto" maxlength="1000" placeholder="اكتب التعديل المطلوب أو اللي اتعمل"><button class="tb ghost" onclick="addNote(${P},'${nid}')">Add</button></div></div>`:'');
   const wl=t.waiting.slice(0,3).map(w=>esc(w.title)+(w.name?' ('+bd(w.name)+')':'')).join(', ')+(t.waiting.length>3?` +${t.waiting.length-3} more`:'');
   const wait = t.locked ? `<div class="twait">Waiting for: ${wl}</div>` : '';
@@ -460,7 +460,7 @@ function pnHTML(r,list){
   return `<div class="card" style="margin-top:14px"><div class="row" style="align-items:center;gap:8px"><h3 style="margin:0">Updates <span class="muted" style="font-weight:500;font-size:13px">· shown to ${who} in their portal</span></h3></div>
     ${r.canEdit?`<div class="pn-form"><textarea id="pnT" rows="2" placeholder="اكتب تحديث… (مثلاً: تم إرسال التصميم للمراجعة)" dir="auto"></textarea><input id="pnN" placeholder="الخطوة الجاية (اختياري)" dir="auto">
       <select id="pnTo" aria-label="Who sees it">${(hasP?['partner','client','both']:['client']).map(k=>`<option value="${k}">${PN_TO[k]}</option>`).join('')}</select><button class="btn primary" onclick="pnAdd('${esc(r.id)}')">Post update</button></div>`:''}
-    ${list===undefined?'<div class="muted" style="padding:8px 0">Loading...</div>':list.length?list.map(n=>`<div class="pn-row"><div class="pn-h"><b>${bd(n.by)}</b><span class="pill p-out" style="font-size:11px">${PN_TO[n.to]||'Partner'}</span><span class="muted">${new Date(n.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</span>${n.mine||can('projects.manage_all')?`<button class="btn ghost small" onclick="pnDel('${esc(n.id)}','${esc(r.id)}')">Delete</button>`:''}</div><div dir="auto">${esc(n.text)}</div>${n.next?`<div class="muted" dir="auto" style="font-size:13px">الخطوة الجاية: ${esc(n.next)}</div>`:''}</div>`).join(''):'<div class="muted" style="padding:8px 0;font-size:13.5px">No updates yet. Stage changes and blockers already show in the portals automatically.</div>'}</div>`;
+    ${list===undefined?'<div class="muted" style="padding:8px 0">Loading...</div>':list.length?list.map(n=>`<div class="pn-row"><div class="pn-h"><b>${bd(n.by)}</b><span class="pill p-out" style="font-size:11px">${PN_TO[n.to]||'Partner'}</span><span class="muted">${new Date(n.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</span>${n.mine||can('projects.manage_all')?`<button class="btn ghost small" onclick="pnDel('${esc(n.id)}','${esc(r.id)}')">Delete</button>`:''}</div><div  style="white-space:normal">${bdl(n.text)}</div>${n.next?`<div class="muted" dir="rtl" style="font-size:13px">الخطوة الجاية: ${bd(n.next)}</div>`:''}</div>`).join(''):'<div class="muted" style="padding:8px 0;font-size:13.5px">No updates yet. Stage changes and blockers already show in the portals automatically.</div>'}</div>`;
 }
 function pnPut(r,list){ S.pn=S.pn||{}; S.pn[r.id]=list; const el=$('pnBox'); if(el && S.proj && S.proj.id===r.id) el.innerHTML=pnHTML(r,list); }
 function pnLoad(r){ call('partnerNotes',{project:r.id}).then(l=>pnPut(r,l)).catch(()=>{}); }

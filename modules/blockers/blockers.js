@@ -43,9 +43,9 @@ function blCard(b){
       <span class="spacer"></span>
       <span class="muted" style="font-size:13px">Since ${fmtD(b.start)}${open?'':' → '+fmtD(b.resolved)} · <b style="color:${open?'var(--bad)':'var(--ink)'}">${b.days} day${b.days===1?'':'s'}</b></span>
     </div>
-    <div style="margin:12px 0 4px;font-size:14.5px;white-space:pre-wrap" dir="auto">${esc(b.details)}</div>
-    ${b.evidence?(/^https?:\/\//i.test(b.evidence)?`<a href="${esc(b.evidence)}" target="_blank" rel="noopener" style="font-size:13px">Evidence ↗</a>`:`<span style="font-size:13px;white-space:pre-wrap" dir="auto">Evidence: ${esc(b.evidence)}</span>`):''}
-    ${b.updates.length?`<div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;display:grid;gap:6px">${b.updates.map(u=>`<div style="font-size:13px"><span class="muted">${new Date(u.at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${bd(u.by)}:</span> <span dir="auto">${esc(u.text)}</span></div>`).join('')}</div>`:''}
+    <div style="margin:12px 0 4px;font-size:14.5px;">${bdl(b.details)}</div>
+    ${b.evidence?(/^https?:\/\//i.test(b.evidence)?`<a href="${esc(b.evidence)}" target="_blank" rel="noopener" style="font-size:13px">Evidence ↗</a>`:`<span style="font-size:13px;white-space:pre-wrap">Evidence: ${bd(b.evidence)}</span>`):''}
+    ${b.updates.length?`<div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;display:grid;gap:6px">${b.updates.map(u=>`<div style="font-size:13px"><span class="muted">${new Date(u.at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${bd(u.by)}:</span> <span ${bdd(u.text)}>${esc(u.text)}</span></div>`).join('')}</div>`:''}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center">
       <input id="note_${esc(b.id)}" placeholder="Add a follow-up (e.g. sent a reminder to the client)" dir="auto" style="flex:1 1 280px;padding:8px 10px;font-size:13px">
       <button class="btn small" onclick="blNote('${esc(b.id)}')">Add</button>
@@ -115,7 +115,7 @@ async function blockersPDF(pid){
     host.style.cssText='position:fixed;left:-10000px;top:0;width:794px;background:#fff;color:#10231F;font-family:IBM Plex Sans,IBM Plex Sans Arabic,sans-serif;padding:40px;box-sizing:border-box';
     host.innerHTML=`
       <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #E8753D;padding-bottom:16px">
-        <div><div style="font-size:12px;color:#5B6E6A;letter-spacing:.08em">MIQNAS · PROJECT BLOCKERS REPORT</div><div style="font-size:26px;font-weight:700;margin-top:6px" dir="auto">${esc(r.client)}</div><div style="font-size:13px;color:#5B6E6A;margin-top:4px">${esc(r.id)} · ${esc(r.type)} · Start ${fmtD(r.start_date)} · Target Launch ${fmtD(r.target_launch)}</div></div>
+        <div><div style="font-size:12px;color:#5B6E6A;letter-spacing:.08em">MIQNAS · PROJECT BLOCKERS REPORT</div><div style="font-size:26px;font-weight:700;margin-top:6px" ${bdd(r.client)}>${esc(r.client)}</div><div style="font-size:13px;color:#5B6E6A;margin-top:4px">${esc(r.id)} · ${esc(r.type)} · Start ${fmtD(r.start_date)} · Target Launch ${fmtD(r.target_launch)}</div></div>
         <div style="text-align:right;font-size:12px;color:#5B6E6A">Generated<br><b style="color:#10231F;font-size:13px">${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</b></div>
       </div>
       <div style="display:flex;gap:12px;margin:20px 0">
@@ -128,9 +128,9 @@ async function blockersPDF(pid){
           <span style="background:${b.status==='Resolved'?'#DCF3E6':'#FEE4E2'};border-radius:99px;padding:2px 9px;font-weight:700">${esc(b.status)}</span>
           <span style="margin-left:auto;color:#5B6E6A">${fmtD(b.start)} → ${b.status==='Resolved'?fmtD(b.resolved):'still open'} · <b style="color:#10231F">${b.days} days</b></span>
         </div>
-        <div style="margin-top:8px;font-size:13.5px;white-space:pre-wrap" dir="auto">${esc(b.details)}</div>
+        <div style="margin-top:8px;font-size:13.5px;">${bdl(b.details)}</div>
         ${b.evidence?`<div style="margin-top:6px;font-size:12px;color:#107366;word-break:break-all">Evidence: ${esc(b.evidence)}</div>`:''}
-        ${b.updates.length?`<div style="margin-top:8px;border-top:1px dashed #DDE6E3;padding-top:6px">${b.updates.map(u=>`<div style="font-size:12px;margin-top:3px"><span style="color:#5B6E6A">${new Date(u.at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} · ${esc(u.by)}:</span> <span dir="auto">${esc(u.text)}</span></div>`).join('')}</div>`:''}
+        ${b.updates.length?`<div style="margin-top:8px;border-top:1px dashed #DDE6E3;padding-top:6px">${b.updates.map(u=>`<div style="font-size:12px;margin-top:3px"><span style="color:#5B6E6A">${new Date(u.at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} · ${esc(u.by)}:</span> <span ${bdd(u.text)}>${esc(u.text)}</span></div>`).join('')}</div>`:''}
       </div>`).join('') || '<div style="color:#5B6E6A">No blockers recorded.</div>'}`;
     document.body.appendChild(host);
     const hr=host.getBoundingClientRect();
