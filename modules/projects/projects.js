@@ -257,6 +257,7 @@ async function tAct(pid,key,action,extra){
 /* ----- My Tasks ----- */
 async function viewMyTasks(keep){
   S.proj=null;
+  if(!keep) S.myTab='active'; // بتفتح دايماً على Active
   const c=S.cache.my;
   if(c) renderMyTasks(c,keep); else if(!keep) $('main').innerHTML=LOADING;
   try{
@@ -266,7 +267,33 @@ async function viewMyTasks(keep){
     renderMyTasks(r,true);
   }catch(e){ if(!c) $('main').innerHTML=`<div class="card err">${esc(e.message)}</div>`; else toast(e.message); }
 }
+// تبويبين: Active على الشمال و Launched بعيد على اليمين عشان مايتلخبطوش
+function mtTabs(r){ const nl=S.cache.myl?S.cache.myl.projects.length:(r.launched||0);
+  return `<div class="mt-tabs"><button type="button" class="${S.myTab!=='launched'?'on':''}" onclick="mtTab('active')">⚡ Active <span>${r.projects.length}</span></button><span class="sp"></span><button type="button" class="${S.myTab==='launched'?'on':''}" onclick="mtTab('launched')">🚀 Launched <span>${nl}</span></button></div>`; }
+function mtTab(t){ S.myTab=t; window.scrollTo(0,0); if(t==='launched') viewLaunched(); else if(S.cache.my) renderMyTasks(S.cache.my); else viewMyTasks(); }
+async function viewLaunched(all){
+  const r=S.cache.my||{projects:[],launched:0};
+  if(S.cache.myl && !all) renderLaunched(S.cache.myl); else $('main').innerHTML=`<div class="en">${mtTabs(r)}${LOADING}</div>`;
+  try{ const d=await call('myLaunched',all?{all:true}:{}); d.all=!!all; S.cache.myl=d; if(S.view==='mytasks' && !S.proj && S.myTab==='launched') renderLaunched(d); }
+  catch(e){ toast(e.message); }
+}
+S.mlOpen=new Set();
+function mlToggle(id){ S.mlOpen.has(id)?S.mlOpen.delete(id):S.mlOpen.add(id); renderLaunched(S.cache.myl); }
+function renderLaunched(d){
+  const r=S.cache.my||{projects:[],launched:0};
+  setTop('My Tasks', d.projects.length+' launched projects');
+  const hm=ms=>{ const m=Math.round((ms||0)/6e4); return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m'; };
+  const card=p=>{ const open=S.mlOpen.has(p.id);
+    return `<div class="lp-c"><div class="lp-h">${piTag(p.id,p.client)}<h3 dir="auto">${esc(p.client)}</h3><span class="pill p-out">${esc(p.id)}</span><span class="muted" style="font-size:13px">${esc(p.type)}</span><span class="sp"></span>
+      <span class="pill p-in">🚀 Launched${p.goLive?' '+fmtDay(p.goLive):''}</span>${p.brief_id?`<button class="btn ghost small" onclick="openBriefFrom('${esc(p.brief_id)}','')">Brief</button>`:''}<button class="btn ghost small" onclick="mlToggle('${esc(p.id)}')">${open?'▾':'▸'} My tasks</button></div>
+      <div class="lp-m"><span>My tasks: <b>${p.done} done</b>${p.tasks.length>p.done?` · ${p.tasks.length-p.done} not done`:''}</span><span>My time: <b>${hm(p.ms)}</b></span></div>
+      ${open?`<div class="lp-t">${p.tasks.map(t=>`<div><span>${t.status==='Done'?'✓':'·'}</span><span>${esc(t.title)}${t.helping?' <span class="pill p-prog" style="font-size:10.5px">Helping</span>':''}</span><span>${hm(t.ms)}</span></div>`).join('')}</div>`:''}</div>`; };
+  $('main').innerHTML=`<div class="en">${mtTabs(r)}
+    ${d.projects.length?`<div class="lp">${d.projects.map(card).join('')}</div>`:'<div class="card muted">No launched projects yet.</div>'}
+    ${!d.all&&d.older?`<div class="lp-more muted">Showing the last 3 months · <button class="btn ghost small" onclick="viewLaunched(true)">Show older (${d.older})</button></div>`:''}</div>`;
+}
 function renderMyTasks(r,keep){
+  if(S.myTab==='launched'){ if(S.cache.myl) renderLaunched(S.cache.myl); return; }
   const y=window.scrollY; S.kbTaskMap=r.sops||S.kbTaskMap;
   setTop('My Tasks', r.projects.length+' active projects');
   {
@@ -280,6 +307,7 @@ function renderMyTasks(r,keep){
       <div class="kpi"><b>${all.filter(t=>t.status!=='Done'&&!t.locked&&!t.withOther).length}</b><span>Ready to start</span></div>
       <div class="kpi"><b style="color:var(--accent)">${all.filter(t=>t.helping?(t.helperList||[]).some(h=>h.u===r.me&&h.since):t.running).length}</b><span>Running now</span></div>
     </div>
+    ${mtTabs(r)}
     ${r.projects.length?`<div class="psel"><label for="mysel">Project</label><select id="mysel" onchange="S.myProj=this.value;renderMyTasks(S.cache.my)">${r.projects.map(p=>{ const open=p.tasks.filter(t=>t.status!=='Done').length, run=p.tasks.some(t=>t.running); return `<option value="${esc(p.id)}"${p.id===sel?' selected':''}>${run?'⏱ ':''}${esc(p.id)} · ${esc(p.client)} — ${open} open</option>`; }).join('')}</select></div>`:''}
     ${r.projects.length? r.projects.filter(p=>p.id===sel).map(p=>`
       <div class="card tgroup">
