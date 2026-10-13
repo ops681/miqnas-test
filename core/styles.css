@@ -744,3 +744,7 @@ button.cchip{cursor:pointer}button.cchip:hover{border-color:var(--brand-line,#BF
 .va-bar{position:sticky;top:0;z-index:999;display:flex;align-items:center;gap:10px;padding:8px 16px;background:#FFF4D6;border-bottom:1px solid #F2D58A;color:#5A4500;font-size:13.5px;font-weight:600}
 .va-bar.edit{background:#FDE2E0;border-color:#F3B3AD;color:#8A1F17}
 .va-bar .spacer{flex:1}.va-bar .va-ic{font-size:16px}
+.va-bar .btn{background:#5A4500 !important;color:#FFFFFF !important;border:1px solid #5A4500 !important;font-weight:700}
+.va-bar .btn.ghost{background:#FFFFFF !important;color:#5A4500 !important;border-color:#C9A64A !important}
+.va-bar.edit .btn{background:#8A1F17 !important;border-color:#8A1F17 !important;color:#FFFFFF !important}
+.va-bar.edit .btn.ghost{background:#FFFFFF !important;color:#8A1F17 !important;border-color:#E39A93 !important}
