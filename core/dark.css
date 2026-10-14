@@ -31,7 +31,8 @@ html[data-theme="dark"] input::placeholder,html[data-theme="dark"] textarea::pla
 html[data-theme="dark"] .p-out,html[data-theme="dark"] .tstat.p-out{background:#1A2420;color:#C9D6D2;border-color:#2E3D38}
 html[data-theme="dark"] .tstat.p-prog{background:var(--bluebg);border-color:#24426B}
 html[data-theme="dark"] .tstat.p-in{border-color:#1D5247}
-html[data-theme="dark"] .av{background:#1E2D29;color:var(--brand2)}
+html[data-theme="dark"] .av{background-color:#1E2D29;color:var(--brand2)}
+html[data-theme="dark"] .av.has-img{background-size:cover;background-position:center;color:transparent}
 html[data-theme="dark"] .modal{background:rgba(0,0,0,.6)}
 html[data-theme="dark"] .pbar,html[data-theme="dark"] .cr-track{background:var(--line)}
 html[data-theme="dark"] .toast{background:#EEF3F1;color:#0B1311}
