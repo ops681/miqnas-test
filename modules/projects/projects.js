@@ -185,13 +185,16 @@ S.openNotes=new Set();
 function toggleNotes(k){ S.openNotes.has(k)?S.openNotes.delete(k):S.openNotes.add(k); rerender(); }
 /* ----- Notes على مستوى المشروع (الإدارة والأكاونت مانجر بيكتبوا، والكل بيقرا) ----- */
 const pnDate=ts=>new Date(ts).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-function pnotesRO(list,title){ if(!list||!list.length) return ''; return `<div class="pnt-card"><h3>📝 ${title||'Project notes'}</h3>${list.map(n=>`<div class="pnt"><div class="pnt-h"><b>${bd(n.by)}</b><span class="muted">${pnDate(n.at)}${n.edited?' · edited '+pnDate(n.edited.at):''}</span></div><div class="pnt-t">${bdl(n.text)}</div></div>`).join('')}</div>`; }
+// كل نوت كارت لوحده: الكلام هو الأساس، وتحته مين كتبها وإمتى في نفس الناحية (اتجاه النوت من لغتها)
+function pnItem(n,tools){ const d=arDir(n.text)?'rtl':'ltr';
+  return `<div class="pnt" dir="${d}">${tools?`<div class="pnt-tools">${tools}</div>`:''}<div class="pnt-t">${bdl(n.text)}</div><div class="pnt-m">✍️ <b>${bd(n.by)}</b> · <span dir="ltr">${pnDate(n.at)}</span>${n.edited?` · <span class="pnt-ed">✎ ${d==='rtl'?'اتعدلت':'edited'} <span dir="ltr">${pnDate(n.edited.at)}</span></span>`:''}</div></div>`; }
+function pnotesRO(list,title){ if(!list||!list.length) return ''; return `<div class="pnt-card"><h3>📝 ${title||'Project notes'}</h3><div class="pnt-list">${list.map(n=>pnItem(n,'')).join('')}</div></div>`; }
 function projNotesHTML(r){
   const L=r.pnotes||[], can=!!r.canNote;
   if(!L.length && !can) return '';
   return `<div class="pnt-card" style="margin-top:14px"><h3>📝 Notes <span class="muted" style="font-weight:500;font-size:13px">· shown to the team and on the brief</span></h3>
-    ${L.map(n=>S.pnEdit===n.id?`<div class="pnt"><textarea id="pnE_${esc(n.id)}" rows="3" dir="auto">${esc(n.text)}</textarea><div class="row" style="gap:6px;margin-top:6px"><button class="btn small primary" onclick="pnoteSave('${esc(r.id)}','${esc(n.id)}')">Save</button><button class="btn small ghost" onclick="S.pnEdit=null;pnoteRender('${esc(r.id)}')">Cancel</button></div></div>`
-      :`<div class="pnt"><div class="pnt-h"><b>${bd(n.by)}</b><span class="muted">${pnDate(n.at)}${n.edited?' · edited by '+bd(n.edited.by)+' '+pnDate(n.edited.at):''}</span>${can?`<span class="spacer"></span><button class="btn ghost small" onclick="S.pnEdit='${esc(n.id)}';pnoteRender('${esc(r.id)}')">Edit</button><button class="btn ghost small" onclick="pnoteDel('${esc(r.id)}','${esc(n.id)}')">Delete</button>`:''}</div><div class="pnt-t">${bdl(n.text)}</div></div>`).join('')}
+    <div class="pnt-list">${L.map(n=>S.pnEdit===n.id?`<div class="pnt"><textarea id="pnE_${esc(n.id)}" rows="3" dir="auto">${esc(n.text)}</textarea><div class="row" style="gap:6px;margin-top:6px"><button class="btn small primary" onclick="pnoteSave('${esc(r.id)}','${esc(n.id)}')">Save</button><button class="btn small ghost" onclick="S.pnEdit=null;pnoteRender('${esc(r.id)}')">Cancel</button></div></div>`
+      :pnItem(n, can?`<button class="pnt-b" title="Edit" onclick="S.pnEdit='${esc(n.id)}';pnoteRender('${esc(r.id)}')">✏️ Edit</button><button class="pnt-b del" title="Delete" onclick="pnoteDel('${esc(r.id)}','${esc(n.id)}')">🗑 Delete</button>`:'')).join('')}</div>
     ${!L.length?'<div class="muted" style="font-size:13.5px;margin-bottom:8px">No notes yet. Example: the domain won\'t be moved now.</div>':''}
     ${can?`<div class="pnt-add"><textarea id="pnNew" rows="2" dir="auto" placeholder="اكتب نوت للمشروع (هتظهر للفريق وفوق البريف)"></textarea><button class="btn primary small" onclick="pnoteSave('${esc(r.id)}')">Add note</button></div>`:''}</div>`;
 }
