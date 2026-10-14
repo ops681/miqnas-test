@@ -4,8 +4,7 @@
 // في View as الكارت بيظهر زي ما الموظف شايفه، بس إشعار المتصفح لأ (عشان مايجيلكش انت).
 function coWorkedMs(){
   const st=S.status; if(!st||!st.clockedIn) return 0;
-  const now=Date.now()-(st._off||0);
-  return (Number(st.closedHoursToday)||0)*36e5 + Math.max(0, now-st.inTs-(st.breakMs||0)-(st.onBreak?now-st.breakSince:0));
+  return (Number(st.closedHoursToday)||0)*36e5 + workedMs(st);
 }
 function coDur(ms){ const m=Math.max(0,Math.round(ms/6e4)), h=Math.floor(m/60), r=m%60;
   const w=(n,one,two,few,many)=>n===1?one:n===2?two:n<=10?n+' '+few:n+' '+many;

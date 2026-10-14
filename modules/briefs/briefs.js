@@ -417,6 +417,7 @@ ${headHTML(b)}
     </div>
     ${assignHTML(src)}
   </div>
+  ${b.pnotes&&b.pnotes.length&&typeof pnotesRO==="function"?pnotesRO(b.pnotes,"Project notes"):""}
   ${sectionsHTML(a)}`;
   const bk=$("#back"); if(bk) bk.onclick=()=>{ if(backTo&&backTo.brief===b.id){ const t=backTo; backTo=null; t.back(); } else go({v:"list"}); };
   const ed=$("#edit"); if(ed) ed.onclick=()=>editBrief(src.id);

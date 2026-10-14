@@ -60,6 +60,7 @@ function navFor(u){
   if(canAny(['executive.view','commercial.metrics.manage'])) add('sales','Sales CRM','chart','Business Lines');
   if(canAny(['executive.view','system.admin'])) add('line2','Line 2','trend','Business Lines');
   if(canAny(['attendance.view_all','leave.approve_hr'])) add('people','People Dashboard','dash','People');
+  if(u.teamAct) add('teamact','Team Activity','chart','People');
   if(can('attendance.view_all')){ add('today','Attendance','cal','People'); add('monthly','Monthly Report','chart','People'); add('screen','Screen Report','monitor','People'); }
   if(can('people.manage')) add('users','Employees','users','People');
   if(can('people.manage')) add('devices','Devices','device','People');
@@ -147,7 +148,7 @@ function go(v,opts){
   window.scrollTo(0,0);
   if(gated() && FREE_VIEWS.indexOf(v)<0){ S.lockShown=true; viewLocked(v); return; }
   S.lockShown=false;
-  const map={dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,clientrep:()=>viewClientRep(opts),partners:viewPartners,knowledge:()=>viewKnowledge(opts),finance:()=>viewFinance(opts),board:()=>viewBoard(opts),people:viewPeople,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
+  const map={teamact:viewTeamAct,dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,clientrep:()=>viewClientRep(opts),partners:viewPartners,knowledge:()=>viewKnowledge(opts),finance:()=>viewFinance(opts),board:()=>viewBoard(opts),people:viewPeople,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
   (map[v]||viewDash)();
 }
 function viewLocked(v){
@@ -207,6 +208,9 @@ function startPrefetchLoop(){
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && S.token && S.user) prefetch(); });
 
 /* ============ مؤقت واحد لكل العدادات ============ */
+// وقت الشغل: البريك المدفوع (ساعة الـ Full time) بيتحسب شغل، والباقي بيتخصم
+function brkPaidLeft(st){ return Math.max(0,(st.breakAllowMs||0)-(st.paidToday||0)); }
+function workedMs(st,now){ if(!st||!st.clockedIn) return 0; now=(now||Date.now())-(st._off||0); const cur=st.onBreak?now-st.breakSince:0; return Math.max(0, now-st.inTs-(st.breakMs||0)+(st.paidMs||0)-Math.max(0,cur-brkPaidLeft(st))); }
 function setStatus(st){ if(st) st._off=Date.now()-(st.serverNow||Date.now()); S.status=st; if(st && !st.clockedIn) store('co_snz',null); if(typeof coTick==='function') setTimeout(coTick,0); }
 function fmtDur(ms){ ms=Math.max(0,ms); const h=Math.floor(ms/36e5), m=Math.floor(ms%36e5/6e4), s=Math.floor(ms%6e4/1e3); return [h,m,s].map(x=>String(x).padStart(2,'0')).join(':'); }
 function tickAll(){
@@ -214,9 +218,10 @@ function tickAll(){
   document.querySelectorAll('[data-live]').forEach(el=>{ const base=+el.dataset.total||0, since=+el.dataset.since||0; el.textContent=fmtDur(base+(since? now-S.skew-since : 0)); });
   const st=S.status;
   if(st && st.clockedIn){
-    const v=fmtDur(now-(st._off||0)-st.inTs-(st.breakMs||0)-(st.onBreak?now-(st._off||0)-st.breakSince:0));
+    const v=fmtDur(workedMs(st,now));
     const a=$('sideElapsed'); if(a) a.textContent=v;
     const b=$('elapsed'); if(b) b.textContent=v;
+    const bl=$('brkLeft'); if(bl && st.onBreak){ const cur=now-(st._off||0)-st.breakSince, left=brkPaidLeft(st)-cur; bl.textContent=left>0?'· paid break left: '+Math.ceil(left/6e4)+' min':'· '+Math.floor(-left/6e4)+' min outside the paid hour'; bl.style.color=left>0?'':'var(--bad)'; }
   }
 }
 setInterval(tickAll,1000);

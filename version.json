@@ -1,5 +1,5 @@
 {
- "v":"2026-10-14.8",
+ "v":"2026-10-14.10",
  "css": [
   "core/styles.css",
   "modules/briefs/briefs.css",
@@ -28,6 +28,7 @@
   "modules/people/employees.js",
   "modules/people/devices.js",
   "modules/people/peopledash.js",
+  "modules/people/teamact.js",
   "modules/settings/settings.js",
   "modules/settings/health.js",
   "modules/blockers/blockers.js",

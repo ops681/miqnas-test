@@ -15,6 +15,7 @@ const SET_GROUPS=[
     ['keep_days','Keep screenshots for','Older screenshots are deleted from Drive automatically','days']]],
   ['Attendance','Clock-in and clock-out alerts',[
     ['forgot_h','Forgot to clock out','Alert when someone is still clocked in after','hours'],
+    ['paid_break','Paid break (Full time)','Break time per day that counts as work, no reason needed. After it a reason is required and an alert is sent. Part time has no paid break','minutes'],
     ['break_max','Long break','Alert when a break runs longer than','minutes'],
     ['loc_min','Location every','How often the location is taken during the shift','minutes']]]
 ];
@@ -25,7 +26,7 @@ function viewSettings(){
 }
 function renderSettings(v){
   $('main').innerHTML=`<div style="max-width:900px;display:grid;gap:18px">
-  <div id="setBrand"></div><div id="setPush"></div><div id="setPlat"></div><div id="setMove"></div>
+  <div id="setBrand"></div><div id="setAlerts"></div><div id="setPush"></div><div id="setPlat"></div><div id="setMove"></div>
   ${SET_GROUPS.map(g=>`<div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>${g[0]}</h2><div class="muted" style="font-size:13px">${g[1]}</div></div>
     ${g[2].map(it=>`<div class="set"><div class="tx"><label for="st_${it[0]}">${it[1]}</label><div>${it[2]}</div></div><input type="number" min="1" id="st_${it[0]}" value="${esc(v[it[0]])}"><span class="u">${it[3]}</span></div>`).join('')}</div>`).join('')}
   <div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>Sign-in security</h2><div class="muted" style="font-size:13px">Turn off only in an emergency</div></div>
@@ -45,7 +46,7 @@ function renderSettings(v){
   <div class="card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><div style="flex:1 1 320px"><h2 style="margin:0 0 4px">Work hours</h2><div class="muted" style="font-size:13px">Off for now, since the team's hours vary. Late-arrival alerts will use this later.</div></div>
     <label class="check" style="margin:0"><input type="checkbox" id="st_late_on" ${v.late_on?'checked':''} disabled>Late-arrival alerts</label></div>
   </div>`;
-  setBrandCard(); setPushCard(); setPlatCard(); setMoveCard();
+  setBrandCard(); setAlertsCard(); setPushCard(); setPlatCard(); setMoveCard();
 }
 /* ----- هوية الشركة ----- */
 function setBrandCard(){
@@ -75,6 +76,19 @@ async function setPlatCard(r){
   $('plA').onclick=()=>{ const n=$('plN').value.trim(); if(!n) return; run(async()=>{ await call('platformAdd',{name:n}); return call('platformsAdmin'); }); };
 }
 /* ----- نقل الإعدادات لسيستم تاني (من التيست للسيستم الجديد) ----- */
+// التنبيهات + مين يشوف Team Activity (بالمنصب أو المجموعة)
+async function setAlertsCard(){
+  const box=$('setAlerts'); if(!box) return;
+  let r; try{ r=await call('alertCfgGet'); }catch(e){ box.innerHTML=''; return; }
+  const c=r.cfg, opt=(name,sel)=>r.options.map(o=>`<label class="check" style="margin:0"><input type="checkbox" data-al="${name}" value="${esc(o.k)}"${sel.indexOf(o.k)>=0?' checked':''}> ${esc(o.label)}${o.who?` <span class="muted" style="font-size:12px">· ${bd(o.who)}</span>`:''}</label>`).join('');
+  box.innerHTML=`<div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>🔔 Alerts & Team Activity</h2><div class="muted" style="font-size:13px">Who gets a bell notification when the team does something, and who can open Team Activity and Live Activity. System admins can always see them</div></div>
+    <div class="set"><div class="tx"><label>Send alerts about</label><div>Each one goes to the bell of the people below</div></div><div class="al-grid">${r.events.map(e=>`<label class="check" style="margin:0"><input type="checkbox" data-ev="${esc(e[0])}"${c.ev[e[0]]?' checked':''}> ${esc(e[1])}</label>`).join('')}</div></div>
+    <div class="set"><div class="tx"><label>Alerts go to</label><div>By seat or group, so it follows the person who holds it</div></div><div class="al-grid">${opt('to',c.to)}</div></div>
+    <div class="set"><div class="tx"><label>Who can see Team Activity</label><div>The daily report of what each person did, and Live Activity on the dashboard</div></div><div class="al-grid">${opt('viewers',c.viewers)}</div></div>
+    <div class="mfoot" style="padding:12px 18px"><div class="spacer"></div><button class="btn primary" id="alSave">Save alerts</button></div></div>`;
+  $('alSave').onclick=async()=>{ const pick=n=>[...box.querySelectorAll(`[data-al="${n}"]:checked`)].map(x=>x.value); const ev={}; box.querySelectorAll('[data-ev]').forEach(x=>{ ev[x.dataset.ev]=x.checked; });
+    try{ await call('alertCfgSave',{cfg:{to:pick('to'),viewers:pick('viewers'),ev}}); toast('اتحفظت ✓'); setAlertsCard(); }catch(e){ alert(e.message); } };
+}
 async function setMoveCard(){
   let st; try{ st=await call('configImportState'); }catch(e){ return; }
   const box=$('setMove'); if(!box) return;

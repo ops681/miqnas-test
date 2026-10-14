@@ -105,6 +105,7 @@ function renderProject(r,keep){
       </div>
       <div style="display:flex;align-items:center;gap:10px">${pbar(r.progress)}<b style="font-size:14px">${r.progress}%</b><span class="muted" style="font-size:13px">${r.done}/${r.total} tasks · ${r.hours} h</span></div>
     </div>
+    <div id="pntBox">${projNotesHTML(r)}</div>
     ${projAccessHTML(r)}
     ${projBlockersHTML(r)}
     ${D.partner||r.canEdit||(r.clientPortal&&r.clientPortal.on)?`<div id="pnBox">${pnHTML(r,S.pn&&S.pn[r.id])}</div>`:''}
@@ -147,15 +148,21 @@ function taskRowHTML(t,pid,me,isAdmin,canEdit){
   } else if(mine && t.status!=='Done' && !blocked){
     timer = t.running ? `<button class="tb pause" onclick="tAct(${P},'pause')">⏸ Stop Timer</button>` : `<button class="tb play" onclick="tAct(${P},'start')">▶ Start Timer</button>`;
   }
-  const time = helping ? hLive(meH) : (t.liveMs||t.running) ? liveSpan(t) : (mine&&!blocked&&t.status!=='Done'?`<span class="ttime">00:00:00</span>`:'');
+  if(t.noTimer) timer=''; // موافقة العميل: الحالة بس
+  const time = t.noTimer ? (t.status!=='Done'&&!t.locked?'<span class="muted" style="font-size:12px">Waiting on the client</span>':'') : helping ? hLive(meH) : (t.liveMs||t.running) ? liveSpan(t) : (mine&&!blocked&&t.status!=='Done'?`<span class="ttime">00:00:00</span>`:'');
   if(helping) status = `<span class="pill p-prog" title="You are helping on this task">Helping</span> `+status;
-  const dl = mine && t.status!=='Done'
+  const dl = t.noTimer ? '' : mine && t.status!=='Done'
     ? `<input type="date" class="tdl${t.late?' late':''}" value="${esc(t.deadline)}" title="Deadline" aria-label="Deadline" onchange="tAct(${P},'deadline',{deadline:this.value})">`
     : (t.deadline?`<span class="tdue${t.late?' late':''}">${t.late?'Overdue · ':'Due '}${fmtDay(t.deadline)}</span>`:'');
   const nk=pid+'|'+t.key, nOpen=S.openNotes.has(nk), nid='nt_'+(pid+'_'+t.key).replace(/[^a-z0-9_]/gi,'_');
   const notes = `<button class="tnbtn" onclick="toggleNotes('${esc(nk)}')">${nOpen?'▾':'▸'} Revisions${t.notes.length?' ('+t.notes.length+')':''}</button>`+
     (nOpen?`<div class="tnotes">${t.notes.length?t.notes.map(n=>`<div class="tnote"><span>${bd(n.by)} · ${new Date(n.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span><div class="tn-t">${bdl(n.text)}</div></div>`).join(''):'<div class="muted" style="font-size:12.5px">No revisions yet.</div>'}
       <div class="tnadd"><input id="${nid}" dir="auto" maxlength="1000" placeholder="اكتب التعديل المطلوب أو اللي اتعمل"><button class="tb ghost" onclick="addNote(${P},'${nid}')">Add</button></div></div>`:'');
+  // Notes عادية تحت الـ Revisions (أي ملاحظة، مش تعديل مطلوب)
+  const tk='n|'+nk, tOpen=S.openNotes.has(tk), tid='tn_'+(pid+'_'+t.key).replace(/[^a-z0-9_]/gi,'_'), TN=t.tnotes||[];
+  const tnotes = `<button class="tnbtn" onclick="toggleNotes('${esc(tk)}')">${tOpen?'▾':'▸'} Notes${TN.length?' ('+TN.length+')':''}</button>`+
+    (tOpen?`<div class="tnotes tn-n">${TN.length?TN.map(n=>`<div class="tnote"><span>${bd(n.by)} · ${new Date(n.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${(n.u===me||isAdmin)?` <button type="button" class="tn-del" title="Delete" onclick="tAct(${P},'tnotedel',{id:'${esc(n.id)}'})">✕</button>`:''}</span><div class="tn-t">${bdl(n.text)}</div></div>`).join(''):'<div class="muted" style="font-size:12.5px">No notes yet.</div>'}
+      <div class="tnadd"><input id="${tid}" dir="auto" maxlength="1000" placeholder="اكتب نوت" onkeydown="if(event.key==='Enter'){event.preventDefault();addTNote(${P},'${tid}');}"><button class="tb ghost" onclick="addTNote(${P},'${tid}')">Add</button></div></div>`:'');
   const wl=t.waiting.slice(0,3).map(w=>esc(w.title)+(w.name?' ('+bd(w.name)+')':'')).join(', ')+(t.waiting.length>3?` +${t.waiting.length-3} more`:'');
   const wait = t.locked ? `<div class="twait">Waiting for: ${wl}</div>` : '';
   const P2=`'${esc(pid)}','${esc(t.key)}'`;
@@ -170,12 +177,34 @@ function taskRowHTML(t,pid,me,isAdmin,canEdit){
   }
   const refs=(t.refs||[]).map(r=>`<div class="tlink tref"><span>${esc(r.label)}</span>${r.url?`<a href="${esc(r.url)}" target="_blank" rel="noopener" dir="ltr">${esc(r.text||r.url)}</a>`:`<span class="tl-txt" dir="auto">${txtLinks(r.text||'')}</span>`}${r.copy?`<button type="button" class="btn ghost small tcopy" aria-label="Copy" onclick="event.stopPropagation();navigator.clipboard.writeText(this.dataset.v).then(()=>toast('اتنسخ'))" data-v="${esc(r.text||r.url)}">Copy</button>`:''}</div>`).join('');
   return `<div class="trow${withOther?' other':''}${t.locked?' locked':''}${t.running||(meH&&meH.since)?' running':''}${t.status==='Done'?' done':''}">
-    <div class="tmain"><div class="tt">${esc(t.title)}${howTo}</div>${who}${helpersLine}${wait}${refs}${link}${notes}</div>
+    <div class="tmain"><div class="tt">${esc(t.title)}${howTo}</div>${who}${helpersLine}${wait}${refs}${link}${notes}${tnotes}</div>
     <div class="tside">${lock}${dl}${status}<span class="tsep"></span>${time}${timer}</div></div>`;
 }
 
 S.openNotes=new Set();
 function toggleNotes(k){ S.openNotes.has(k)?S.openNotes.delete(k):S.openNotes.add(k); rerender(); }
+/* ----- Notes على مستوى المشروع (الإدارة والأكاونت مانجر بيكتبوا، والكل بيقرا) ----- */
+const pnDate=ts=>new Date(ts).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+function pnotesRO(list,title){ if(!list||!list.length) return ''; return `<div class="pnt-card"><h3>📝 ${title||'Project notes'}</h3>${list.map(n=>`<div class="pnt"><div class="pnt-h"><b>${bd(n.by)}</b><span class="muted">${pnDate(n.at)}${n.edited?' · edited '+pnDate(n.edited.at):''}</span></div><div class="pnt-t">${bdl(n.text)}</div></div>`).join('')}</div>`; }
+function projNotesHTML(r){
+  const L=r.pnotes||[], can=!!r.canNote;
+  if(!L.length && !can) return '';
+  return `<div class="pnt-card" style="margin-top:14px"><h3>📝 Notes <span class="muted" style="font-weight:500;font-size:13px">· shown to the team and on the brief</span></h3>
+    ${L.map(n=>S.pnEdit===n.id?`<div class="pnt"><textarea id="pnE_${esc(n.id)}" rows="3" dir="auto">${esc(n.text)}</textarea><div class="row" style="gap:6px;margin-top:6px"><button class="btn small primary" onclick="pnoteSave('${esc(r.id)}','${esc(n.id)}')">Save</button><button class="btn small ghost" onclick="S.pnEdit=null;pnoteRender('${esc(r.id)}')">Cancel</button></div></div>`
+      :`<div class="pnt"><div class="pnt-h"><b>${bd(n.by)}</b><span class="muted">${pnDate(n.at)}${n.edited?' · edited by '+bd(n.edited.by)+' '+pnDate(n.edited.at):''}</span>${can?`<span class="spacer"></span><button class="btn ghost small" onclick="S.pnEdit='${esc(n.id)}';pnoteRender('${esc(r.id)}')">Edit</button><button class="btn ghost small" onclick="pnoteDel('${esc(r.id)}','${esc(n.id)}')">Delete</button>`:''}</div><div class="pnt-t">${bdl(n.text)}</div></div>`).join('')}
+    ${!L.length?'<div class="muted" style="font-size:13.5px;margin-bottom:8px">No notes yet. Example: the domain won\'t be moved now.</div>':''}
+    ${can?`<div class="pnt-add"><textarea id="pnNew" rows="2" dir="auto" placeholder="اكتب نوت للمشروع (هتظهر للفريق وفوق البريف)"></textarea><button class="btn primary small" onclick="pnoteSave('${esc(r.id)}')">Add note</button></div>`:''}</div>`;
+}
+function pnoteRender(pid){ const r=S.cache['p:'+pid]; if(r && $('pntBox')) $('pntBox').innerHTML=projNotesHTML(r); }
+async function pnoteSave(pid,id){
+  const el=$(id?'pnE_'+id:'pnNew'); const text=el?el.value.trim():''; if(!text) return toast('اكتب النوت الأول');
+  try{ const out=await call('projNoteSave',{project:pid,id:id||'',text}); const r=S.cache['p:'+pid]; if(r) r.pnotes=out.notes; S.pnEdit=null; pnoteRender(pid); toast('اتحفظت النوت ✓'); }catch(e){ alert(e.message); }
+}
+async function pnoteDel(pid,id){
+  if(!confirm('تمسح النوت دي؟')) return;
+  try{ const out=await call('projNoteDelete',{project:pid,id}); const r=S.cache['p:'+pid]; if(r) r.pnotes=out.notes; pnoteRender(pid); toast('اتمسحت ✓'); }catch(e){ alert(e.message); }
+}
+function addTNote(pid,key,id){ const el=$(id); const v=el?el.value.trim():''; if(!v) return; el.value=''; tAct(pid,key,'tnote',{text:v}); }
 function addNote(pid,key,id){
   const el=$(id); const v=el?el.value.trim():''; if(!v) return; el.value='';
   // النوت ممكن تستنى لو النت فاصل
@@ -246,6 +275,7 @@ async function tAct(pid,key,action,extra){
     S.pending--;
     if(action==='link') toast('Link saved ✓');
     if(action==='note') toast('اتضاف التعديل ✓');
+    if(action==='tnote') toast('اتضافت النوت ✓');
     if(r && typeof r==='object'){
       S.skew=Date.now()-r.now;
       if(mode==='my') S.cache.my=r; else S.cache['p:'+pid]=r;
@@ -315,6 +345,7 @@ function renderMyTasks(r,keep){
           ${p.brief_id?`<button class="btn ghost small" onclick="openBriefFrom('${esc(p.brief_id)}','')">Brief</button>`:''}
           <button class="btn ghost small" onclick="viewProject('${esc(p.id)}')">Full Project</button></div>
         <div style="display:flex;align-items:center;gap:8px;margin:2px 0 6px">${pbar(p.progress)}<span class="muted" style="font-size:12px">${p.progress}% of project</span></div>
+        ${pnotesRO(p.pnotes)}
         ${p.links.length?`<div class="links sm">${p.links.map(l=>oneUrl(l.link)?`<a href="${esc(l.link)}" target="_blank" rel="noopener" class="lnk"><b>${esc(l.title)}</b><span>${bd(l.by)}</span></a>`:`<div class="lnk lnk-t"><b>${esc(l.title)}</b><span>${bd(l.by)}</span><p dir="auto">${txtLinks(l.link)}</p></div>`).join('')}</div>`:''}
         ${p.tasks.slice().sort((a,b)=>rank(a)-rank(b)).map(t=>taskRowHTML(t,p.id,r.me,false)).join('')}
       </div>`).join('') : '<div class="card muted">No tasks assigned to you right now.</div>'}</div>`;

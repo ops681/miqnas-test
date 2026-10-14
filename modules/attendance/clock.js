@@ -7,9 +7,9 @@ function viewClock(){
   <div class="card clock">
     <div>${inn?`<span class="pill p-in">Clocked in</span> <span class="muted">since ${esc(st.inT)}</span>`:'<span class="pill p-out">Not clocked in</span>'}</div>
     <div class="big-time" id="elapsed">${inn?'00:00:00':'--:--'}</div>
-    <div class="muted">Today's hours: <b>${(st.closedHoursToday||0).toFixed(2)}</b></div>
+    <div class="muted">Today's hours: <b>${(st.closedHoursToday||0).toFixed(2)}</b>${st.breakAllowMs&&inn?` · Paid break left today: <b id="pbLeft">${Math.floor(brkPaidLeft(st)/6e4)} min</b>`:''}</div>
     ${inn ? (st.onBreak
-        ? `<div class="brkbox" dir="auto">On break since <b>${new Date(st.breakSince).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</b> · ${bd(st.breakReason)}</div><button class="btn primary" id="resumeBrk">Resume Work</button> <button class="btn out" id="outBtn">Clock Out</button>`
+        ? `<div class="brkbox" dir="auto">On break since <b>${new Date(st.breakSince).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</b> · ${bd(st.breakReason==='Paid break'?'☕ Paid break':st.breakReason)}${st.breakAllowMs?` <span class="muted" id="brkLeft"></span>`:''}</div><button class="btn primary" id="resumeBrk">Resume Work</button> <button class="btn out" id="outBtn">Clock Out</button>`
         : `<button class="btn brk" id="brkBtn">Break</button> <button class="btn out" id="outBtn">Clock Out</button><div id="shareBox"></div>`)
       : `<button class="btn primary" id="inBtn">Clock In</button>`}
     <div class="notice" dir="rtl">
@@ -112,17 +112,20 @@ function showAlarm(afterReload){
   $('alarmOut').onclick=()=>{ $('modalRoot').innerHTML=''; document.title='Miqnas ERP'; clockOut(); };
 }
 function breakForm(){
+  const left=brkPaidLeft(S.status||{}), free=left>=60000;
   $('modalRoot').innerHTML=`<div class="modal"><div class="card">
     <h2>Take a Break</h2>
     <p class="muted" dir="rtl" style="text-align:right">السكرين شوتس هتقف، وأي تايمر شغال على تاسك هيقف لوحده لحد ما ترجع.</p>
-    <label for="brkR">Reason</label><input id="brkR" dir="auto" placeholder="مثال: صلاة، غدا، مشوار سريع" maxlength="200">
+    ${free?`<div class="brk-paid" dir="rtl">☕ فاضلك <b>${Math.floor(left/6e4)} دقيقة</b> من ساعة البريك بتاعتك النهارده. مش محتاج تكتب سبب.</div>`
+      :`${(S.status||{}).breakAllowMs?'<div class="brk-paid over" dir="rtl">خلصت ساعة البريك بتاعتك النهارده، فلازم تكتب السبب وهيتبعت تنبيه للإدارة.</div>':'<div class="brk-paid over" dir="rtl">اكتب سبب البريك، وهيتبعت تنبيه للإدارة.</div>'}`}
+    <label for="brkR">Reason${free?' (optional)':''}</label><input id="brkR" dir="auto" placeholder="مثال: صلاة، غدا، مشوار سريع" maxlength="200">
     <div class="err" id="brkE"></div>
     <div class="mfoot"><button class="btn primary" id="brkS">Start Break</button><button class="btn" onclick="closeModal()">Cancel</button></div>
   </div></div>`;
   $('brkR').focus();
   $('brkS').onclick=async()=>{
     const reason=$('brkR').value.trim();
-    if(!reason){ $('brkE').textContent='اكتب سبب البريك'; return; }
+    if(!reason && !free){ $('brkE').textContent='اكتب سبب البريك'; return; }
     $('brkS').disabled=true;
     try{
       const st=await call('breakStart',{reason});
