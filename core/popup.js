@@ -13,7 +13,11 @@ async function ppCheck(){
     const r=await call('notifPeek',{since});
     if(r.unread!=null && r.unread!==S.unread){ S.unread=r.unread; renderBell(); }
     const seen=ppSeen();
-    const fresh=(r.list||[]).filter(n=>!seen[n.id] && !S.pp.some(x=>x.id===n.id));
+    let fresh=(r.list||[]).filter(n=>!seen[n.id] && !S.pp.some(x=>x.id===n.id));
+    if(!fresh.length) return;
+    // استلام مشروع جديد: كارت كبير في نص الشاشة بدل الركن
+    const big=fresh.filter(npIs); if(big.length){ ppMark(big.map(n=>n.id)); S.npQ=(S.npQ||[]).concat(big); npShow(); }
+    fresh=fresh.filter(n=>!npIs(n));
     if(!fresh.length) return;
     S.pp=fresh.concat(S.pp).slice(0,8);
     ppMark(fresh.map(n=>n.id));
@@ -44,3 +48,24 @@ function ppAll(){ S.pp=[]; ppRender(); loadNotifs(); openBell(); }
   setTimeout(ppCheck, 4000);   // بعد ما الموقع يفتح على طول: اللي حصل وإنت مش موجود
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') setTimeout(ppCheck,800); });
 })();
+
+/* ----- استلمت مشروع جديد: كارت في نص الشاشة (واحد ورا التاني لو أكتر من مشروع) ----- */
+function npIs(n){ return n && n.type==='project' && /^(You were added to |You are the Account Manager of )/.test(String(n.title||'')); }
+function npShow(){
+  if($('npCard')||!(S.npQ||[]).length || VA_TAB) return;
+  const n=S.npQ[0], am=/^You are the Account Manager of /.test(n.title), name=String(n.title).replace(/^(You were added to |You are the Account Manager of )/,'');
+  const parts=String(n.detail||'').split(' · ');
+  const c=document.createElement('div'); c.id='npCard'; c.className='np-wrap';
+  c.innerHTML=`<div class="np-card" role="alertdialog" aria-label="New project"><div class="np-top">🎉</div>
+    <h2 dir="rtl">${am?'بقيت الـ Account Manager لمشروع جديد':'استلمت مشروع جديد'}</h2>
+    <div class="np-name" ${bdd(name)}>${esc(name)}</div>
+    <div class="np-meta">${parts.map(p=>`<span>${bd(p)}</span>`).join('')}</div>
+    ${S.npQ.length>1?`<div class="muted" style="font-size:12.5px;margin-top:6px">+${S.npQ.length-1} more</div>`:''}
+    <div class="np-act"><button class="btn ghost" onclick="npLater()">Later</button><button class="btn primary" onclick="npOpen()">Open project →</button></div></div>`;
+  document.body.appendChild(c);
+}
+function npNext(read){ const n=(S.npQ||[]).shift(); const c=$('npCard'); if(c) c.remove();
+  if(n && read) call('notifRead',{ids:[n.id]}).then(r=>{ S.unread=r.unread; renderBell(); }).catch(()=>{});
+  return n; }
+function npOpen(){ const n=npNext(true); S.npQ=[]; if(n&&n.go) goTo(n.go); }
+function npLater(){ npNext(false); setTimeout(npShow,250); }
