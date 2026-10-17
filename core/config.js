@@ -12,9 +12,7 @@ const MODE_NAMES = { tab:'Tab', window:'Window', screen:'Full Screen' };
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LOADING = '<div class="loading">Loading...</div>';
-// الصلاحيات جاية من السيرفر مع بيانات المستخدم
-const can = p => !!(S.user && S.user.perms && S.user.perms.indexOf(p) >= 0);
-const canAny = list => list.some(can);
+// can / canAny في core/api.js: الصلاحيات بتتاخد من رد السيرفر بس
 // اللي بيبصم: كل الصفحات مقفولة لحد بصمة الدخول (ماعدا Time Clock)
 // صفحات مفتوحة حتى قبل البصمة: البصمة نفسها وطلبات الإجازة والإذن
 const FREE_VIEWS = ['clock','requests'];

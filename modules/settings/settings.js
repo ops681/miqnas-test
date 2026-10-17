@@ -26,7 +26,7 @@ function viewSettings(){
 }
 function renderSettings(v){
   $('main').innerHTML=`<div style="max-width:900px;display:grid;gap:18px">
-  <div id="setBrand"></div><div id="setAlerts"></div><div id="setPush"></div><div id="setPlat"></div><div id="setMove"></div>
+  <div id="setBrand"></div><div id="setAlerts"></div><div id="setSec"></div><div id="setPush"></div><div id="setPlat"></div><div id="setMove"></div>
   ${SET_GROUPS.map(g=>`<div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>${g[0]}</h2><div class="muted" style="font-size:13px">${g[1]}</div></div>
     ${g[2].map(it=>`<div class="set"><div class="tx"><label for="st_${it[0]}">${it[1]}</label><div>${it[2]}</div></div><input type="number" min="1" id="st_${it[0]}" value="${esc(v[it[0]])}"><span class="u">${it[3]}</span></div>`).join('')}</div>`).join('')}
   <div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>Sign-in security</h2><div class="muted" style="font-size:13px">Turn off only in an emergency</div></div>
@@ -46,7 +46,7 @@ function renderSettings(v){
   <div class="card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><div style="flex:1 1 320px"><h2 style="margin:0 0 4px">Work hours</h2><div class="muted" style="font-size:13px">Off for now, since the team's hours vary. Late-arrival alerts will use this later.</div></div>
     <label class="check" style="margin:0"><input type="checkbox" id="st_late_on" ${v.late_on?'checked':''} disabled>Late-arrival alerts</label></div>
   </div>`;
-  setBrandCard(); setAlertsCard(); setPushCard(); setPlatCard(); setMoveCard();
+  setBrandCard(); setAlertsCard(); setSecCard(); setPushCard(); setPlatCard(); setMoveCard();
 }
 /* ----- هوية الشركة ----- */
 function setBrandCard(){
@@ -75,6 +75,18 @@ async function setPlatCard(r){
   box.querySelectorAll('[data-ph]').forEach(b=>b.onclick=()=>run(()=>call('platformEdit',{name:b.dataset.ph,active:b.dataset.on==='1'})));
   $('plA').onclick=()=>{ const n=$('plN').value.trim(); if(!n) return; run(async()=>{ await call('platformAdd',{name:n}); return call('platformsAdmin'); }); };
 }
+// المحاولات اللي السيرفر رفضها (حد حاول يفتح حاجة مش من صلاحيته)
+async function setSecCard(){
+  const box=$('setSec'); if(!box) return;
+  let L; try{ L=await call('secLog'); }catch(e){ box.innerHTML=''; return; }
+  const when=t=>new Date(t).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  const by={}; L.forEach(x=>{ (by[x.u]||(by[x.u]={name:x.name,n:0,last:0})).n++; if(x.at>by[x.u].last) by[x.u].last=x.at; });
+  const ppl=Object.keys(by).sort((a,b)=>by[b].last-by[a].last);
+  box.innerHTML=`<div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>🔒 Refused attempts</h2><div class="muted" style="font-size:13px">Every time the server refused a page or an action because it's outside the person's permissions. The normal site never asks for these, so a line here means someone changed the site code in their browser. The server still blocked it: nothing was shown or changed</div></div>
+    ${L.length?`<div style="padding:10px 18px;display:flex;gap:8px;flex-wrap:wrap">${ppl.map(k=>`<span class="pill p-bad">${bd(by[k].name||k)} · ${by[k].n} ${by[k].n===1?'attempt':'attempts'}</span>`).join('')}</div>
+    <div class="tbl-wrap" style="max-height:340px;overflow:auto"><table><thead><tr><th>When</th><th>Who</th><th>Tried</th><th>Server reply</th></tr></thead><tbody>${L.slice(0,100).map(x=>`<tr><td style="white-space:nowrap">${when(x.at)}</td><td>${bd(x.name||x.u)}</td><td><code>${esc(x.action)}</code></td><td>${bd(x.msg)}</td></tr>`).join('')}</tbody></table></div>`
+    :`<div class="muted" style="padding:14px 18px">No refused attempts. ✓</div>`}</div>`;
+}
 /* ----- نقل الإعدادات لسيستم تاني (من التيست للسيستم الجديد) ----- */
 // التنبيهات + مين يشوف Team Activity (بالمنصب أو المجموعة)
 async function setAlertsCard(){
@@ -84,10 +96,11 @@ async function setAlertsCard(){
   box.innerHTML=`<div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>🔔 Alerts & Team Activity</h2><div class="muted" style="font-size:13px">Who gets a bell notification when the team does something, and who can open Team Activity and Live Activity. System admins can always see them</div></div>
     <div class="set"><div class="tx"><label>Send alerts about</label><div>Each one goes to the bell of the people below</div></div><div class="al-grid">${r.events.map(e=>`<label class="check" style="margin:0"><input type="checkbox" data-ev="${esc(e[0])}"${c.ev[e[0]]?' checked':''}> ${esc(e[1])}</label>`).join('')}</div></div>
     <div class="set"><div class="tx"><label>Alerts go to</label><div>By seat or group, so it follows the person who holds it</div></div><div class="al-grid">${opt('to',c.to)}</div></div>
+    <div class="set"><div class="tx"><label>🔒 Security alerts go to</label><div>When someone tries to open a page or do an action outside their permissions (for example by changing the site code). One alert per person every 15 minutes</div></div><div class="al-grid">${opt('sec',c.sec||[])}</div></div>
     <div class="set"><div class="tx"><label>Who can see Team Activity</label><div>The daily report of what each person did, and Live Activity on the dashboard</div></div><div class="al-grid">${opt('viewers',c.viewers)}</div></div>
     <div class="mfoot" style="padding:12px 18px"><div class="spacer"></div><button class="btn primary" id="alSave">Save alerts</button></div></div>`;
   $('alSave').onclick=async()=>{ const pick=n=>[...box.querySelectorAll(`[data-al="${n}"]:checked`)].map(x=>x.value); const ev={}; box.querySelectorAll('[data-ev]').forEach(x=>{ ev[x.dataset.ev]=x.checked; });
-    try{ await call('alertCfgSave',{cfg:{to:pick('to'),viewers:pick('viewers'),ev}}); toast('اتحفظت ✓'); setAlertsCard(); }catch(e){ alert(e.message); } };
+    try{ await call('alertCfgSave',{cfg:{to:pick('to'),viewers:pick('viewers'),sec:pick('sec'),ev}}); toast('اتحفظت ✓'); setAlertsCard(); }catch(e){ alert(e.message); } };
 }
 async function setMoveCard(){
   let st; try{ st=await call('configImportState'); }catch(e){ return; }

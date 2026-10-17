@@ -544,7 +544,7 @@ function bindAssign(b){
 window.BriefModule={
   prime(r){ if(me) { primeList(r); if(app&&route.v==="list"&&typeof S!=="undefined"&&S.view==="briefs") render(); } },
   enter(el,user,opts){
-    const has=p=>(user.perms||[]).indexOf(p)>=0;
+    const has=p=>typeof can==="function"?can(p):(user.perms||[]).indexOf(p)>=0;
     app=el; me=user.username; myName=user.name; isAdmin=has("briefs.manage_all");
     myRole=isAdmin?"admin":has("briefs.manage_own")?"am":"team";
     canWrite=isAdmin||myRole==="am"; seeAccess=!!user.seeAccess||has("briefs.access_all");
