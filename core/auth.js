@@ -39,7 +39,7 @@ function boot(){
   if(/[?&]setup\b/.test(location.search)){ firstSetupView(); return; }
   if(!S.token && VA_TAB){ vaEnded(); return; }
   if(!S.token){ $('loginView').classList.remove('hidden'); return; }
-  permSeed(u?u.perms:[]);
+  permSeed(u);
   if(u){ S.user=u; startApp(); refreshMe(); }
   else refreshMe(true);
 }

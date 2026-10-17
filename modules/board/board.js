@@ -1,7 +1,7 @@
 /* ============ Board: تقرير الإدارة الشهري ============
    للـ C-level والفاوندرز والـ CEO. صورة الشركة في شهر + اتجاه آخر 6 شهور، وبيتطبع PDF لاجتماع البورد.
    الماليات بتظهر بس للي معاه صلاحية Finance أو الـ CEO أو الفاوندرز. */
-function canBoard(){ return !!(S.user&&(S.user.clevel||S.user.founder||S.user.ceo)) || can('system.admin'); }
+function canBoard(){ return !!(S.user&&(srvFlag('clevel')||srvFlag('founder')||srvFlag('ceo'))) || can('system.admin'); }
 function viewBoard(opts){
   opts=opts||{};
   if(opts.month) S.boardM=opts.month;

@@ -20,7 +20,7 @@ function renderDash(r,keep){
     ${showPeople?`<div class="kpi"><span>Clocked in</span><b>${k.clockedIn}/${k.clockers}</b><small>Right now</small></div>`:''}
     <div class="kpi"><span>Timers running</span><b style="color:var(--brand2)">${k.timers}</b><small>Across all projects</small></div>
   </div>
-  ${S.user&&S.user.teamAct?`<div id="liveAct">${S.laHTML||''}</div>`:''}
+  ${S.user&&srvFlag('teamAct')?`<div id="liveAct">${S.laHTML||''}</div>`:''}
   ${canClientRep()?`<div id="crMini">${crCardHTML(r.crMini||S.cache['cr_'+crCurMonth()+'_'])}</div>`:''}
   ${typeof ptnDashHTML==='function'?ptnDashHTML(r.partners):''}
   ${mgmtHTML(r.mgmt)}
@@ -51,7 +51,7 @@ function renderDash(r,keep){
     </table></div>`:`<div class="empty">No active projects.</div>`}
   </div>`;
   if(!r.crMini) crCardLoad();   // السيرفر القديم: الكارت بيتجاب لوحده
-  if(S.user&&S.user.teamAct) liveActLoad();
+  if(S.user&&srvFlag('teamAct')) liveActLoad();
   if(keep) window.scrollTo(0,y);
 }
 

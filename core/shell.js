@@ -35,7 +35,7 @@ const initials = n => { n=String(n||'').trim(); const p=n.split(/\s+/); return (
 
 // الخطوط: كل موظف بيشوف صفحات الـ Line بتاعه، والـ C-level بيشوف كل الخطوط
 const LINE_OF={projects:'Line 1',partners:'Line 1',finance:'Line 1',blockers:'Line 1',briefs:'Line 1',clientrep:'Line 1',crm:'Line 1',sales:'Sales',line2:'Line 2'};
-function inLine(u,id){ const l=LINE_OF[id]; if(!l||!u||u.clevel||u.founder||can('system.admin')) return true; return (u.lines&&u.lines.length?u.lines:['Line 1']).indexOf(l)>=0; }
+function inLine(u,id){ const l=LINE_OF[id]; if(!l||!u||srvFlag('clevel')||srvFlag('founder')||can('system.admin')) return true; const ls=srvFlag('lines')||[]; return (ls.length?ls:['Line 1']).indexOf(l)>=0; }
 function navFor(u){
   const N=[];
   const add=(id,label,icon,sec)=>{ if(inLine(u,id)) N.push({id,label,icon,sec}); };
@@ -60,7 +60,7 @@ function navFor(u){
   if(canAny(['executive.view','commercial.metrics.manage'])) add('sales','Sales CRM','chart','Business Lines');
   if(canAny(['executive.view','system.admin'])) add('line2','Line 2','trend','Business Lines');
   if(canAny(['attendance.view_all','leave.approve_hr'])) add('people','People Dashboard','dash','People');
-  if(u.teamAct) add('teamact','Team Activity','chart','People');
+  if(srvFlag('teamAct')) add('teamact','Team Activity','chart','People');
   if(can('attendance.view_all')){ add('today','Attendance','cal','People'); add('monthly','Monthly Report','chart','People'); add('screen','Screen Report','monitor','People'); }
   if(can('people.manage')) add('users','Employees','users','People');
   if(can('people.manage')) add('devices','Devices','device','People');
@@ -127,7 +127,7 @@ function startApp(){
   if(deep && N.some(n=>n.id==='briefs')) go('briefs',{id:deep});
   else if(back && back.v && N.some(n=>n.id===back.v) && !(gated() && FREE_VIEWS.indexOf(back.v)<0)){ go(back.v, back.o&&Object.keys(back.o).length?back.o:undefined); if(back.p && back.v==='projects' && typeof viewProject==='function') viewProject(back.p); }
   else if(gated() && FREE_VIEWS.indexOf(S.view)<0) go('clock');
-  else if(!S.view || !N.some(n=>n.id===S.view)) go((S.user.clevel||S.user.founder) && N.some(n=>n.id==='dash') ? 'dash' : N[0].id==='clock' && can('tasks.mine') && S.status && S.status.clockedIn ? 'mytasks' : N[0].id);
+  else if(!S.view || !N.some(n=>n.id===S.view)) go((srvFlag('clevel')||srvFlag('founder')) && N.some(n=>n.id==='dash') ? 'dash' : N[0].id==='clock' && can('tasks.mine') && S.status && S.status.clockedIn ? 'mytasks' : N[0].id);
   else { const pj=S.proj&&S.proj.id; go(S.view, S.navOpts||undefined); if(pj && S.view==='projects' && typeof viewProject==='function') viewProject(pj); }
   startBellPolling();
   startPrefetchLoop();

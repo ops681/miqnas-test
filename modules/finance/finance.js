@@ -3,7 +3,7 @@
    الأكاونت مانجر بيشوف عقود عملاءه وحالة الدفعات بس.
    الفواتير الرسمية بتطلع من برنامج المحاسبة، وهنا بيتسجل رقمها. كل الإعدادات من تاب Settings. */
 S.fin={tab:'contracts',f:'all',q:''};
-function canFinance(){ return can('finance.manage') || (S.user&&S.user.founder) || can('projects.manage_own'); }
+function canFinance(){ return can('finance.manage') || (S.user&&srvFlag('founder')) || can('projects.manage_own'); }
 function sar(n,cur){ const v=Number(n)||0; return v.toLocaleString('en-US',{maximumFractionDigits:2})+' '+(cur||(S.cache.fin&&S.cache.fin.settings.currency)||'SAR'); }
 const FC_ST={draft:['Draft','p-out'],sent:['Sent','p-yel'],signed:['Signed','p-in'],expired:['Expired','p-absent'],cancelled:['Cancelled','p-out']};
 const FI_ST={due:['Due','p-yel'],overdue:['Overdue','p-bad'],paid:['Paid','p-in']};
