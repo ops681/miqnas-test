@@ -22,8 +22,24 @@ function forceLogin(msg, hard){
 }
 
 async function logout(){
-  if(S.status && S.status.clockedIn && !confirm('انت لسه عامل بصمة دخول. لو خرجت السكرين شوتس هتقف. متأكد؟')) return;
-  try{ call('logout'); }catch(e){}
+  // باصم دخول من اللابتوب: الخروج = بصمة خروج (مفيش خروج والبصمة شغالة)
+  if(S.status && S.status.clockedIn && !S.mobile && !VA_TAB){ logoutAsk(); return; }
+  logoutNow();
+}
+function logoutAsk(){
+  const st=S.status||{};
+  $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:420px;text-align:center" dir="rtl">
+    <div style="font-size:34px;line-height:1">🚪</div>
+    <h2 style="margin:8px 0 6px">انت لسه باصم دخول</h2>
+    <div class="muted" style="font-size:14px;margin-bottom:16px">لما تخرج من السيستم هتتعملك <b>بصمة خروج</b> دلوقتي${st.inT?` (داخل من الساعة <bdi dir="ltr">${esc(st.inT)}</bdi>)`:''}، والسكرين شوتس هتقف.</div>
+    <div class="err" id="loE" style="margin:0 0 8px"></div>
+    <div class="row" style="gap:8px;justify-content:center"><button class="btn primary" id="loGo">بصمة خروج واقفل</button><button class="btn ghost" onclick="closeModal()">رجوع</button></div></div></div>`;
+  $('loGo').onclick=async()=>{ const b=$('loGo'); b.disabled=true; b.textContent='لحظة…';
+    try{ await call('clockOut'); }catch(e){ if(!/مفيش بصمة دخول/.test(e.message||'')){ $('loE').textContent=e.message; b.disabled=false; b.textContent='بصمة خروج واقفل'; return; } }
+    closeModal(); logoutNow(); };
+}
+async function logoutNow(){
+  try{ await Promise.race([call('logout'), new Promise(r=>setTimeout(r,4000))]); }catch(e){}
   stopStream(false);
   store(cacheKey(),null);
   S.token=null; store('erp_token',null); store('erp_user',null); store('erp_mobile',null); if(typeof navClear==='function') navClear();

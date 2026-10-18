@@ -41,7 +41,7 @@ function renderToday(r,keep){
       ${L.map(x=>`<tr>
         <td><b>${esc(x.name)}</b></td><td class="muted">${esc(x.job)}</td>
         <td>${x.state==='open'?'<span class="pill p-bad">No clock-out</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>'+(x.sessions>1?`<div class="sub2">${x.sessions} sessions</div>`:''):x.state==='leave'?'<span class="pill" style="background:var(--bluebg);color:var(--blue)">On leave</span>':r.workday===false?'<span class="pill p-out">Day off</span>':'<span class="pill p-absent">Absent</span>'}</td>
-        <td class="nw">${esc(x.inT)||'—'}</td><td class="nw">${esc(x.outT)||'—'}</td><td>${esc(x.mode)||'—'}</td>
+        <td class="nw">${esc(x.inT)||'—'}</td><td class="nw">${esc(x.outT)||'—'}${aoTag(x.autoOut)}</td><td>${esc(x.mode)||'—'}</td>
         <td class="nw">${esc(x.lastShot)||'—'}</td><td>${x.stops?`<span class="pill p-bad">${x.stops}</span>`:'0'}</td><td>${x.hoursToday||0}</td></tr>`).join('')}
     </table></div>`;
     return;
@@ -61,7 +61,7 @@ function renderToday(r,keep){
     ${L.map(x=>`<tr>
       <td><b>${esc(x.name)}</b></td><td class="muted">${esc(x.job)}</td>
       <td>${x.staleOpen?`<span class="pill p-bad">Forgot clock-out</span><div class="sub2">Open since ${x.openSince?shortD(x.openSince):'an earlier day'}</div>`:x.alert?'<span class="pill p-bad">No screenshots</span>':x.state==='break'?`<span class="pill p-prog">On Break</span><div class="sub2" ${bdd(x.breakSince)}>${esc(x.breakSince)} · ${esc(x.breakReason)}</div>`:x.state==='in'?'<span class="pill p-in">Working</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>':x.state==='leave'?'<span class="pill" style="background:var(--bluebg);color:var(--blue)">On leave</span>':'<span class="pill p-absent">Absent</span>'}</td>
-      <td class="nw">${x.staleOpen?'—':esc(x.inT)||'—'}</td><td class="nw">${esc(x.outT)||'—'}</td><td>${esc(x.mode)||'—'}</td>
+      <td class="nw">${x.staleOpen?'—':esc(x.inT)||'—'}</td><td class="nw">${esc(x.outT)||'—'}${aoTag(x.autoOut)}</td><td>${esc(x.mode)||'—'}</td>
       <td class="nw">${esc(x.lastShot)||'—'}</td><td>${x.stops?`<span class="pill p-bad">${x.stops}</span>`:'0'}</td><td>${x.hoursToday}</td></tr>`).join('')}
   </table></div>`;
 }
@@ -128,7 +128,7 @@ async function mrOpen(un){
       <div class="grid kpis" style="margin:14px 0"><div class="kpi"><span>Days</span><b>${s.days||0}</b></div><div class="kpi"><span>Hours</span><b>${s.hours||0}</b></div><div class="kpi"><span>Avg / day</span><b>${s.avg||0}</b></div><div class="kpi"><span>Missed clock-outs</span><b>${s.missed||0}</b></div></div>
       ${r.requests.length?`<h3 style="font-size:14px;margin:0 0 6px">Approved requests</h3><div style="margin-bottom:12px">${r.requests.map(q=>`<div class="kv" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13.5px"><span>${KIND[q.kind]||q.kind}${q.kind==='leave'?' · '+esc(q.type):''}</span><span class="muted">${fmtD(q.from)}${q.to&&q.to!==q.from?' → '+fmtD(q.to):''} · ${q.kind==='leave'?q.days+' d':q.hours+' h'}</span></div>`).join('')}</div>`:''}
       <h3 style="font-size:14px;margin:0 0 6px">Days</h3>
-      ${r.days.length?`<div class="tbl-wrap" style="max-height:320px;overflow:auto"><table><tr><th>Date</th><th>Day</th><th>In</th><th>Out</th><th>Hours</th></tr>${r.days.map(d=>`<tr><td>${fmtD(d.date)}</td><td class="muted">${esc(d.day||'')}</td><td>${esc(d.inT||'')}</td><td>${d.open?'<span class="pill p-absent">Open</span>':esc(d.outT||'')}</td><td>${d.hours}</td></tr>`).join('')}</table></div>`:'<div class="muted">No attendance this month.</div>'}
+      ${r.days.length?`<div class="tbl-wrap" style="max-height:320px;overflow:auto"><table><tr><th>Date</th><th>Day</th><th>In</th><th>Out</th><th>Hours</th></tr>${r.days.map(d=>`<tr><td>${fmtD(d.date)}</td><td class="muted">${esc(d.day||'')}</td><td>${esc(d.inT||'')}</td><td>${d.open?'<span class="pill p-absent">Open</span>':esc(d.outT||'')+aoTag(d.auto)}</td><td>${d.hours}</td></tr>`).join('')}</table></div>`:'<div class="muted">No attendance this month.</div>'}
     </div></div>`;
   }catch(e){ closeModal(); toast(e.message); }
 }

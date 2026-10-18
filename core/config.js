@@ -12,6 +12,8 @@ const MODE_NAMES = { tab:'Tab', window:'Window', screen:'Full Screen' };
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LOADING = '<div class="loading">Loading...</div>';
+// علامة "خروج أوتوماتيك" جنب وقت الخروج
+const aoTag = a => a ? ' <span class="pill p-yel" style="font-size:11px" title="Clocked out automatically: the system was closed without clocking out">Auto</span>' : '';
 // can / canAny في core/api.js: الصلاحيات بتتاخد من رد السيرفر بس
 // اللي بيبصم: كل الصفحات مقفولة لحد بصمة الدخول (ماعدا Time Clock)
 // صفحات مفتوحة حتى قبل البصمة: البصمة نفسها وطلبات الإجازة والإذن

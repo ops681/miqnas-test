@@ -1,7 +1,7 @@
 /* ============ تنبيهات بتظهر على الشاشة ============
    كل دقيقة تقريبًا (والصفحة قدام الموظف) بنسأل السيرفر سؤال خفيف: فيه إشعارات جديدة؟
    أي إشعار جديد بيظهر في كارت في جنب الشاشة لحد ما الموظف يفتحه أو يقفله. ومش بيظهر تاني بعد كده. */
-const PP_ICON={ready:'tasks',approval:'cal',request:'cal',leave:'cal',project:'folder',note:'brief',blocker:'flag',brief:'brief',pulse:'chart',task:'todo',review:'todo',returned:'warn',done:'todo',comment:'brief',meeting:'meet',launch:'trend'};
+const PP_ICON={ready:'tasks',approval:'cal',request:'cal',leave:'cal',project:'folder',note:'brief',blocker:'flag',brief:'brief',pulse:'chart',task:'todo',review:'todo',returned:'warn',done:'todo',comment:'brief',meeting:'meet',launch:'trend',autoout:'warn'};
 S.pp=[];
 function ppKey(){ return 'erp_pp_'+(S.user?S.user.username:''); }
 function ppSeen(){ try{ return JSON.parse(load(ppKey())||'{}')||{}; }catch(e){ return {}; } }

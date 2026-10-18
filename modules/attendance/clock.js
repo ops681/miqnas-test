@@ -11,11 +11,12 @@ function viewClock(){
     ${inn ? (st.onBreak
         ? `<div class="brkbox" dir="auto">On break since <b>${new Date(st.breakSince).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</b> · ${bd(st.breakReason==='Paid break'?'☕ Paid break':st.breakReason)}${st.breakAllowMs?` <span class="muted" id="brkLeft"></span>`:''}</div><button class="btn primary" id="resumeBrk">Resume Work</button> <button class="btn out" id="outBtn">Clock Out</button>`
         : `<button class="btn brk" id="brkBtn">Break</button> <button class="btn out" id="outBtn">Clock Out</button><div id="shareBox"></div>`)
-      : `<button class="btn primary" id="inBtn">Clock In</button>`}
+      : `${st.lastAuto?`<div class="notice" dir="rtl" style="border-color:var(--warn);background:var(--warnbg);margin:0 0 12px">⚠️ آخر بصمة اتقفلت <b>أوتوماتيك</b> الساعة <b><bdi dir="ltr">${new Date(st.lastAuto.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</bdi></b>، لأن السيستم اتقفل من غير بصمة خروج. الساعات اتحسبت لحد آخر مرة كنت موجود فيها.</div>`:''}<button class="btn primary" id="inBtn">Clock In</button>`}
     <div class="notice" dir="rtl">
       • أول ما تدوس بصمة دخول، هيطلعلك شباك تختار منه تشارك: <b>تاب</b> أو <b>ويندو</b> أو <b>الشاشة كلها</b>.<br>
       • السيستم بياخد سكرين شوت كل ${S.cfg.shotMinutes} دقايق لحد ما تبصم خروج.<br>
       • خلي الصفحة دي مفتوحة طول الشغل، ولو قفلتها أو وقفت المشاركة هيتسجل.<br>
+      ${S.cfg.aoOn?`• لو قفلت السيستم ومشيت من غير بصمة خروج، هتتعملك بصمة خروج <b>أوتوماتيك</b> بعد ${S.cfg.aoMin} دقيقة، بوقت آخر مرة كنت موجود فيها.<br>`:''}
       • استخدم <b>كروم</b> أو <b>إيدج</b> على الكمبيوتر.
     </div>
   </div>
@@ -41,7 +42,7 @@ function renderMyMonth(r){
       <div class="kpi"><span>Avg per day</span><b>${s.avg}</b></div>
     </div>
     ${r.days.length?`<div class="tbl-wrap"><table style="min-width:420px"><tr><th>Date</th><th>Day</th><th>In</th><th>Out</th><th>Hours</th></tr>
-    ${r.days.slice().reverse().map(d=>`<tr><td>${esc(d.date)}</td><td>${esc(d.day)}</td><td>${esc(d.inT)}</td><td>${d.open?'<span class="pill p-in">Working</span>':esc(d.outT)}</td><td>${d.open?'—':d.hours}</td></tr>`).join('')}
+    ${r.days.slice().reverse().map(d=>`<tr><td>${esc(d.date)}</td><td>${esc(d.day)}</td><td>${esc(d.inT)}</td><td>${d.open?'<span class="pill p-in">Working</span>':esc(d.outT)+aoTag(d.auto)}</td><td>${d.open?'—':d.hours}</td></tr>`).join('')}
     </table></div>`:'<p class="muted">No attendance this month yet.</p>'}`;
 }
 async function loadMyMonth(){

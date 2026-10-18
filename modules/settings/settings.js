@@ -39,6 +39,9 @@ function renderSettings(v){
     <div class="set"><div class="tx"><label for="st_co_before">Remind before the shift ends</label><div>Worked hours today, without breaks</div></div><input type="number" min="1" max="120" id="st_co_before" value="${esc(v.co_before)}"><span class="u">min</span></div>
     <div class="set"><div class="tx"><label for="st_co_snooze">"Still working · remind me later"</label><div>The bar hides for this long, then comes back</div></div><input type="number" min="5" max="240" id="st_co_snooze" value="${esc(v.co_snooze)}"><span class="u">min</span></div>
     <div class="set"><div class="tx"><label for="st_co_notify">Browser notification too</label><div>Shows in the corner of the screen even when the site is in another tab or app. The browser asks each person once, when they clock in</div></div><input type="checkbox" id="st_co_notify" ${v.co_notify?'checked':''} style="width:20px;height:20px"></div></div>
+  <div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>🚪 Auto clock-out</h2><div class="muted" style="font-size:13px">For people who close the site or the laptop and leave without clocking out. The clock-out is saved at the last time they were there (last screenshot or the site open in front of them), marked "Auto" in the reports, and they get a notification. Never during a break. Signing out of the site on the laptop always clocks out too</div></div>
+    <div class="set"><div class="tx"><label for="st_ao_on">Turn on auto clock-out</label><div>Checked every 5 minutes</div></div><input type="checkbox" id="st_ao_on" ${v.ao_on?'checked':''} style="width:20px;height:20px"></div>
+    <div class="set"><div class="tx"><label for="st_ao_min">Clock out after nothing from them for</label><div>10 to 480 minutes. It's never shorter than two screenshots + 5 minutes (now ${2*(Number(v.shot_min)||10)+5} min), so nobody is clocked out between two screenshots</div></div><input type="number" min="10" max="480" id="st_ao_min" value="${esc(v.ao_min)}"><span class="u">min</span></div></div>
   <div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>Work week & requests</h2><div class="muted" style="font-size:13px">Days off are skipped when counting leave days and project working days</div></div>
     <div class="set"><div class="tx"><label>Weekly days off</label><div>Tick every day the company is closed</div></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">${[['off_sat','Sat'],['off_sun','Sun'],['off_mon','Mon'],['off_tue','Tue'],['off_wed','Wed'],['off_thu','Thu'],['off_fri','Fri']].map(d=>`<label class="check" style="margin:0"><input type="checkbox" id="st_${d[0]}"${v[d[0]]?' checked':''}>${d[1]}</label>`).join('')}</div></div>
@@ -158,8 +161,8 @@ async function setPushCard(){
 async function saveSettings(){
   const v=Object.assign({}, S.cache.settings||{});
   SET_GROUPS.forEach(g=>g[2].forEach(it=>{ const el=$('st_'+it[0]); if(el) v[it[0]]=Number(el.value); }));
-  ['co_before','co_snooze'].forEach(k=>{ const el=$('st_'+k); if(el) v[k]=Number(el.value); });
-  ['co_on','co_notify','device_lock','one_session','clock_first','location_on','permissions_on','off_sat','off_sun','off_mon','off_tue','off_wed','off_thu','off_fri'].forEach(k=>{ const el=$('st_'+k); if(el) v[k]=el.checked; });
+  ['co_before','co_snooze','ao_min'].forEach(k=>{ const el=$('st_'+k); if(el) v[k]=Number(el.value); });
+  ['co_on','co_notify','ao_on','device_lock','one_session','clock_first','location_on','permissions_on','off_sat','off_sun','off_mon','off_tue','off_wed','off_thu','off_fri'].forEach(k=>{ const el=$('st_'+k); if(el) v[k]=el.checked; });
   const b=$('setSave'); b.disabled=true; b.textContent='Saving...';
   try{ const r=await call('settingsSave',{settings:v}); S.cache.settings=r; saveCache(); S.cfg.shotMinutes=r.shot_min; toast('اتحفظت الإعدادات ✓'); refreshDash(); }
   catch(e){ alert(e.message); }
