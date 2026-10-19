@@ -1,7 +1,7 @@
 /* ============ بورتال الشركاء (زد وأي شريك تاني) ============
    صفحة لوحدها: المفتاح في اللينك (?k=...) + يوزر وباسورد بتحددهم الإدارة. للاطلاع بس.
    البيانات جاية من السيرفر محسوبة من المشاريع والتاسكات والبلوكرز. */
-const PT = { key: new URLSearchParams(location.search).get('k') || '', t: '', info: null, all: false, month: '', q: '', f: 'all', data: null, open: '' };
+const PT = { key: new URLSearchParams(location.search).get('k') || '', t: '', info: null, all: false, month: '', q: '', f: 'all', data: null, open: '', view: 'cards', tf: '', topen: '' };
 const pe = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // النص العربي اللي فيه كلام إنجليزي يتعرض من اليمين (مايتشقلبش)
 const pdir = s => { s = String(s == null ? '' : s); const a = (s.match(/[\u0600-\u06FF]/g) || []).length; return a > 0 && a >= (s.match(/[A-Za-z]/g) || []).length ? 'dir="rtl"' : 'dir="auto"'; };
@@ -84,8 +84,14 @@ function ptList() {
   const q = PT.q.trim().toLowerCase(), chip = PT_CHIPS.find(c => c[0] === PT.f) || PT_CHIPS[0];
   return PT.data.stores.filter(s => chip[3](s) && (!q || [s.name, s.storeId, s.ref, s.url, s.live].some(v => String(v || '').toLowerCase().indexOf(q) >= 0)));
 }
+function ptTabs() {
+  const d = PT.data, tr = PT.view === 'track';
+  const b = (on, txt, js) => `<button type="button" role="tab" aria-selected="${on}" class="${on ? 'on' : ''}" onclick="${js}">${txt}</button>`;
+  return `<div class="pt-tabs" role="tablist" style="grid-template-columns:repeat(3,1fr)">${b(!tr && !d.all, 'متاجر الشهر', "PT.view='cards';ptSet('all',false)")}${b(!tr && d.all, 'كل المتاجر', "PT.view='cards';ptSet('all',true)")}${b(tr, 'متابعة المتاجر', "PT.view='track';PT.topen='';ptRender()")}</div>`;
+}
 function ptRender() {
   const d = PT.data; if (!d) return;
+  if (PT.view === 'track') return ptTrack();
   if (PT.open) { const s = d.stores.find(x => x.id === PT.open); if (s) return ptDetail(s); PT.open = ''; }
   const k = d.kpis, L = ptList();
   const months = []; { const [y0, m0] = d.first.split('-').map(Number); const cur = new Date(); let y = y0, m = m0; while (y < cur.getFullYear() || (y === cur.getFullYear() && m <= cur.getMonth() + 1)) { months.push(y + '-' + String(m).padStart(2, '0')); m++; if (m > 12) { m = 1; y++; } } }
@@ -96,7 +102,7 @@ function ptRender() {
     <div class="pt-title"><b>مِقناص × ${pe(ptName())}</b><span>بورتال الشركاء · تقرير التسليم</span></div>
     <span class="pt-upd">محدّث ${pe(ago(d.at))}</span><button type="button" class="pt-out" onclick="ptLogout()">خروج</button></header>
   <div class="pt-bar">
-    <div class="pt-tabs" role="tablist"><button type="button" role="tab" aria-selected="${!d.all}" class="${d.all ? '' : 'on'}" onclick="ptSet('all',false)">متاجر الشهر</button><button type="button" role="tab" aria-selected="${d.all}" class="${d.all ? 'on' : ''}" onclick="ptSet('all',true)">كل المتاجر</button></div>
+    ${ptTabs()}
     ${d.all ? '' : `<label class="pt-field month"><small>الشهر</small><select aria-label="الشهر" onchange="ptSet('month',this.value)">${months.reverse().map(m => `<option value="${m}"${m === d.month ? ' selected' : ''}>${mName(m)}</option>`).join('')}</select></label>`}
     <button type="button" class="pt-btn" onclick="ptExport()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>تصدير Excel</button>
     <button type="button" class="pt-btn" onclick="ptReport()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>تقرير PDF</button>
@@ -144,6 +150,7 @@ function ptDetail(s) {
       <div class="pt-prog"><div><span>التقدم الكلي</span><b>${s.pct}%</b></div><span class="pt-track${s.pct === 100 ? ' ok' : ''}" style="height:8px"><i style="width:${s.pct}%"></i></span></div>
     </section>
     ${s.blockers.map(b => `<section class="pt-sec pt-blk"><h2><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F7A29D" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>عائق مفتوح · ${b.days} ${b.days === 1 ? 'يوم' : 'أيام'}</h2><p ${pdir(b.text)}>${pe(b.text)}</p><div class="pt-pills" style="justify-content:flex-start;margin:0"><span class="pill p-block">المسؤول: ${pe(b.owner)}</span><span class="pill p-block">${pe(b.cat)}</span>${b.since ? `<span class="pill p-block">منذ ${dShort(b.since)}</span>` : ''}</div></section>`).join('')}
+    ${ptBlogHtml((PT.data.track || []).find(r => r.project === s.id))}
     <section class="pt-sec"><h2>مراحل التنفيذ <small>${done} / ${s.stages.filter(x => x.st !== 'na').length}</small></h2>
       <div>${s.stages.map(x => `<div class="pt-st ${x.st}"><span class="d" aria-hidden="true">${x.st === 'done' ? '✓' : x.st === 'prog' ? '•' : x.st === 'wait' ? '…' : x.st === 'na' ? '–' : ''}</span><span>${pe(x.name)}</span><em>${ST_TXT[x.st]}</em></div>`).join('')}</div></section>
     ${s.qa.length ? `<section class="pt-sec"><h2>فحص النقل التقني <small>${qaDone} / ${s.qa.length}</small></h2><div class="pt-qa">${s.qa.map(q => `<div class="${q.st}"><i aria-hidden="true"></i>${pe(q.name)}</div>`).join('')}</div></section>` : ''}
@@ -169,3 +176,81 @@ function ptExport() {
   ptLoad(); ptBrand();
   setInterval(() => { if (document.visibilityState === 'visible' && PT.t && PT.data) ptLoad(true); }, 5 * 60000);
 })();
+
+/* ============ متابعة المتاجر (بنفس أعمدة شيت الشريك) ============ */
+const TR_C = { 'تم بدء التواصل': '#7FB3F5', 'في انتظار المتطلبات': '#F2C14E', 'تم بدء العمل': '#F08A4B', 'متبقي تفعيل زد باي': '#C792EA', 'متبقي تفعيل الدومين': '#C792EA', 'مكتمل': '#4CC38A' };
+const trCol = s => TR_C[s] || '#F07171';
+const trPill = s => `<span class="pill" style="background:${trCol(s)}22;color:${trCol(s)};border-color:${trCol(s)}55">${pe(s)}</span>`;
+const TR_K = [['', 'كل المتاجر', '#EEF3F1', () => true], ['contact', 'تم بدء التواصل', '#7FB3F5', r => r.status === 'تم بدء التواصل'], ['waiting', 'في انتظار المتطلبات', '#F2C14E', r => r.status === 'في انتظار المتطلبات'],
+  ['work', 'تم بدء العمل', '#F08A4B', r => r.status === 'تم بدء العمل'], ['left', 'متبقي تفعيل', '#C792EA', r => /^متبقي/.test(r.status)], ['done', 'مكتمل', '#4CC38A', r => r.status === 'مكتمل'],
+  ['closed', 'مقفول', '#F07171', r => !TR_C[r.status]], ['blocked', 'عليه عائق', '#F7A29D', r => r.blog.some(b => b.open)]];
+function trList() {
+  const q = PT.q.trim().toLowerCase(), k = TR_K.find(x => x[0] === PT.tf) || TR_K[0];
+  return (PT.data.track || []).filter(r => k[3](r) && (!q || [r.name, r.sid, r.phone, r.url, r.ref].some(v => String(v || '').toLowerCase().indexOf(q) >= 0)))
+    .sort((a, b) => String(b.contact || '').localeCompare(String(a.contact || '')));
+}
+function trNotes(r) {
+  const o = r.blog.filter(b => b.open), c = r.blog.length - o.length;
+  const h = o.map(b => `<div style="color:#F7A29D">🔴 عائق عند <b>${pe(b.owner)}</b>: ${pe(b.cat)}${b.text ? ' — ' + pe(b.text) : ''} · ${b.days} ${b.days === 1 ? 'يوم' : 'أيام'}</div>`).join('');
+  const n = r.note ? `<div ${pdir(r.note)}>${pe(r.note)}</div>` : '';
+  const more = c ? `<div style="font-size:12px;color:var(--mut);margin-top:3px">＋ ${c} ${c === 1 ? 'عائق اتحل' : 'عوائق اتحلت'} · انتظار العميل ${r.bsum.client} يوم · ${pe(ptName())} ${r.bsum.partner} يوم</div>` : '';
+  return (h + n + more) || '<span style="color:var(--dim)">—</span>';
+}
+function ptTrack() {
+  const d = PT.data, T = d.track || [];
+  if (PT.topen) { const r = T.find(x => x.key === PT.topen); if (r) return ptTrackOne(r); PT.topen = ''; }
+  const L = trList(), focus = document.activeElement && document.activeElement.id === 'ptQ';
+  const th = 'padding:11px 12px;text-align:start;font-size:12px;color:var(--mut);font-weight:600;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--card2);position:sticky;top:0';
+  const td = 'padding:12px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:top';
+  const url = u => u ? `<a href="${pe(/^https?:/.test(u) ? u : 'https://' + u)}" target="_blank" rel="noopener noreferrer" dir="ltr" onclick="event.stopPropagation()">${pe(String(u).replace(/^https?:\/\//, '').replace(/\/$/, ''))}</a>` : '—';
+  document.getElementById('pt').innerHTML = `<div class="pt-wrap">
+  <header class="pt-head">${ptMark(PT.info)}
+    <div class="pt-title"><b>مِقناص × ${pe(ptName())}</b><span>بورتال الشركاء · متابعة المتاجر</span></div>
+    <span class="pt-upd">محدّث ${pe(ago(d.at))}</span><button type="button" class="pt-out" onclick="ptLogout()">خروج</button></header>
+  <div class="pt-bar">${ptTabs()}
+    <button type="button" class="pt-btn" onclick="ptTrackExport()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>تصدير Excel</button>
+  </div>
+  <label class="pt-field search"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9DB0AA" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="ptQ" placeholder="ابحث برقم المتجر أو اسمه أو رقم التاجر" value="${pe(PT.q)}" oninput="PT.q=this.value;ptRender()"></label>
+  <section class="pt-kpis" aria-label="ملخص">${TR_K.filter(k => k[0] !== 'blocked').map(k => `<button type="button" class="pt-k${PT.tf === k[0] ? ' main' : ''}" style="cursor:pointer;text-align:start;font:inherit;color:inherit" onclick="PT.tf='${k[0]}';ptRender()"><span>${k[1]}</span><b style="color:${k[2]}">${T.filter(k[3]).length}</b></button>`).join('')}</section>
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:auto;max-height:75vh"><table style="width:100%;border-collapse:collapse;min-width:1180px">
+  <tr>${['Store ID', 'اسم المتجر', 'رقم التواصل للتاجر', 'رابط المتجر', 'الباقة', 'الثيم', 'الحالة', 'تاريخ بدء التواصل', 'تاريخ التشغيل', 'ملاحظات وعوائق التاجر'].map(h => `<th style="${th}">${h}</th>`).join('')}</tr>
+  ${L.length ? L.map(r => `<tr style="cursor:pointer" onclick="PT.topen='${pe(r.key)}';ptRender();window.scrollTo(0,0)"><td style="${td}" class="num" dir="ltr">${pe(r.sid) || '—'}</td><td style="${td}"><b ${pdir(r.name)}>${pe(r.name)}</b></td><td style="${td}" class="num" dir="ltr">${pe(r.phone) || '—'}</td><td style="${td}">${url(r.url)}</td><td style="${td};white-space:nowrap">${pe(r.pkg) || '—'}</td><td style="${td}" dir="auto">${pe(r.theme) || '—'}</td><td style="${td}">${trPill(r.status)}</td><td style="${td};white-space:nowrap" class="num">${pe(r.contact) || '—'}</td><td style="${td};white-space:nowrap" class="num">${pe(r.launch) || '—'}</td><td style="${td};min-width:260px;line-height:1.7">${trNotes(r)}</td></tr>`).join('')
+    : `<tr><td colspan="10" style="${td};text-align:center;color:var(--mut)">مفيش متاجر هنا</td></tr>`}
+  </table></div>
+  <div class="pt-end"><span>عرض ${L.length} من ${T.length} متجر · اضغط على أي متجر لسجل العوائق كامل</span><span>مِقناص · للاطلاع فقط</span></div></div>`;
+  if (focus) { const q = document.getElementById('ptQ'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+}
+// سجل العوائق كامل (المفتوح والمقفول) + أيام الانتظار لكل طرف
+function ptBlogHtml(r) {
+  if (!r || !r.blog || !r.blog.length) return '';
+  const td = 'padding:9px 10px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top';
+  return `<section class="pt-sec"><h2>سجل العوائق <small>${r.blog.length}</small></h2>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><div class="pt-k" style="flex:1;min-width:150px"><span>أيام انتظار بسبب العميل</span><b style="color:#F7A29D">${r.bsum.client} <small style="font-size:13px">يوم</small></b></div><div class="pt-k" style="flex:1;min-width:150px"><span>أيام انتظار بسبب ${pe(ptName())}</span><b style="color:#C792EA">${r.bsum.partner} <small style="font-size:13px">يوم</small></b></div></div>
+    <div style="font-size:12px;color:var(--mut)">الأيام محسوبة من غير تكرار: لو فيه عائقين في نفس الوقت، اليوم بيتحسب مرة واحدة.</div>
+    <div style="overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:640px"><tr>${['العائق', 'عند', 'من', 'لحد', 'المدة', 'الإثبات'].map(h => `<th style="${td};color:var(--mut);font-size:12px;text-align:start">${h}</th>`).join('')}</tr>
+    ${r.blog.map(b => `<tr><td style="${td}"><b>${pe(b.cat)}</b>${b.text ? `<div ${pdir(b.text)} style="color:#C9D6D2">${pe(b.text)}</div>` : ''}</td><td style="${td}">${pe(b.owner)}</td><td style="${td}" class="num">${pe(b.from)}</td><td style="${td}" class="num">${b.open ? '<b style="color:#F7A29D">لسه مفتوح</b>' : pe(b.to)}</td><td style="${td}" class="num">${b.days} ${b.days === 1 ? 'يوم' : 'أيام'}</td><td style="${td}">${b.links.length ? b.links.map((l, i) => `<a href="${pe(l)}" target="_blank" rel="noopener noreferrer">🔗 رابط${b.links.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('<br>') : (b.ev ? `<span ${pdir(b.ev)}>${pe(b.ev)}</span>` : '—')}</td></tr>`).join('')}</table></div></section>`;
+}
+function ptTrackOne(r) {
+  const kv = (k, v, ltr) => `<div><span>${k}</span><b ${ltr ? 'dir="ltr" class="num"' : ''}>${v || '—'}</b></div>`;
+  document.getElementById('pt').innerHTML = `<div class="pt-wrap"><div class="pt-d">
+    <button type="button" class="pt-back" onclick="PT.topen='';ptRender()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>متابعة المتاجر</button>
+    <section class="pt-sec"><span class="num" style="font-size:12px;color:var(--mut)" dir="ltr">${[r.ref, r.sid ? '#' + r.sid : ''].filter(Boolean).map(pe).join(' · ')}</span>
+      <h1 style="margin:0" ${pdir(r.name)}>${pe(r.name)}</h1><div>${trPill(r.status)}</div>
+      <div class="pt-dates" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">${kv('رقم التواصل للتاجر', pe(r.phone), true)}${kv('رابط المتجر', pe(String(r.url || '').replace(/^https?:\/\//, '')), true)}${kv('الباقة', pe(r.pkg))}${kv('الثيم', pe(r.theme))}${kv('تاريخ بدء التواصل', pe(r.contact), true)}${kv('تاريخ التشغيل', pe(r.launch), true)}</div>
+      ${r.note ? `<div ${pdir(r.note)} style="font-size:13.5px">📝 ${pe(r.note)}</div>` : ''}
+      ${r.project ? `<button type="button" class="pt-btn" style="align-self:flex-start" onclick="PT.view='cards';PT.topen='';PT.open='${pe(r.project)}';ptSet('all',true)">مراحل التنفيذ والتحديثات ←</button>` : ''}
+    </section>
+    ${ptBlogHtml(r) || '<section class="pt-sec"><h2>سجل العوائق</h2><div style="color:var(--mut)">مفيش عوائق على المتجر ده.</div></section>'}
+    <div class="pt-end">المعلومات دي بتتحدث تلقائياً من سيستم مِقناص · للاطلاع فقط</div></div></div>`;
+}
+function ptTrackExport() {
+  const L = trList(), csv = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const head = ['Store ID', 'اسم المتجر', 'رقم التواصل للتاجر', 'رابط المتجر', 'الباقة', 'الثيم', 'الحالة', 'تاريخ بدء التواصل', 'تاريخ التشغيل', 'ملاحظات وعوائق التاجر', 'عوائق مفتوحة', 'عوائق اتحلت', 'أيام انتظار العميل', 'أيام انتظار ' + ptName(), 'سجل العوائق'];
+  const rows = L.map(r => { const o = r.blog.filter(b => b.open);
+    return [r.sid, r.name, r.phone, r.url, r.pkg, r.theme, r.status, r.contact, r.launch, [r.note].concat(o.map(b => 'عائق عند ' + b.owner + ': ' + b.cat + (b.text ? ' - ' + b.text : ''))).filter(Boolean).join(' | '),
+      o.length, r.blog.length - o.length, r.bsum.client, r.bsum.partner,
+      r.blog.map(b => b.cat + ' (' + b.owner + ') ' + b.from + ' → ' + (b.open ? 'مفتوح' : b.to) + ' · ' + b.days + ' يوم' + (b.links.length ? ' · ' + b.links.join(' ') : '')).join(' || ')]; });
+  const txt = '﻿' + [head].concat(rows).map(r => r.map(csv).join(',')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'Miqnas-' + String((PT.info && PT.info.nameEn) || 'Partner').replace(/[^A-Za-z0-9]/g, '') + '-stores-tracking.csv'; document.body.appendChild(a); a.click(); a.remove();
+}

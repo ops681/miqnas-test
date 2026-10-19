@@ -34,7 +34,7 @@ const ico=(k,s)=>`<svg width="${s||18}" height="${s||18}" viewBox="0 0 24 24" fi
 const initials = n => { n=String(n||'').trim(); const p=n.split(/\s+/); return (p.length>1? p[0][0]+p[1][0] : n.slice(0,2)).toUpperCase(); };
 
 // الخطوط: كل موظف بيشوف صفحات الـ Line بتاعه، والـ C-level بيشوف كل الخطوط
-const LINE_OF={projects:'Line 1',partners:'Line 1',finance:'Line 1',blockers:'Line 1',briefs:'Line 1',clientrep:'Line 1',crm:'Line 1',sales:'Sales',line2:'Line 2'};
+const LINE_OF={projects:'Line 1',partners:'Line 1',zstores:'Line 1',finance:'Line 1',blockers:'Line 1',briefs:'Line 1',clientrep:'Line 1',crm:'Line 1',sales:'Sales',line2:'Line 2'};
 function inLine(u,id){ const l=LINE_OF[id]; if(!l||!u||srvFlag('clevel')||srvFlag('founder')||can('system.admin')) return true; const ls=srvFlag('lines')||[]; return (ls.length?ls:['Line 1']).indexOf(l)>=0; }
 function navFor(u){
   const N=[];
@@ -50,6 +50,7 @@ function navFor(u){
   if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) add('projects','Projects','folder','Workspace');
   if(canClientRep()) add('clientrep','Client Report','chart','Workspace');
   if(can('projects.manage_all')) add('partners','Partners','link','Workspace');
+  if(canAny(['projects.manage_all','projects.manage_own'])) add('zstores','Zid Stores','folder','Workspace');
   if(canFinance()) add('finance','Finance','money','Workspace');
   if(can('blockers.manage')) add('blockers','Blockers','flag','Workspace');
   if(can('briefs.use')) add('briefs','Briefs','brief','Workspace');
@@ -148,7 +149,7 @@ function go(v,opts){
   window.scrollTo(0,0);
   if(gated() && FREE_VIEWS.indexOf(v)<0){ S.lockShown=true; viewLocked(v); return; }
   S.lockShown=false;
-  const map={teamact:viewTeamAct,dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,clientrep:()=>viewClientRep(opts),partners:viewPartners,knowledge:()=>viewKnowledge(opts),finance:()=>viewFinance(opts),board:()=>viewBoard(opts),people:viewPeople,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
+  const map={teamact:viewTeamAct,dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,clientrep:()=>viewClientRep(opts),partners:viewPartners,zstores:()=>viewZStores(opts),knowledge:()=>viewKnowledge(opts),finance:()=>viewFinance(opts),board:()=>viewBoard(opts),people:viewPeople,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
   (map[v]||viewDash)();
 }
 function viewLocked(v){

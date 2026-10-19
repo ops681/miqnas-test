@@ -1,5 +1,5 @@
 {
- "v":"2026-10-20.2",
+ "v":"2026-10-20.3",
  "css": [
   "core/styles.css",
   "modules/briefs/briefs.css",
@@ -43,6 +43,7 @@
   "modules/crm/crm.js",
   "modules/clients/report.js",
   "modules/partners/partners.js",
+  "modules/partners/zstores.js",
   "modules/knowledge/knowledge.js",
   "modules/finance/finance.js",
   "modules/board/board.js",

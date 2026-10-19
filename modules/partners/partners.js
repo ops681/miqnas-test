@@ -22,7 +22,7 @@ function renderPartners(r){
       </div>
       <div class="muted" style="font-size:12.5px">${p.thisMonth} new this month${p.hasUser===undefined?'':' · '+(p.hasUser?'Portal sign-in set':'<span style="color:var(--bad)">Portal locked: no username yet</span>')}</div>
       ${p.noAm&&(r.ams||[]).length?`<div class="ptn-am"><span><b>${p.noAm}</b> store${p.noAm===1?'':'s'} without an Account Manager</span><div class="row" style="gap:6px"><select id="ptnAm_${esc(p.id)}" aria-label="Account Manager"><option value="">Choose…</option>${r.ams.map(a=>`<option value="${esc(a.username)}">${esc(a.name)}</option>`).join('')}</select><button class="btn small primary" onclick="ptnAssignAm('${esc(p.id)}')">Assign</button></div></div>`:p.noAm?`<div class="ptn-am"><span><b>${p.noAm}</b> store${p.noAm===1?'':'s'} without an Account Manager. Add an Account Manager from Employees, then assign them here.</span></div>`:''}
-      <div class="ptn-a">${p.active?`<button class="btn primary small" onclick="ptAdmin('${esc(p.id)}')">Portal &amp; report</button>`:''}<button class="btn ghost small" onclick="ptnForm('${esc(p.id)}')">Edit</button></div>
+      <div class="ptn-a">${p.active?`<button class="btn primary small" onclick="ptAdmin('${esc(p.id)}')">Portal &amp; report</button> <button class="btn small" onclick="go('zstores',{partner:'${esc(p.id)}'})">Stores</button>`:''}<button class="btn ghost small" onclick="ptnForm('${esc(p.id)}')">Edit</button></div>
     </div>`;
   $('main').innerHTML=`<div class="ptn-grid">${act.map(card).join('')||'<div class="card empty">No partners yet.</div>'}</div>
     ${off.length?`<h3 style="margin:22px 0 10px">Stopped</h3><div class="ptn-grid">${off.map(card).join('')}</div>`:''}
