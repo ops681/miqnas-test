@@ -50,6 +50,13 @@ function renderZStores(r){
     ${list.length?`<div class="tbl-wrap"><table>${head}${list.map(row).join('')}</table></div>`:`<div class="empty" style="padding:22px">${tab==='new'?'No new stores. Add one with "+ New store".':'Nothing here.'}</div>`}</div>
     <div class="card" style="margin-top:14px;font-size:13px;line-height:1.9" dir="rtl"><b>الحالة اللي ${esc(r.partner.name||'زد')} بتشوفها بتتحسب لوحدها:</b> متجر جديد = <b>تم بدء التواصل</b> · اتعمل البريف = <b>في انتظار المتطلبات</b> · اتعمل المشروع = <b>تم بدء العمل</b> · بعد الإطلاق: <b>متبقي تفعيل زد باي</b> / <b>متبقي تفعيل الدومين</b> / <b>مكتمل</b> (من التاسكات). العوائق (Blockers) بتظهر لهم بالإثبات، وبتفضل في السجل حتى بعد ما تتحل.</div>`;
 }
+function zsStatusSel(x){
+  const r=S.zsR, auto=x.project&&TR_AUTO(x);
+  if(auto) return `<select id="zsS" dir="rtl" disabled><option>${esc(x.status)}</option></select><div class="muted" style="font-size:12px;margin-top:4px">It's a project now: the status follows the project and its tasks</div>`;
+  const opts=(x.brief?[r.statuses.waiting]:[r.statuses.contact,r.statuses.waiting]).concat(r.closeReasons), cur=x.status||r.statuses.contact, cut=opts.length-r.closeReasons.length;
+  return `<select id="zsS" dir="rtl" data-nosearch>${opts.map((o,i)=>`${i===cut?'<optgroup label="Closed">':''}<option${o===cur?' selected':''}>${esc(o)}</option>${i===opts.length-1?'</optgroup>':''}`).join('')}</select>`;
+}
+const TR_AUTO=x=>['تم بدء العمل','متبقي تفعيل زد باي','متبقي تفعيل الدومين','مكتمل'].indexOf(x.status)>=0;
 function zsForm(key){
   const r=S.zsR; if(!r) return;
   const x=(r.rows||[]).find(y=>y.key===key)||{};
@@ -57,7 +64,7 @@ function zsForm(key){
   const v=k=>esc(x[k]||'');
   $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:580px">
     <h2 style="margin:0 0 4px">${key?'Edit store':'New store from '+esc(r.partner.nameEn||'Zid')}</h2>
-    <div class="muted" style="font-size:13px;margin-bottom:14px">${key?'Changes show in the portal right away.':'Copy it from '+esc(r.partner.nameEn||'Zid')+'\'s portal. It shows in their portal right away as <b dir="rtl">تم بدء التواصل</b>. This is not a project yet'}</div>
+    <div class="muted" style="font-size:13px;margin-bottom:14px">${key?'Changes show in the portal right away.':'Copy it from '+esc(r.partner.nameEn||'Zid')+'\'s portal. It shows in their portal right away with the status you pick. This is not a project yet'}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div><label for="zsI">Store ID *</label><input id="zsI" dir="ltr" value="${v('sid')}"></div>
       <div><label for="zsN">Store name *</label><input id="zsN" dir="auto" value="${v('name')}"></div>
@@ -66,14 +73,15 @@ function zsForm(key){
       <div><label for="zsK">Package *</label><select id="zsK" dir="auto" data-nosearch><option value="">Choose…</option>${r.packages.map(p=>`<option${p===x.pkg?' selected':''}>${esc(p)}</option>`).join('')}</select></div>
       <div><label for="zsT">Theme</label><input id="zsT" value="${v('theme')}"></div>
       <div><label for="zsD">Contact started *</label><input id="zsD" type="date" value="${esc(x.contact||today)}"></div>
-      ${r.admin?`<div><label for="zsA">Account Manager *</label><select id="zsA" dir="auto"><option value="">Choose…</option>${r.ams.map(a=>`<option value="${esc(a.u)}"${a.u===x.am?' selected':''}>${esc(a.name)}</option>`).join('')}</select></div>`:'<div></div>'}
+      <div><label for="zsS">Status *</label>${zsStatusSel(x)}</div>
+      ${r.admin?`<div><label for="zsA">Account Manager *</label><select id="zsA" dir="auto"><option value="">Choose…</option>${r.ams.map(a=>`<option value="${esc(a.u)}"${a.u===x.am?' selected':''}>${esc(a.name)}</option>`).join('')}</select></div>`:''}
       <div style="grid-column:1/-1"><label for="zsNo">Merchant notes and blockers</label><textarea id="zsNo" rows="2" dir="auto" placeholder="Shows in the portal next to the open blockers">${v('note')}</textarea></div></div>
     <div class="err" id="zsE"></div>
     <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancel</button><div class="spacer"></div><button class="btn primary" id="zsGo">${key?'Save':'Save store'}</button></div></div></div>`;
   $('zsGo').onclick=async()=>{
     const b=$('zsGo'); b.disabled=true;
     const store={partner:S.zsP,id:x.rec||'',project:isVirt?x.project:'',store_id:$('zsI').value.trim(),name:$('zsN').value.trim(),phone:$('zsPh').value.trim(),url:$('zsU').value.trim(),
-      package:$('zsK').value,theme:$('zsT').value.trim(),contact_date:$('zsD').value,note:$('zsNo').value.trim(),am:r.admin?$('zsA').value:''};
+      package:$('zsK').value,theme:$('zsT').value.trim(),contact_date:$('zsD').value,note:$('zsNo').value.trim(),am:r.admin?$('zsA').value:'',status:$('zsS')&&!$('zsS').disabled?$('zsS').value:''};
     try{ await call('zsSave',{store}); closeModal(); toast('اتحفظ ✓'); zsRefresh(); }catch(e){ $('zsE').textContent=e.message; b.disabled=false; }
   };
 }
@@ -84,7 +92,7 @@ function zsCloseForm(id){
   const r=S.zsR;
   $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:420px">
     <h2 style="margin:0 0 4px">Close store</h2><div class="muted" style="font-size:13px;margin-bottom:12px">The reason shows as the status in ${esc(r.partner.nameEn||'Zid')}'s portal. You can reopen it later</div>
-    <div style="display:grid;gap:8px" dir="rtl">${r.closeReasons.map((c,i)=>`<label class="check" style="margin:0"><input type="radio" name="zsR" value="${esc(c)}"${i?'':' checked'}> ${esc(c)}</label>`).join('')}</div>
+    <div style="display:grid;gap:8px" dir="rtl">${r.closeReasons.map((c,i)=>`<label style="display:flex;align-items:center;gap:10px;margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-weight:500"><input type="radio" name="zsR" value="${esc(c)}"${i?'':' checked'} style="width:18px;height:18px;margin:0;flex:none"><span>${esc(c)}</span></label>`).join('')}</div>
     <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancel</button><div class="spacer"></div><button class="btn primary" onclick="const v=document.querySelector('input[name=zsR]:checked').value;closeModal();zsState('${esc(id)}','close',v)">Close store</button></div></div></div>`;
 }
 async function zsBriefGo(id){
