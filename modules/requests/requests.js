@@ -51,7 +51,7 @@ function renderRequests(){
       <div class="kpi"><span>Annual leave left</span><b style="color:${b.left<=3?'var(--warn)':'var(--ok)'}">${b.left}</b><small>of ${b.total} days this year</small></div>
       <div class="kpi"><span>Used</span><b>${b.used}</b><small>Approved days this year</small></div>
       <div class="kpi"><span>Waiting approval</span><b>${b.pending}</b><small>Days in pending requests</small></div>
-      <div class="kpi"><span>Your shift</span><b>${M.shift} h</b><small>Extra time becomes overtime</small></div>
+      <div class="kpi"><span>Your shift</span><b>${M.shift} h</b><small>Hours per day</small></div>
     </div>
     <div class="card" style="margin-bottom:18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       <div style="flex:1 1 300px"><b>Who approves your requests</b><div class="muted" style="font-size:13px">${M.flow.map((f,i)=>`${i+1}. ${esc(f.step)}${f.who.length?' ('+f.who.map(esc).join(' or ')+')':''}`).join(' → ')}</div></div>
