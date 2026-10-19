@@ -1,7 +1,7 @@
 /* ============ بورتال الشركاء (زد وأي شريك تاني) ============
    صفحة لوحدها: المفتاح في اللينك (?k=...) + يوزر وباسورد بتحددهم الإدارة. للاطلاع بس.
    البيانات جاية من السيرفر محسوبة من المشاريع والتاسكات والبلوكرز. */
-const PT = { key: new URLSearchParams(location.search).get('k') || '', t: '', info: null, all: false, month: '', q: '', f: 'all', data: null, open: '', view: 'cards', tf: '', topen: '' };
+const PT = { key: new URLSearchParams(location.search).get('k') || '', t: '', info: null, all: false, month: '', q: '', f: 'all', data: null, open: '', view: 'cards', tf: '', topen: '', tm: '' };
 const pe = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // النص العربي اللي فيه كلام إنجليزي يتعرض من اليمين (مايتشقلبش)
 const pdir = s => { s = String(s == null ? '' : s); const a = (s.match(/[\u0600-\u06FF]/g) || []).length; return a > 0 && a >= (s.match(/[A-Za-z]/g) || []).length ? 'dir="rtl"' : 'dir="auto"'; };
@@ -92,6 +92,7 @@ function ptTabs() {
 function ptRender() {
   const d = PT.data; if (!d) return;
   if (PT.view === 'track') return ptTrack();
+  if (PT.open && PT.open.indexOf('T:') === 0) { PT.view = 'track'; PT.topen = PT.open.slice(2); PT.open = ''; return ptTrack(); }   // متجر لسه مش مشروع: تفاصيله في متابعة المتاجر
   if (PT.open) { const s = d.stores.find(x => x.id === PT.open); if (s) return ptDetail(s); PT.open = ''; }
   const k = d.kpis, L = ptList();
   const months = []; { const [y0, m0] = d.first.split('-').map(Number); const cur = new Date(); let y = y0, m = m0; while (y < cur.getFullYear() || (y === cur.getFullYear() && m <= cur.getMonth() + 1)) { months.push(y + '-' + String(m).padStart(2, '0')); m++; if (m > 12) { m = 1; y++; } } }
@@ -184,9 +185,25 @@ const trPill = s => `<span class="pill" style="background:${trCol(s)}22;color:${
 const TR_K = [['', 'كل المتاجر', '#EEF3F1', () => true], ['contact', 'تم بدء التواصل', '#7FB3F5', r => r.status === 'تم بدء التواصل'], ['waiting', 'في انتظار المتطلبات', '#F2C14E', r => r.status === 'في انتظار المتطلبات'],
   ['work', 'تم بدء العمل', '#F08A4B', r => r.status === 'تم بدء العمل'], ['left', 'متبقي تفعيل', '#C792EA', r => /^متبقي/.test(r.status)], ['done', 'مكتمل', '#4CC38A', r => r.status === 'مكتمل'],
   ['closed', 'مقفول', '#F07171', r => !TR_C[r.status]], ['blocked', 'عليه عائق', '#F7A29D', r => r.blog.some(b => b.open)]];
+function trMonths() {
+  const d = PT.data, out = [], cur = new Date(); let [y, m] = String(d.first || d.month).split('-').map(Number);
+  while (y < cur.getFullYear() || (y === cur.getFullYear() && m <= cur.getMonth() + 1)) { out.push(y + '-' + String(m).padStart(2, '0')); m++; if (m > 12) { m = 1; y++; } }
+  return out;
+}
+const trMonth = () => PT.tm || (new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'));
+// المتجر يتبع الشهر: دخل فيه، أو اتشغّل فيه، أو لسه شغال (مكملش ومتقفلش)
+function trInMonth(r, m) {
+  if (m === 'all') return true;
+  const inM = v => !!v && String(v).slice(0, 7) === m, end = m + '-31', ent = r.contact;
+  if (ent && ent > end) return false;
+  if (r.launch) return inM(r.launch) || inM(ent) || r.launch > end;
+  if (r.status === 'مكتمل' || !TR_C[r.status]) return inM(ent);
+  return true;
+}
+function trBase() { const m = trMonth(); return (PT.data.track || []).filter(r => trInMonth(r, m)); }
 function trList() {
   const q = PT.q.trim().toLowerCase(), k = TR_K.find(x => x[0] === PT.tf) || TR_K[0];
-  return (PT.data.track || []).filter(r => k[3](r) && (!q || [r.name, r.sid, r.phone, r.url, r.ref].some(v => String(v || '').toLowerCase().indexOf(q) >= 0)))
+  return trBase().filter(r => k[3](r) && (!q || [r.name, r.sid, r.phone, r.url, r.ref].some(v => String(v || '').toLowerCase().indexOf(q) >= 0)))
     .sort((a, b) => String(b.contact || '').localeCompare(String(a.contact || '')));
 }
 function trNotes(r) {
@@ -197,8 +214,9 @@ function trNotes(r) {
   return (h + n + more) || '<span style="color:var(--dim)">—</span>';
 }
 function ptTrack() {
-  const d = PT.data, T = d.track || [];
-  if (PT.topen) { const r = T.find(x => x.key === PT.topen); if (r) return ptTrackOne(r); PT.topen = ''; }
+  const d = PT.data;
+  if (PT.topen) { const r = (d.track || []).find(x => x.key === PT.topen); if (r) return ptTrackOne(r); PT.topen = ''; }
+  const T = trBase(), tm = trMonth();
   const L = trList(), focus = document.activeElement && document.activeElement.id === 'ptQ';
   const th = 'padding:11px 12px;text-align:start;font-size:12px;color:var(--mut);font-weight:600;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--card2);position:sticky;top:0';
   const td = 'padding:12px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:top';
@@ -208,6 +226,7 @@ function ptTrack() {
     <div class="pt-title"><b>مِقناص × ${pe(ptName())}</b><span>بورتال الشركاء · متابعة المتاجر</span></div>
     <span class="pt-upd">محدّث ${pe(ago(d.at))}</span><button type="button" class="pt-out" onclick="ptLogout()">خروج</button></header>
   <div class="pt-bar">${ptTabs()}
+    <label class="pt-field month"><small>الشهر</small><select aria-label="الشهر" onchange="PT.tm=this.value;ptRender()"><option value="all"${tm === 'all' ? ' selected' : ''}>كل الشهور</option>${trMonths().reverse().map(m => `<option value="${m}"${m === tm ? ' selected' : ''}>${mName(m)}</option>`).join('')}</select></label>
     <button type="button" class="pt-btn" onclick="ptTrackExport()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>تصدير Excel</button>
   </div>
   <label class="pt-field search"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9DB0AA" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="ptQ" placeholder="ابحث برقم المتجر أو اسمه أو رقم التاجر" value="${pe(PT.q)}" oninput="PT.q=this.value;ptRender()"></label>
@@ -217,7 +236,7 @@ function ptTrack() {
   ${L.length ? L.map(r => `<tr style="cursor:pointer" onclick="PT.topen='${pe(r.key)}';ptRender();window.scrollTo(0,0)"><td style="${td}" class="num" dir="ltr">${pe(r.sid) || '—'}</td><td style="${td}"><b ${pdir(r.name)}>${pe(r.name)}</b></td><td style="${td}" class="num" dir="ltr">${pe(r.phone) || '—'}</td><td style="${td}">${url(r.url)}</td><td style="${td};white-space:nowrap">${pe(r.pkg) || '—'}</td><td style="${td}" dir="auto">${pe(r.theme) || '—'}</td><td style="${td}">${trPill(r.status)}</td><td style="${td};white-space:nowrap" class="num">${pe(r.contact) || '—'}</td><td style="${td};white-space:nowrap" class="num">${pe(r.launch) || '—'}</td><td style="${td};min-width:260px;line-height:1.7">${trNotes(r)}</td></tr>`).join('')
     : `<tr><td colspan="10" style="${td};text-align:center;color:var(--mut)">مفيش متاجر هنا</td></tr>`}
   </table></div>
-  <div class="pt-end"><span>عرض ${L.length} من ${T.length} متجر · اضغط على أي متجر لسجل العوائق كامل</span><span>مِقناص · للاطلاع فقط</span></div></div>`;
+  <div class="pt-end"><span>عرض ${L.length} من ${T.length} متجر${tm === 'all' ? '' : ' في ' + mName(tm)} · اضغط على أي متجر لسجل العوائق كامل</span><span>مِقناص · للاطلاع فقط</span></div></div>`;
   if (focus) { const q = document.getElementById('ptQ'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
 }
 // سجل العوائق كامل (المفتوح والمقفول) + أيام الانتظار لكل طرف
@@ -252,5 +271,5 @@ function ptTrackExport() {
       r.blog.map(b => b.cat + ' (' + b.owner + ') ' + b.from + ' → ' + (b.open ? 'مفتوح' : b.to) + ' · ' + b.days + ' يوم' + (b.links.length ? ' · ' + b.links.join(' ') : '')).join(' || ')]; });
   const txt = '﻿' + [head].concat(rows).map(r => r.map(csv).join(',')).join('\r\n');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' }));
-  a.download = 'Miqnas-' + String((PT.info && PT.info.nameEn) || 'Partner').replace(/[^A-Za-z0-9]/g, '') + '-stores-tracking.csv'; document.body.appendChild(a); a.click(); a.remove();
+  a.download = 'Miqnas-' + String((PT.info && PT.info.nameEn) || 'Partner').replace(/[^A-Za-z0-9]/g, '') + '-stores-tracking-' + trMonth() + '.csv'; document.body.appendChild(a); a.click(); a.remove();
 }
