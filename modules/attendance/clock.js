@@ -192,23 +192,38 @@ async function grabCanvas(maxW){
   const track=S.stream&&S.stream.getVideoTracks()[0];
   if(!track||track.readyState!=='live') throw new Error('no stream');
   let src=null,w=0,h=0;
-  if('ImageCapture' in window){ try{ const bmp=await new ImageCapture(track).grabFrame(); src=bmp; w=bmp.width; h=bmp.height; }catch(e){} }
-  if(!src){ const v=$('cap'); src=v; w=v.videoWidth; h=v.videoHeight; }
-  if(!w||!h) throw new Error('no frame');
+  // كروم ساعات مابيردّش على grabFrame (الويندو متصغّرة / مستخبية / مفيهاش حركة): بعد 3 ثواني ناخد آخر فريم من الفيديو
+  if('ImageCapture' in window){ try{ const bmp=await shotTimeout(new ImageCapture(track).grabFrame(),3000); src=bmp; w=bmp.width; h=bmp.height; }catch(e){ if(/timeout/.test(e.message)) shotFail('the shared window sent no new picture for 3 seconds (minimized or hidden?), used the last picture', true); } }
+  if(!src){ const v=$('cap'); if(v&&v.paused) try{ await shotTimeout(v.play(),1500); }catch(e){} src=v; w=v?v.videoWidth:0; h=v?v.videoHeight:0; }
+  if(!w||!h) throw new Error(track.muted?'no picture: the shared window is minimized or hidden':'no picture from the shared screen');
   const sc=Math.min(1,maxW/w); const c=document.createElement('canvas'); c.width=Math.round(w*sc); c.height=Math.round(h*sc);
   c.getContext('2d').drawImage(src,0,0,c.width,c.height);
   return { image: c.toDataURL('image/jpeg',0.6) };
 }
+function shotTimeout(p,ms){ return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]); }
+// صورة فشلت: بتتسجل في سجل المشاركة بالسبب (مرة كل 10 دقايق لنفس السبب). وبتعرّف السيرفر إن الموظف لسه موجود
+function shotFail(reason,note){
+  const now=Date.now(); reason=String(reason||'unknown').slice(0,140);
+  if(S.sfR===reason && now-(S.sfAt||0)<10*60000) return;
+  S.sfR=reason; S.sfAt=now;
+  call('shareEvent',{event:note?'shotnote':'shotfail',reason,at:now}).catch(()=>{});
+}
 async function takeShot(){
-  if(!S.sharing) return;
+  if(!S.sharing || S.shotBusy) return;
   if(S.status && S.status.onBreak) return;
-  const shot=await grabCanvas(1600);
+  S.shotBusy=true;
+  try{ await takeShot0(); } finally{ S.shotBusy=false; }
+}
+async function takeShot0(){
+  let shot;
+  try{ shot=await shotTimeout(grabCanvas(1600),8000); }
+  catch(e){ shotFail(e.message==='timeout'?'taking the picture took too long':e.message==='no stream'?'screen sharing is not running':e.message); return; }
   shot.mode=S.mode;
   S.lastShot=Date.now(); S.shotGap=nextShotGap();
   shot.at=S.lastShot;
   shot.rid=S.lastShot.toString(36)+Math.random().toString(36).slice(2,10);
   try{ await call('uploadShot',shot); }
-  catch(e){ if(e.offline){ S.shotQ.push(shot); if(S.shotQ.length>6) S.shotQ.shift(); renderNet(); } }
+  catch(e){ if(e.offline){ S.shotQ.push(shot); if(S.shotQ.length>6) S.shotQ.shift(); renderNet(); } else shotFail('upload refused: '+(e.message||'error')); }
   const el=$('lastShotT'); if(el) el.textContent=new Date(S.lastShot).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
 // السكرين شوتس اللي استنت لما النت كان فاصل (آخر 6 بس، يعني ساعة)
