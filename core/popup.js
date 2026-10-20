@@ -1,7 +1,7 @@
 /* ============ تنبيهات بتظهر على الشاشة ============
    كل دقيقة تقريبًا (والصفحة قدام الموظف) بنسأل السيرفر سؤال خفيف: فيه إشعارات جديدة؟
    أي إشعار جديد بيظهر في كارت في جنب الشاشة لحد ما الموظف يفتحه أو يقفله. ومش بيظهر تاني بعد كده. */
-const PP_ICON={ready:'tasks',approval:'cal',request:'cal',leave:'cal',project:'folder',note:'brief',blocker:'flag',brief:'brief',pulse:'chart',task:'todo',review:'todo',returned:'warn',done:'todo',comment:'brief',meeting:'meet',launch:'trend',autoout:'warn',helper:'users'};
+const PP_ICON={ready:'tasks',approval:'cal',request:'cal',leave:'cal',project:'folder',note:'brief',blocker:'flag',brief:'brief',pulse:'chart',task:'todo',review:'todo',returned:'warn',done:'todo',comment:'brief',meeting:'meet',launch:'trend',autoout:'warn',helper:'users',thanks:'trend'};
 S.pp=[];
 function ppKey(){ return 'erp_pp_'+(S.user?S.user.username:''); }
 function ppSeen(){ try{ return JSON.parse(load(ppKey())||'{}')||{}; }catch(e){ return {}; } }
@@ -21,6 +21,9 @@ async function ppCheck(){
     // دورك دلوقتي / اتضافت تساعد: كارت في نص الشاشة (لو مقفول من الإعدادات بيروح للركن زي الأول)
     const turn=fresh.filter(tcIs); if(turn.length) tcTake(turn);
     fresh=fresh.filter(n=>!tcIs(n));
+    // المتجر اتعمله Launch: كارت شكر للفريق
+    const thx=fresh.filter(lcIs); if(thx.length){ thx.forEach(n=>{ if(!(S.lcQ||[]).some(q=>q.id===n.id)) (S.lcQ=S.lcQ||[]).push(n); }); lcShow(); }
+    fresh=fresh.filter(n=>!lcIs(n));
     if(!fresh.length) return;
     S.pp=fresh.concat(S.pp).slice(0,8);
     ppMark(fresh.map(n=>n.id));
@@ -55,7 +58,7 @@ function ppAll(){ S.pp=[]; ppRender(); loadNotifs(); openBell(); }
 /* ----- استلمت مشروع جديد: كارت في نص الشاشة (واحد ورا التاني لو أكتر من مشروع) ----- */
 function npIs(n){ return n && n.type==='project' && /^(You were added to |You are the Account Manager of )/.test(String(n.title||'')); }
 function npShow(){
-  if($('npCard')||$('tcCard')||!(S.npQ||[]).length || VA_TAB) return;   // كارت واحد في نص الشاشة في المرة
+  if($('npCard')||$('tcCard')||$('lcCard')||!(S.npQ||[]).length || VA_TAB) return;   // كارت واحد في نص الشاشة في المرة
   const n=S.npQ[0], am=/^You are the Account Manager of /.test(n.title), name=String(n.title).replace(/^(You were added to |You are the Account Manager of )/,'');
   const parts=String(n.detail||'').split(' · ');
   const c=document.createElement('div'); c.id='npCard'; c.className='np-wrap';
@@ -94,7 +97,7 @@ function tcHand(h){
   return `<div class="tc-hand"><div class="muted" style="font-size:12px;margin-bottom:4px">التسليم</div>${html}</div>`;
 }
 function tcShow(){
-  if($('npCard')||$('tcCard')||VA_TAB||!(S.tcQ||[]).length) return;
+  if($('npCard')||$('tcCard')||$('lcCard')||VA_TAB||!(S.tcQ||[]).length) return;
   if(S.status && S.status.onBreak) return;
   if($('modalRoot') && $('modalRoot').innerHTML.trim()) return;   // فيه فورم مفتوحة: نستنى
   const L=S.tcQ, c=document.createElement('div'); c.id='tcCard'; c.className='np-wrap';
@@ -127,4 +130,35 @@ function tcDone(ids){
 }
 function tcOpen(id){ const n=(S.tcQ||[]).find(q=>q.id===id); tcDone([id]); if(n&&n.go) goTo({view:n.go.view,id:n.go.id}); setTimeout(()=>{ tcShow(); npShow(); },600); }
 function tcAll(){ tcDone((S.tcQ||[]).map(q=>q.id)); go('mytasks'); setTimeout(npShow,600); }
-function tcLater(){ tcSnzSet((S.tcQ||[]).map(q=>q.id),Date.now()+30*6e4); S.tcQ=[]; const c=$('tcCard'); if(c) c.remove(); setTimeout(npShow,250); }
+function tcLater(){ tcSnzSet((S.tcQ||[]).map(q=>q.id),Date.now()+30*6e4); S.tcQ=[]; const c=$('tcCard'); if(c) c.remove(); setTimeout(()=>{ npShow(); lcShow(); },250); }
+
+/* ----- المتجر اتعمله Launch: كارت شكر للي اشتغلوا عليه (الرسالة والتوقيع من Settings) ----- */
+function lcIs(n){ return n && n.type==='thanks' && n.go && S.cfg.lcOn!==false; }
+function lcShow(){
+  if($('npCard')||$('tcCard')||$('lcCard')||VA_TAB||!(S.lcQ||[]).length) return;
+  if(S.status && S.status.onBreak) return;
+  if($('modalRoot') && $('modalRoot').innerHTML.trim()) return;
+  const n=S.lcQ[0], g=n.go||{}, first=String((S.user&&S.user.name)||'').split(' ')[0];
+  const msg=String(S.cfg.lcMsg||'شكراً يا {الاسم} على مجهودك 🙏\n{المتجر} اتعمله Launch النهارده، والفضل ليك وللفريق.');
+  const html=esc(msg).replace(/\{الاسم\}/g,esc(first)).replace(/\{المتجر\}/g,`<b style="color:var(--brand2)">${esc(g.pj||'')}</b>`).split('\n');
+  const url=String(g.url||''), href=url?(/^https?:/.test(url)?url:'https://'+url):'';
+  const conf=Array.from({length:60},(_,i)=>`<i style="left:${(i*37)%100}%;background:${['#F08A4B','#2BB39A','#7FB3F5','#F2C14E','#C792EA','#F07171'][i%6]};animation-delay:${(i%12)*0.06}s;animation-duration:${1.6+(i%5)*0.25}s;transform:rotate(${i*47%360}deg)"></i>`).join('');
+  const c=document.createElement('div'); c.id='lcCard'; c.className='np-wrap';
+  c.innerHTML=`<div class="lc-conf" aria-hidden="true">${conf}</div>
+    <div class="np-card" role="alertdialog" aria-label="Store launched" style="position:relative">
+      <div class="np-top">🎉</div>
+      <h2 dir="rtl" style="font-size:20px">${html[0]||''}</h2>
+      ${html.slice(1).map(l=>`<div dir="rtl" style="font-size:14.5px;line-height:1.8">${l}</div>`).join('')}
+      ${href?`<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" dir="ltr" style="display:inline-block;margin-top:6px;font-size:13px">${esc(url.replace(/^https?:\/\//,'').replace(/\/$/,''))} ↗</a>`:''}
+      ${(g.team||[]).length?`<div class="muted" style="font-size:12.5px;margin-top:14px">الفريق</div><div class="lc-team">${g.team.map(t=>`<span class="av" data-u="${esc(t.u)}" title="${esc(t.n)}">${esc(initials(t.n))}</span>`).join('')}</div>`:''}
+      ${S.cfg.lcSign?`<div class="muted" style="font-size:12.5px;margin-top:12px" dir="rtl">— ${esc(S.cfg.lcSign)}</div>`:''}
+      <div class="np-act">${href?`<button class="btn ghost" onclick="lcDone('${esc(href)}')">افتح المتجر ↗</button>`:''}<button class="btn primary" onclick="lcDone()">شكراً 🙌</button></div></div>`;
+  document.body.appendChild(c);
+  if(typeof avApply==='function') avApply(c);
+}
+function lcDone(href){
+  const n=(S.lcQ||[]).shift(); const c=$('lcCard'); if(c) c.remove();
+  if(n){ ppMark([n.id]); call('notifRead',{ids:[n.id]}).then(r=>{ S.unread=r.unread; renderBell(); }).catch(()=>{}); }
+  if(href) window.open(href,'_blank','noopener');
+  setTimeout(()=>{ lcShow(); tcShow(); npShow(); },400);
+}
