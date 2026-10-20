@@ -262,14 +262,145 @@ function ptTrackOne(r) {
     ${ptBlogHtml(r) || '<section class="pt-sec"><h2>سجل العوائق</h2><div style="color:var(--mut)">مفيش عوائق على المتجر ده.</div></section>'}
     <div class="pt-end">المعلومات دي بتتحدث تلقائياً من سيستم مِقناص · للاطلاع فقط</div></div></div>`;
 }
-function ptTrackExport() {
-  const L = trList(), csv = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-  const head = ['Store ID', 'اسم المتجر', 'رقم التواصل للتاجر', 'رابط المتجر', 'الباقة', 'الثيم', 'الحالة', 'تاريخ بدء التواصل', 'تاريخ التشغيل', 'ملاحظات وعوائق التاجر', 'عوائق مفتوحة', 'عوائق اتحلت', 'أيام انتظار العميل', 'أيام انتظار ' + ptName(), 'سجل العوائق'];
-  const rows = L.map(r => { const o = r.blog.filter(b => b.open);
-    return [r.sid, r.name, r.phone, r.url, r.pkg, r.theme, r.status, r.contact, r.launch, [r.note].concat(o.map(b => 'عائق عند ' + b.owner + ': ' + b.cat + (b.text ? ' - ' + b.text : ''))).filter(Boolean).join(' | '),
-      o.length, r.blog.length - o.length, r.bsum.client, r.bsum.partner,
-      r.blog.map(b => b.cat + ' (' + b.owner + ') ' + b.from + ' → ' + (b.open ? 'مفتوح' : b.to) + ' · ' + b.days + ' يوم' + (b.links.length ? ' · ' + b.links.join(' ') : '')).join(' || ')]; });
-  const txt = '﻿' + [head].concat(rows).map(r => r.map(csv).join(',')).join('\r\n');
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' }));
-  a.download = 'Miqnas-' + String((PT.info && PT.info.nameEn) || 'Partner').replace(/[^A-Za-z0-9]/g, '') + '-stores-tracking-' + trMonth() + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+// ملف Excel بنفس شكل شيت الشريك بالظبط (التنسيق متاخد من الشيت بتاعهم) ومتملي من البورتال
+const XL = { pur: 'FF4E3372', ink: 'FF1F0433', line: 'FFA599B2',
+  st: { 'تم بدء التواصل': ['FFF1EAFF', 'FF6E48A1'], 'في انتظار المتطلبات': ['FFFDF5D6', 'FF6F673B'], 'تم بدء العمل': ['FFD1F4F4', 'FF306666'], 'لا يوجد رد من التاجر': ['FFFFEDE6', 'FF723F1A'],
+    'التاجر لا يناسب الشريك': ['FFE4E4E5', 'FF1F0433'], 'التاجر منسحب': ['FFFEE5E9', 'FF70192F'], 'تم تحويل التاجر لشريك اخر': ['FFEBE8ED', 'FF3C1C54'], 'متبقي تفعيل زد باي': ['FFE2D2FF', 'FF4E3372'],
+    'متبقي تفعيل الدومين': ['FFE9FAFA', 'FF306666'], 'مكتمل': ['FFDDF8DC', 'FF476A44'] } };
+async function ptTrackExport() {
+  try {
+    const L = trList(), sh = PT.data.sheet || {}, label = sh.label || 'Ruk- مقناص';
+    const statuses = sh.statuses || Object.keys(XL.st), pk = sh.packages || ['انطلاقة سنوي', 'نمو سنوي', 'الاحترافية'];
+    const F = o => Object.assign({ size: 11, color: XL.ink }, o || {});
+    const box = XL.line, last = Math.max(505, 5 + L.length);
+    const A = { h: 'right', v: 'middle' };
+    // تاب المتاجر
+    const rows = {};
+    [1, 2, 3, 4].forEach(r => { rows[r] = { ht: 27, c: {} }; });
+    rows[5] = { ht: 42, c: {} };
+    rows[2].c[1] = { v: 'متابعة المتاجر', s: { font: F({ size: 16, b: true, color: XL.pur }), al: A } };
+    rows[3].c[1] = { v: 'الشريك', s: { font: F(), al: A } }; rows[3].c[2] = { v: label, s: { font: F(), al: A } };
+    ['Store ID', 'اسم المتجر', 'رقم التواصل للتاجر', 'رابط المتجر', 'الباقة', 'الثيم', 'الحالة', 'تاريخ بدء التواصل', 'تاريخ التشغيل', 'ملاحظات وعوائق التاجر']
+      .forEach((h, i) => { rows[5].c[i + 1] = { v: h, s: { font: F({ size: 12, b: true, color: 'FFFFFFFF' }), fill: XL.pur, border: box, al: { h: 'center', v: 'middle', wrap: true } } }; });
+    const notes = r => [r.note].concat(r.blog.filter(b => b.open).map(b => 'عائق عند ' + b.owner + ': ' + b.cat + (b.text ? ' - ' + b.text : '') + ' (' + b.days + ' ' + (b.days === 1 ? 'يوم' : 'أيام') + ')')).filter(Boolean).join('\n');
+    for (let i = 6; i <= last; i++) {
+      const r = L[i - 6], v = r ? [r.sid, r.name, r.phone, r.url, r.pkg, r.theme, r.status, r.contact, r.launch, notes(r)] : [];
+      rows[i] = { ht: 31.5, c: {} };
+      for (let c = 1; c <= 10; c++) {
+        const date = c === 8 || c === 9, x = v[c - 1];
+        rows[i].c[c] = { v: x === '' || x == null ? null : x, date: date && !!x, s: { font: F({ size: 12 }), border: box, al: { h: 'right', v: 'middle', wrap: c === 10 || c === 4 }, fmt: date ? 'dd/mm/yyyy' : (c === 3 || c === 1 ? '@' : '') } };
+      }
+    }
+    const cf = [{ ref: 'G6:G' + last, rules: statuses.filter(s => XL.st[s]).map(s => ({ f: '$G6="' + s + '"', fill: XL.st[s][0], color: XL.st[s][1], b: true })) },
+      { ref: 'A6:A' + last, rules: [{ f: 'AND($A6<>"",COUNTIF($A$6:$A$' + last + ',$A6)>1)', fill: 'FFFEE5E9', color: 'FF9E2342' }] },
+      { ref: 'I6:I' + last, rules: [{ f: 'AND($B6<>"",$G6="مكتمل",$I6="")', fill: 'FFFEE5E9', color: 'FF9E2342' }] }];
+    const dv = [{ ref: 'E6:E' + last, f: "'التعليمات والقوائم'!$C$2:$C$" + (1 + pk.length) }, { ref: 'G6:G' + last, f: "'التعليمات والقوائم'!$B$2:$B$" + (1 + statuses.length) }];
+    // تاب التعليمات والقوائم زي ما هو
+    const help = ['هذا الملف مخصص للشريك: ' + label, 'اكتب متجرًا واحدًا في كل صف، بدءًا من الصف 6.', 'Store ID هو رقم المتجر الثابت؛ لا تغيّره ولا تكرره.', 'اختر الباقة والحالة من القائمة المنسدلة.',
+      'أدخل التواريخ بصيغة سنة-شهر-يوم، مثل 2026-10-19.', 'عند اختيار مكتمل، أدخل تاريخ التشغيل.', '', '', 'حدّث نفس صف المتجر عند تغيير حالته أو ملاحظاته.', 'الخطوة القادمة ومدة التفعيل تظهران لمسؤول المتابعة في الداشبورد فقط.', 'موعد المتابعة يحدده مسؤول المتابعة في الداشبورد فقط.'];
+    const rows2 = {}, n = Math.max(help.length, statuses.length, pk.length) + 1;
+    for (let i = 1; i <= n; i++) {
+      rows2[i] = { ht: 30, c: {} };
+      const v = i === 1 ? ['طريقة التعبئة', 'الحالات', 'الباقات'] : [help[i - 2] || null, statuses[i - 2] || null, pk[i - 2] || null];
+      v.forEach((x, c) => {
+        const s = i === 1 ? { font: F({ b: true, color: 'FFFFFFFF' }), fill: XL.pur, al: A } : c === 1 && x && XL.st[x] ? { font: F({ b: true, color: XL.st[x][1] }), fill: XL.st[x][0], al: A } : { font: F(), al: A };
+        rows2[i].c[c + 1] = { v: x, s: s };
+      });
+    }
+    const blob = xlsxBuild([
+      { name: 'المتاجر', tab: XL.pur, rtl: true, grid: false, freeze: { x: 2, y: 5 }, cols: [159, 207, 190, 255, 223, 190, 271, 199, 159, 383], rows: rows, cf: cf, dv: dv },
+      { name: 'التعليمات والقوائم', tab: 'FFD8D2DD', rtl: true, grid: false, cols: [759, 271, 223], rows: rows2 }]);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'متابعة المتاجر - ' + label + (trMonth() === 'all' ? '' : ' - ' + trMonth()) + '.xlsx'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  } catch (e) { alert(e.message || 'حصل خطأ'); }
+}
+/* ----- ملف xlsx من غير أي مكتبة برة (zip من غير ضغط + XML) ----- */
+function xlsxBuild(sheets) {
+  const x = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  const col = n => { let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+  // الستايلات
+  const fonts = ['<font><sz val="11"/><color rgb="FF000000"/><name val="Arial"/></font>'], fills = ['<fill><patternFill patternType="none"/></fill>', '<fill><patternFill patternType="gray125"/></fill>'];
+  const borders = ['<border><left/><right/><top/><bottom/><diagonal/></border>'], fmts = {}, xfs = ['<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'], dxfs = [];
+  const idx = (arr, v) => { let i = arr.indexOf(v); if (i < 0) { arr.push(v); i = arr.length - 1; } return i; };
+  const xfOf = s => {
+    if (!s) return 0;
+    const f = s.font || {}, fo = idx(fonts, '<font>' + (f.b ? '<b/>' : '') + '<sz val="' + (f.size || 11) + '"/><color rgb="' + (f.color || 'FF000000') + '"/><name val="Arial"/></font>');
+    const fi = s.fill ? idx(fills, '<fill><patternFill patternType="solid"><fgColor rgb="' + s.fill + '"/><bgColor indexed="64"/></patternFill></fill>') : 0;
+    const b = s.border ? '<color rgb="' + s.border + '"/>' : '', bo = s.border ? idx(borders, '<border><left style="thin">' + b + '</left><right style="thin">' + b + '</right><top style="thin">' + b + '</top><bottom style="thin">' + b + '</bottom><diagonal/></border>') : 0;
+    let nf = 0; if (s.fmt === '@') nf = 49; else if (s.fmt) { if (!fmts[s.fmt]) fmts[s.fmt] = 164 + Object.keys(fmts).length; nf = fmts[s.fmt]; }
+    const al = s.al || {};
+    return idx(xfs, '<xf numFmtId="' + nf + '" fontId="' + fo + '" fillId="' + fi + '" borderId="' + bo + '" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment' + (al.h ? ' horizontal="' + al.h + '"' : '') + (al.v ? ' vertical="' + (al.v === 'middle' ? 'center' : al.v) + '"' : '') + (al.wrap ? ' wrapText="1"' : '') + ' readingOrder="2"/></xf>');
+  };
+  const serial = d => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d)); return m ? Math.round((Date.UTC(+m[1], +m[2] - 1, +m[3]) - Date.UTC(1899, 11, 30)) / 864e5) : null; };
+  const files = [];
+  sheets.forEach((S, si) => {
+    let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
+    xml += '<sheetPr>' + (S.tab ? '<tabColor rgb="' + S.tab + '"/>' : '') + '<pageSetUpPr fitToPage="1"/></sheetPr>';
+    xml += '<sheetViews><sheetView' + (S.rtl ? ' rightToLeft="1"' : '') + (S.grid === false ? ' showGridLines="0"' : '') + (si === 0 ? ' tabSelected="1"' : '') + ' workbookViewId="0">';
+    if (S.freeze) { const tl = col(S.freeze.x + 1) + (S.freeze.y + 1); xml += '<pane xSplit="' + S.freeze.x + '" ySplit="' + S.freeze.y + '" topLeftCell="' + tl + '" activePane="bottomRight" state="frozen"/><selection pane="topRight"/><selection pane="bottomLeft"/><selection pane="bottomRight" activeCell="' + tl + '" sqref="' + tl + '"/>'; }
+    xml += '</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>';
+    if (S.cols) xml += '<cols>' + S.cols.map((px, i) => '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + (Math.round((px - 5) / 7 * 100 + 0.5) / 100) + '" customWidth="1"/>').join('') + '</cols>';
+    xml += '<sheetData>';
+    Object.keys(S.rows).map(Number).sort((a, b) => a - b).forEach(r => {
+      const R = S.rows[r]; xml += '<row r="' + r + '"' + (R.ht ? ' ht="' + R.ht + '" customHeight="1"' : '') + '>';
+      Object.keys(R.c).map(Number).sort((a, b) => a - b).forEach(c => {
+        const C = R.c[c], ref = col(c) + r, s = xfOf(C.s), v = C.v;
+        if (v === null || v === undefined || v === '') xml += '<c r="' + ref + '" s="' + s + '"/>';
+        else if (C.date && serial(v) !== null) xml += '<c r="' + ref + '" s="' + s + '"><v>' + serial(v) + '</v></c>';
+        else if (typeof v === 'number') xml += '<c r="' + ref + '" s="' + s + '"><v>' + v + '</v></c>';
+        else xml += '<c r="' + ref + '" s="' + s + '" t="inlineStr"><is><t xml:space="preserve">' + x(v) + '</t></is></c>';
+      });
+      xml += '</row>';
+    });
+    xml += '</sheetData>';
+    let pr = 1;
+    (S.cf || []).forEach(g => {
+      xml += '<conditionalFormatting sqref="' + g.ref + '">' + g.rules.map(r => {
+        const d = idx(dxfs, '<dxf><font>' + (r.b ? '<b/>' : '') + '<color rgb="' + r.color + '"/></font><fill><patternFill patternType="solid"><bgColor rgb="' + r.fill + '"/></patternFill></fill></dxf>');
+        return '<cfRule type="expression" dxfId="' + d + '" priority="' + (pr++) + '"><formula>' + x(r.f) + '</formula></cfRule>';
+      }).join('') + '</conditionalFormatting>';
+    });
+    if ((S.dv || []).length) xml += '<dataValidations count="' + S.dv.length + '">' + S.dv.map(d => '<dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" sqref="' + d.ref + '"><formula1>' + x(d.f) + '</formula1></dataValidation>').join('') + '</dataValidations>';
+    xml += '<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>';
+    files.push(['xl/worksheets/sheet' + (si + 1) + '.xml', xml]);
+  });
+  const nfx = Object.keys(fmts).map(k => '<numFmt numFmtId="' + fmts[k] + '" formatCode="' + x(k) + '"/>').join('');
+  const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' + (nfx ? '<numFmts count="' + Object.keys(fmts).length + '">' + nfx + '</numFmts>' : '') +
+    '<fonts count="' + fonts.length + '">' + fonts.join('') + '</fonts><fills count="' + fills.length + '">' + fills.join('') + '</fills><borders count="' + borders.length + '">' + borders.join('') + '</borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="' + xfs.length + '">' + xfs.join('') + '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+    '<dxfs count="' + dxfs.length + '">' + dxfs.join('') + '</dxfs></styleSheet>';
+  const wb = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView activeTab="0"/></bookViews><sheets>' +
+    sheets.map((S, i) => '<sheet name="' + x(S.name) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('') + '</sheets></workbook>';
+  const wbRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    sheets.map((S, i) => '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>').join('') +
+    '<Relationship Id="rId' + (sheets.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  const ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' + sheets.map((S, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('') +
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>';
+  const rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  return new Blob([zipStore([['[Content_Types].xml', ct], ['_rels/.rels', rels], ['xl/workbook.xml', wb], ['xl/_rels/workbook.xml.rels', wbRels], ['xl/styles.xml', styles]].concat(files))], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+// zip من غير ضغط (STORE)
+function zipStore(entries) {
+  const enc = new TextEncoder(), T = zipStore.t || (zipStore.t = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })());
+  const crc = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = T[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  const d = new Date(), dt = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate(), tm = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const parts = [], central = []; let off = 0;
+  entries.forEach(([name, text]) => {
+    const nb = enc.encode(name), data = typeof text === 'string' ? enc.encode(text) : text, c = crc(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true); h.setUint16(10, tm, true); h.setUint16(12, dt, true);
+    h.setUint32(14, c, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, nb.length, true); h.setUint16(28, 0, true);
+    parts.push(new Uint8Array(h.buffer), nb, data);
+    const cd = new DataView(new ArrayBuffer(46));
+    cd.setUint32(0, 0x02014b50, true); cd.setUint16(4, 20, true); cd.setUint16(6, 20, true); cd.setUint16(8, 0x0800, true); cd.setUint16(10, 0, true); cd.setUint16(12, tm, true); cd.setUint16(14, dt, true);
+    cd.setUint32(16, c, true); cd.setUint32(20, data.length, true); cd.setUint32(24, data.length, true); cd.setUint16(28, nb.length, true); cd.setUint32(42, off, true);
+    central.push(new Uint8Array(cd.buffer), nb);
+    off += 30 + nb.length + data.length;
+  });
+  const cdLen = central.reduce((a, b) => a + b.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, entries.length, true); e.setUint16(10, entries.length, true); e.setUint32(12, cdLen, true); e.setUint32(16, off, true);
+  const all = parts.concat(central, [new Uint8Array(e.buffer)]), out = new Uint8Array(all.reduce((a, b) => a + b.length, 0)); let p = 0;
+  all.forEach(b => { out.set(b, p); p += b.length; });
+  return out;
 }
