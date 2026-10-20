@@ -830,3 +830,8 @@ button.cchip{cursor:pointer}button.cchip:hover{border-color:var(--brand-line,#BF
 .np-name{font-size:20px;font-weight:800;color:var(--brand2);margin:4px 0}
 .np-meta{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}.np-meta span{background:var(--line2);border-radius:999px;padding:3px 10px;font-size:12.5px}
 .np-act{display:flex;gap:8px;justify-content:center;margin-top:16px}.np-act .btn{min-width:120px}
+/* كارت دورك دلوقتي / اتضافت تساعد */
+.tc-hand{margin-top:12px;text-align:start;background:var(--line2);border-radius:12px;padding:10px 12px;font-size:13px;max-height:180px;overflow:auto;word-break:break-word}
+.tc-list{display:grid;gap:8px;margin-top:12px;text-align:start;max-height:50vh;overflow:auto}
+.tc-row{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.tc-k{font-size:11.5px;font-weight:700;color:var(--brand2);white-space:nowrap}
