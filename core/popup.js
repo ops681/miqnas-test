@@ -55,7 +55,7 @@ function ppAll(){ S.pp=[]; ppRender(); loadNotifs(); openBell(); }
 /* ----- استلمت مشروع جديد: كارت في نص الشاشة (واحد ورا التاني لو أكتر من مشروع) ----- */
 function npIs(n){ return n && n.type==='project' && /^(You were added to |You are the Account Manager of )/.test(String(n.title||'')); }
 function npShow(){
-  if($('npCard')||!(S.npQ||[]).length || VA_TAB) return;
+  if($('npCard')||$('tcCard')||!(S.npQ||[]).length || VA_TAB) return;   // كارت واحد في نص الشاشة في المرة
   const n=S.npQ[0], am=/^You are the Account Manager of /.test(n.title), name=String(n.title).replace(/^(You were added to |You are the Account Manager of )/,'');
   const parts=String(n.detail||'').split(' · ');
   const c=document.createElement('div'); c.id='npCard'; c.className='np-wrap';
@@ -70,8 +70,8 @@ function npShow(){
 function npNext(read){ const n=(S.npQ||[]).shift(); const c=$('npCard'); if(c) c.remove();
   if(n && read) call('notifRead',{ids:[n.id]}).then(r=>{ S.unread=r.unread; renderBell(); }).catch(()=>{});
   return n; }
-function npOpen(){ const n=npNext(true); S.npQ=[]; if(n&&n.go) goTo(n.go); }
-function npLater(){ npNext(false); setTimeout(npShow,250); }
+function npOpen(){ const n=npNext(true); S.npQ=[]; if(n&&n.go) goTo(n.go); setTimeout(tcShow,600); }
+function npLater(){ npNext(false); setTimeout(()=>{ npShow(); tcShow(); },250); }
 
 /* ----- دورك دلوقتي (تاسك كان مستني تاسك تانية وخلصت) + اتضافت تساعد في تاسك: كارت في نص الشاشة ----- */
 // "بعدين" بيأجّله 30 دقيقة. لو التاسك بدأت خلاص الكارت مابيظهرش. مش وقت البريك. أكتر من واحد = كارت واحد فيه لستة.
@@ -98,7 +98,8 @@ function tcShow(){
   if(S.status && S.status.onBreak) return;
   if($('modalRoot') && $('modalRoot').innerHTML.trim()) return;   // فيه فورم مفتوحة: نستنى
   const L=S.tcQ, c=document.createElement('div'); c.id='tcCard'; c.className='np-wrap';
-  const kind=n=>n.type==='helper'?'🤝 اتضافت تساعد':'🚀 دورك';
+  const kind=n=>n.type==='helper'?'اتضافت تساعد':'دورك';
+  const emo=n=>n.type==='helper'?'🤝':'🚀';
   if(L.length===1){
     const n=L[0], g=n.go, help=n.type==='helper';
     c.innerHTML=`<div class="np-card tc-card" role="alertdialog" aria-label="${help?'Added as helper':'Your turn'}"><div class="np-top">${help?'🤝':'🚀'}</div>
@@ -109,9 +110,10 @@ function tcShow(){
       ${help?'':tcHand(g.h)}
       <div class="np-act"><button class="btn ghost" onclick="tcLater()">بعدين</button><button class="btn primary" onclick="tcOpen('${esc(n.id)}')">افتح التاسك ←</button></div></div>`;
   } else {
-    c.innerHTML=`<div class="np-card tc-card" style="width:min(500px,100%)" role="alertdialog" aria-label="Your tasks"><div class="np-top">🚀</div>
+    const allH=L.every(n=>n.type==='helper'), anyH=L.some(n=>n.type==='helper');
+    c.innerHTML=`<div class="np-card tc-card" style="width:min(500px,100%)" role="alertdialog" aria-label="Your tasks"><div class="np-top">${allH?'🤝':anyH?'🚀🤝':'🚀'}</div>
       <h2 dir="rtl">${L.length} تاسكات مستنياك</h2>
-      <div class="tc-list">${L.slice(0,6).map(n=>`<div class="tc-row"><div style="flex:1;min-width:0"><span class="tc-k">${kind(n)}</span> <b dir="auto">${esc(n.go.tt||'')}</b> <span class="muted" ${bdd(n.go.pj||'')}>· ${esc(n.go.pj||'')}</span>
+      <div class="tc-list">${L.slice(0,6).map(n=>`<div class="tc-row"><span class="tc-emo" aria-hidden="true">${emo(n)}</span><div style="flex:1;min-width:0"><span class="tc-k">${kind(n)}</span> <b dir="auto">${esc(n.go.tt||'')}</b> <span class="muted" ${bdd(n.go.pj||'')}>· ${esc(n.go.pj||'')}</span>
         <div class="muted" style="font-size:12.5px" dir="rtl">${esc(n.go.by||'')} ${n.type==='helper'?'ضافك':'خلّص '+esc(n.go.from||'')} ${tcAgo(n.at)}</div></div><button class="btn small primary" onclick="tcOpen('${esc(n.id)}')">افتح</button></div>`).join('')}</div>
       ${L.length>6?`<div class="muted" style="font-size:12.5px;margin-top:6px">+${L.length-6} more</div>`:''}
       <div class="np-act"><button class="btn ghost" onclick="tcLater()">بعدين</button><button class="btn primary" onclick="tcAll()">My Tasks ←</button></div></div>`;
@@ -123,6 +125,6 @@ function tcDone(ids){
   const c=$('tcCard'); if(c) c.remove();
   call('notifRead',{ids}).then(r=>{ S.unread=r.unread; renderBell(); }).catch(()=>{});
 }
-function tcOpen(id){ const n=(S.tcQ||[]).find(q=>q.id===id); tcDone([id]); if(n&&n.go) goTo({view:n.go.view,id:n.go.id}); setTimeout(tcShow,600); }
-function tcAll(){ tcDone((S.tcQ||[]).map(q=>q.id)); go('mytasks'); }
-function tcLater(){ tcSnzSet((S.tcQ||[]).map(q=>q.id),Date.now()+30*6e4); S.tcQ=[]; const c=$('tcCard'); if(c) c.remove(); }
+function tcOpen(id){ const n=(S.tcQ||[]).find(q=>q.id===id); tcDone([id]); if(n&&n.go) goTo({view:n.go.view,id:n.go.id}); setTimeout(()=>{ tcShow(); npShow(); },600); }
+function tcAll(){ tcDone((S.tcQ||[]).map(q=>q.id)); go('mytasks'); setTimeout(npShow,600); }
+function tcLater(){ tcSnzSet((S.tcQ||[]).map(q=>q.id),Date.now()+30*6e4); S.tcQ=[]; const c=$('tcCard'); if(c) c.remove(); setTimeout(npShow,250); }
