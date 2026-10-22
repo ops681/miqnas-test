@@ -3,7 +3,7 @@
    تاسكات المشاريع لسه في My Tasks / Projects. */
 const PRIO_COL={Low:'#98A2B3',Medium:'var(--blue)',High:'var(--accent)',Urgent:'#D92D20'};
 const GT_PILL={'To Do':'p-absent','In Progress':'p-in','In Review':'p-yel','Done':'p-in','Cancelled':''};
-S.gtTab='mine';
+S.gtTab='mine'; S.gtProj='';
 function viewTasks(opts){
   setTop('Tasks','Tasks from meetings, requests and day-to-day work',`<button class="btn primary" onclick="gtEdit()">+ New task</button>`);
   swr('gt','gtList',{},(L)=>{ renderTasks(L); if(opts&&opts.id){ const id=opts.id; opts.id=null; gtOpen(id); } });
@@ -13,7 +13,7 @@ function gtRow(t){
   const meta=[];
   if(S.gtTab!=='mine') meta.push(esc(t.ownerName));
   if(t.due) meta.push(`<span style="color:${t.late?'var(--bad)':t.dueToday?'var(--warn)':'inherit'}">${t.late?'Late · ':t.dueToday?'Due today · ':'Due '}${fmtD(t.due)}</span>`);
-  if(t.source&&t.source.label) meta.push(esc(t.source.label));
+  if(t.source&&t.source.label) meta.push(t.source.type==='project'?`<span class="gt-pj">📁 ${bd(t.source.label)}</span>`:esc(t.source.label));
   if(t.blocked) meta.push('<span style="color:var(--yel)">Waiting on '+t.deps.filter(d=>d.status!=='Done'&&d.status!=='Cancelled').map(d=>esc(d.title)).join(', ')+'</span>');
   return `<button class="al" onclick="gtOpen('${esc(t.id)}')"><span title="${t.priority}" style="flex:none;width:10px;height:10px;border-radius:3px;margin-top:6px;background:${PRIO_COL[t.priority]}"></span>
     <span class="tx"><b style="${t.status==='Done'||t.status==='Cancelled'?'text-decoration:line-through;color:var(--muted)':''}">${bd(t.title)}</b><span>${meta.join(' · ')||'&nbsp;'}</span></span>
@@ -22,9 +22,14 @@ function gtRow(t){
 function renderTasks(L){
   const tabs=[['mine','My tasks',L.mine],['review','To review',L.review],['assigned','Assigned by me',L.assigned]].concat(L.team?[['team','My team',L.team]]:[]);
   if(!tabs.some(x=>x[0]===S.gtTab)) S.gtTab='mine';
-  const list=(L[S.gtTab]||[]).slice().sort((a,b)=>{ const o=s=>['In Review','In Progress','To Do','Done','Cancelled'].indexOf(s); return o(a.status)-o(b.status) || (b.late-a.late) || ((a.due||'9')<(b.due||'9')?-1:1); });
+  const all=L[S.gtTab]||[];
+  // فلتر بالمشروع: المشاريع اللي ليها تاسكات في التاب ده بس
+  const pj={}; all.forEach(t=>{ if(t.source&&t.source.type==='project'&&t.source.id) pj[t.source.id]=t.source.label; });
+  if(S.gtProj && !pj[S.gtProj]) S.gtProj='';
+  const pf=Object.keys(pj).length?`<select class="gt-pf" aria-label="Filter by project" onchange="S.gtProj=this.value;renderTasks(S.cache.gt)"><option value="">📁 All projects</option>${Object.keys(pj).sort((a,b)=>String(pj[a]).localeCompare(pj[b])).map(id=>`<option value="${esc(id)}"${S.gtProj===id?' selected':''}>${esc(pj[id])}</option>`).join('')}</select>`:'';
+  const list=all.filter(t=>!S.gtProj||(t.source&&t.source.type==='project'&&t.source.id===S.gtProj)).slice().sort((a,b)=>{ const o=s=>['In Review','In Progress','To Do','Done','Cancelled'].indexOf(s); return o(a.status)-o(b.status) || (b.late-a.late) || ((a.due||'9')<(b.due||'9')?-1:1); });
   const open=list.filter(t=>t.status!=='Done'&&t.status!=='Cancelled'), closed=list.filter(t=>t.status==='Done'||t.status==='Cancelled');
-  $('main').innerHTML=`<div class="flt">${tabs.map(x=>`<button class="${S.gtTab===x[0]?'on':''}" onclick="S.gtTab='${x[0]}';renderTasks(S.cache.gt)">${x[1]} <span>${x[2].filter(t=>t.status!=='Done'&&t.status!=='Cancelled').length}</span></button>`).join('')}</div>
+  $('main').innerHTML=`<div class="gt-bar"><div class="flt">${tabs.map(x=>`<button class="${S.gtTab===x[0]?'on':''}" onclick="S.gtTab='${x[0]}';renderTasks(S.cache.gt)">${x[1]} <span>${x[2].filter(t=>t.status!=='Done'&&t.status!=='Cancelled').length}</span></button>`).join('')}</div>${pf}</div>
     <div class="card flush">${open.length?open.map(gtRow).join(''):`<div class="empty"><b>Nothing open</b>${S.gtTab==='review'?'No tasks are waiting for your review.':'No open tasks here.'}</div>`}</div>
     ${closed.length?`<h3 style="margin:22px 0 10px" class="muted">Finished in the last 2 weeks</h3><div class="card flush" style="opacity:.85">${closed.map(gtRow).join('')}</div>`:''}`;
 }
@@ -49,7 +54,8 @@ function gtShow(t){
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:16px 0">
       ${kv('Owner',esc(t.ownerName))}${kv('Priority',`<span style="color:${PRIO_COL[t.priority]}">● </span>`+esc(t.priority))}${kv('Deadline',t.due?`<span style="color:${t.late?'var(--bad)':'inherit'}">${fmtD(t.due)}${t.late?' · late':''}</span>`:'—')}
       ${kv('Reviewer',t.reviewerName?esc(t.reviewerName):'—')}${kv('Helping',t.contributors.length?t.contributors.map(x=>esc(x.name)).join('، '):'—')}${kv('Created by',esc(t.createdByName))}
-      ${t.source&&t.source.label?kv('From',esc(t.source.type)+' · '+(t.source.type==='meeting'?`<a href="#" onclick="closeModal();go('meetings',{id:'${esc(t.source.id)}'});return false">${esc(t.source.label)}</a>`:esc(t.source.label))):''}
+      ${t.source&&t.source.type==='project'&&t.source.label?kv('Project',t.source.open?`<a href="#" onclick="closeModal();goTo({view:'project',id:'${esc(t.source.id)}'});return false">📁 ${bd(t.source.label)} ↗</a>`:'📁 '+bd(t.source.label))
+        :t.source&&t.source.label?kv('From',esc(t.source.type)+' · '+(t.source.type==='meeting'?`<a href="#" onclick="closeModal();go('meetings',{id:'${esc(t.source.id)}'});return false">${esc(t.source.label)}</a>`:esc(t.source.label))):''}
     </div>
     ${t.desc?`<div style="white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:14px">${bd(t.desc)}</div>`:''}
     ${t.deps.length?`<div style="margin-bottom:14px"><div class="muted" style="font-size:12px;margin-bottom:4px">Has to wait for</div>${t.deps.map(d=>`<div style="display:flex;gap:8px;margin:4px 0"><span class="pill ${GT_PILL[d.status]||''}">${esc(d.status)}</span><span>${bd(d.title)} <span class="muted">· ${esc(d.owner)}</span></span></div>`).join('')}</div>`:''}
@@ -71,7 +77,7 @@ async function gtDo(act,withNote,needNote){
 }
 
 /* ----- إنشاء / تعديل ----- */
-async function gtEdit(id){
+async function gtEdit(id,pre){
   let L=S.cache.gt; if(!L){ try{ L=await gtReload(); }catch(e){ alert(e.message); return; } }
   const t=id? gtFind(id) : {title:'',desc:'',owner:S.user.username,contributors:[],reviewer:'',priority:'Medium',due:'',deps:[]};
   const P=L.people, me=S.user.username;
@@ -80,10 +86,16 @@ async function gtEdit(id){
   const cont=(t.contributors||[]).map(x=>x.u||x);
   const deps=(t.deps||[]).map(d=>d.id||d);
   const depList=L.depsPick.filter(d=>d.id!==t.id);
+  // المشروع (اختياري): في التاسكات الإيدوي بس (مش اللي جاية من اجتماع أو طلب)
+  const src=t.source||{}, canPj=!id||!src.type||src.type==='manual'||src.type==='project';
+  const curPj=(pre&&pre.project)||(src.type==='project'?src.id:'');
+  const PJ=(L.projects||[]).slice(); if(curPj && !PJ.some(x=>x.id===curPj)) PJ.unshift({id:curPj,client:src.label||curPj});
+  const pjSel=canPj&&PJ.length?`<label for="gtPj">Project <span class="muted" style="font-weight:400">(optional)</span></label><select id="gtPj"><option value="">— No project —</option>${PJ.map(x=>`<option value="${esc(x.id)}"${x.id===curPj?' selected':''}>${esc(x.client)} · ${esc(x.id)}${x.status&&x.status!=='Active'?' ('+esc(x.status)+')':''}</option>`).join('')}</select><div class="muted" style="font-size:12.5px;margin-top:4px" dir="rtl">اللي عليه التاسك هيقدر يفتح المشروع والبريف للقراءة لحد ما التاسك تخلص</div>`:'';
   $('modalRoot').innerHTML=`<div class="modal"><div class="card" style="max-width:640px">
     <h2>${id?'Edit task':'New task'}</h2>
     <label for="gtT">Title</label><input id="gtT" maxlength="200" value="${esc(t.title)}" placeholder="What needs to be done">
     <label for="gtD">Details</label><textarea id="gtD" rows="3" maxlength="3000" placeholder="Optional">${esc(t.desc)}</textarea>
+    ${pjSel}
     <div class="row"><div><label for="gtO">Owner</label><select id="gtO">${opt(owners,t.owner)}</select></div>
       <div><label for="gtR">Reviewer</label><select id="gtR">${opt(P.filter(p=>p.u!==t.owner),t.reviewer,'No review')}</select></div></div>
     <div class="row"><div><label for="gtP">Priority</label><select id="gtP">${['Low','Medium','High','Urgent'].map(p=>`<option${p===t.priority?' selected':''}>${p}</option>`).join('')}</select></div>
@@ -100,7 +112,9 @@ async function gtEdit(id){
 async function gtSave(id){
   const task={id:id||undefined,title:$('gtT').value,desc:$('gtD').value,owner:$('gtO').value,reviewer:$('gtR').value,priority:$('gtP').value,due:$('gtDue').value,
     contributors:[...document.querySelectorAll('[data-gc]:checked')].map(x=>x.dataset.gc),deps:[...document.querySelectorAll('[data-gd]:checked')].map(x=>x.dataset.gd)};
+  if($('gtPj')) task.project=$('gtPj').value;
   const b=$('gtSaveB'); b.disabled=true; b.textContent='Saving...';
-  try{ const t=await call('gtSave',{task}); closeModal(); toast('اتحفظت التاسك ✓'); if(task.owner!==S.user.username) S.gtTab='assigned'; await gtReload(); S.cache.desk=null; gtShow(t); }
+  try{ const t=await call('gtSave',{task}); closeModal(); toast('اتحفظت التاسك ✓'); if(task.owner!==S.user.username) S.gtTab='assigned'; await gtReload(); S.cache.desk=null;
+    if(S.view==='tasks') gtShow(t); else if(S.proj&&S.proj.id&&task.project===S.proj.id&&typeof viewProject==='function') viewProject(S.proj.id,true); }
   catch(e){ $('gtErr').textContent=e.message; b.disabled=false; b.textContent=id?'Save':'Create task'; }
 }

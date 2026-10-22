@@ -78,7 +78,18 @@ function npLater(){ npNext(false); setTimeout(()=>{ npShow(); tcShow(); },250); 
 
 /* ----- دورك دلوقتي (تاسك كان مستني تاسك تانية وخلصت) + اتضافت تساعد في تاسك: كارت في نص الشاشة ----- */
 // "بعدين" بيأجّله 30 دقيقة. لو التاسك بدأت خلاص الكارت مابيظهرش. مش وقت البريك. أكتر من واحد = كارت واحد فيه لستة.
-function tcIs(n){ return n && n.go && n.go.tk && ((n.type==='ready' && S.cfg.rdCard!==false) || (n.type==='helper' && S.cfg.hpCard!==false)); }
+function tcIs(n){ return n && n.go && ((n.go.tk && ((n.type==='ready' && S.cfg.rdCard!==false) || (n.type==='helper' && S.cfg.hpCard!==false)))
+  || (n.go.gt && TC_GT[n.go.gt] && S.cfg.gtCard!==false)); }
+// كروت التاسكات الجانبية: كل نوع بإيموجي وعنوان
+const TC_GT={assign:['📌','اتعملك Assign في تاسك جانبي','Assign'],help:['🤝','اتضفت تساعد في تاسك جانبي','بتساعد'],ready:['🔓','التاسك اتفتحتلك، تقدر تبدأ','اتفتحت'],review:['🔍','تاسك جانبي مستني مراجعتك','مراجعة'],returned:['↩️','التاسك رجعتلك بملاحظة','رجعت']};
+function tcInfo(n){
+  const g=n.go||{}, by=`<b>${esc(g.by||'')}</b>`;
+  if(g.gt && TC_GT[g.gt]){ const k=TC_GT[g.gt];
+    const line={assign:by+' اداهالك',help:by+' ضافك',ready:by+' خلّص <b dir="auto">'+esc(g.from||'')+'</b>',review:by+' خلّصها',returned:by+' رجّعها'}[g.gt];
+    return {emo:k[0],h:k[1],kind:k[2],line,note:g.gt==='review'||g.gt==='returned'?g.note:'',bad:g.gt==='returned'}; }
+  return n.type==='helper'?{emo:'🤝',h:'اتضافت تساعد في تاسك',kind:'اتضافت تساعد',line:by+' ضافك',hand:false}:{emo:'🚀',h:'دورك دلوقتي',kind:'دورك',line:by+' خلّص <b dir="auto">'+esc(g.from||'')+'</b>',hand:true};
+}
+function tcNote(t,bad){ return t?`<div class="tc-hand"${bad?' style="border-color:var(--bad)"':''}><div class="muted" style="font-size:12px;margin-bottom:4px">${bad?'الملاحظة':'ملاحظة'}</div><div ${bdd(t)} style="white-space:pre-line">${esc(t)}</div></div>`:''; }
 function tcSnz(){ try{ return JSON.parse(load('erp_tc_snz_'+(S.user?S.user.username:''))||'{}')||{}; }catch(e){ return {}; } }
 function tcSnzSet(ids,until){ const s=tcSnz(), now=Date.now(); Object.keys(s).forEach(k=>{ if(s[k]<now) delete s[k]; }); ids.forEach(id=>{ s[id]=until; }); store('erp_tc_snz_'+(S.user?S.user.username:''),JSON.stringify(s)); }
 function tcTake(list){
@@ -101,35 +112,35 @@ function tcShow(){
   if(S.status && S.status.onBreak) return;
   if($('modalRoot') && $('modalRoot').innerHTML.trim()) return;   // فيه فورم مفتوحة: نستنى
   const L=S.tcQ, c=document.createElement('div'); c.id='tcCard'; c.className='np-wrap';
-  const kind=n=>n.type==='helper'?'اتضافت تساعد':'دورك';
-  const emo=n=>n.type==='helper'?'🤝':'🚀';
   if(L.length===1){
-    const n=L[0], g=n.go, help=n.type==='helper';
-    c.innerHTML=`<div class="np-card tc-card" role="alertdialog" aria-label="${help?'Added as helper':'Your turn'}"><div class="np-top">${help?'🤝':'🚀'}</div>
-      <h2 dir="rtl">${help?'اتضافت تساعد في تاسك':'دورك دلوقتي'}</h2>
+    const n=L[0], g=n.go, f=tcInfo(n);
+    const meta=[g.pj?`<span ${bdd(g.pj)}>📁 ${esc(g.pj)}</span>`:'', g.gt?'':(g.id?`<span dir="ltr">${esc(g.id)}</span>`:''), g.gt&&g.due?`<span dir="rtl">الديدلاين ${esc(typeof fmtD==="function"?fmtD(g.due):g.due)}</span>`:''].filter(Boolean).join('');
+    c.innerHTML=`<div class="np-card tc-card" role="alertdialog" aria-label="${esc(f.h)}"><div class="np-top">${f.emo}</div>
+      <h2 dir="rtl">${f.h}</h2>
       <div class="np-name" dir="auto">${esc(g.tt||'')}</div>
-      <div class="np-meta"><span ${bdd(g.pj||'')}>${esc(g.pj||'')}</span>${g.id?`<span dir="ltr">${esc(g.id)}</span>`:''}</div>
-      <div style="margin-top:12px;font-size:13.5px" dir="rtl"><b>${esc(g.by||'')}</b> ${help?'ضافك':'خلّص <b dir="auto">'+esc(g.from||'')+'</b>'} ${tcAgo(n.at)}</div>
-      ${help?'':tcHand(g.h)}
-      <div class="np-act"><button class="btn ghost" onclick="tcLater()">بعدين</button><button class="btn primary" onclick="tcOpen('${esc(n.id)}')">افتح التاسك ←</button></div></div>`;
+      ${meta?`<div class="np-meta">${meta}</div>`:''}
+      <div style="margin-top:12px;font-size:13.5px" dir="rtl">${f.line} ${tcAgo(n.at)}</div>
+      ${f.hand?tcHand(g.h):''}${tcNote(f.note,f.bad)}
+      <div class="np-act"><button class="btn ghost" onclick="tcLater()">بعدين</button>${g.gt&&g.pid?`<button class="btn ghost" onclick="tcProj('${esc(n.id)}')">📁 افتح المشروع</button>`:''}<button class="btn primary" onclick="tcOpen('${esc(n.id)}')">افتح التاسك ←</button></div></div>`;
   } else {
-    const allH=L.every(n=>n.type==='helper'), anyH=L.some(n=>n.type==='helper');
-    c.innerHTML=`<div class="np-card tc-card" style="width:min(500px,100%)" role="alertdialog" aria-label="Your tasks"><div class="np-top">${allH?'🤝':anyH?'🚀🤝':'🚀'}</div>
+    const emos=[...new Set(L.map(n=>tcInfo(n).emo))].slice(0,3).join('');
+    c.innerHTML=`<div class="np-card tc-card" style="width:min(500px,100%)" role="alertdialog" aria-label="Your tasks"><div class="np-top">${emos}</div>
       <h2 dir="rtl">${L.length} تاسكات مستنياك</h2>
-      <div class="tc-list">${L.slice(0,6).map(n=>`<div class="tc-row"><span class="tc-emo" aria-hidden="true">${emo(n)}</span><div style="flex:1;min-width:0"><span class="tc-k">${kind(n)}</span> <b dir="auto">${esc(n.go.tt||'')}</b> <span class="muted" ${bdd(n.go.pj||'')}>· ${esc(n.go.pj||'')}</span>
-        <div class="muted" style="font-size:12.5px" dir="rtl">${esc(n.go.by||'')} ${n.type==='helper'?'ضافك':'خلّص '+esc(n.go.from||'')} ${tcAgo(n.at)}</div></div><button class="btn small primary" onclick="tcOpen('${esc(n.id)}')">افتح</button></div>`).join('')}</div>
+      <div class="tc-list">${L.slice(0,6).map(n=>{ const f=tcInfo(n); return `<div class="tc-row"><span class="tc-emo" aria-hidden="true">${f.emo}</span><div style="flex:1;min-width:0"><span class="tc-k">${esc(f.kind)}</span> <b dir="auto">${esc(n.go.tt||'')}</b>${n.go.pj?` <span class="muted" ${bdd(n.go.pj)}>· ${esc(n.go.pj)}</span>`:''}
+        <div class="muted" style="font-size:12.5px" dir="rtl">${f.line} ${tcAgo(n.at)}</div></div><button class="btn small primary" onclick="tcOpen('${esc(n.id)}')">افتح</button></div>`; }).join('')}</div>
       ${L.length>6?`<div class="muted" style="font-size:12.5px;margin-top:6px">+${L.length-6} more</div>`:''}
-      <div class="np-act"><button class="btn ghost" onclick="tcLater()">بعدين</button><button class="btn primary" onclick="tcAll()">My Tasks ←</button></div></div>`;
+      <div class="np-act"><button class="btn ghost" onclick="tcLater()">بعدين</button><button class="btn primary" onclick="tcAll()">${L.every(n=>n.go.gt)?'Tasks ←':'My Tasks ←'}</button></div></div>`;
   }
   document.body.appendChild(c);
 }
+function tcProj(id){ const n=(S.tcQ||[]).find(q=>q.id===id); tcDone([id]); if(n&&n.go&&n.go.pid) goTo({view:'project',id:n.go.pid}); setTimeout(()=>{ tcShow(); npShow(); },600); }
 function tcDone(ids){
   ppMark(ids); S.tcQ=(S.tcQ||[]).filter(q=>ids.indexOf(q.id)<0);
   const c=$('tcCard'); if(c) c.remove();
   call('notifRead',{ids}).then(r=>{ S.unread=r.unread; renderBell(); }).catch(()=>{});
 }
 function tcOpen(id){ const n=(S.tcQ||[]).find(q=>q.id===id); tcDone([id]); if(n&&n.go) goTo({view:n.go.view,id:n.go.id}); setTimeout(()=>{ tcShow(); npShow(); },600); }
-function tcAll(){ tcDone((S.tcQ||[]).map(q=>q.id)); go('mytasks'); setTimeout(npShow,600); }
+function tcAll(){ const gt=(S.tcQ||[]).every(q=>q.go&&q.go.gt); tcDone((S.tcQ||[]).map(q=>q.id)); go(gt?'tasks':'mytasks'); setTimeout(npShow,600); }
 function tcLater(){ tcSnzSet((S.tcQ||[]).map(q=>q.id),Date.now()+30*6e4); S.tcQ=[]; const c=$('tcCard'); if(c) c.remove(); setTimeout(()=>{ npShow(); lcShow(); },250); }
 
 /* ----- المتجر اتعمله Launch: كارت شكر للي اشتغلوا عليه (الرسالة والتوقيع من Settings) ----- */

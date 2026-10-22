@@ -74,12 +74,13 @@ function renderProject(r,keep){
   setTop(r.client, r.id+' · '+r.type);
   S.proj=r;
   {
-    const backTo = S.view==='mytasks' ? ['viewMyTasks()','My Tasks'] : ['viewProjects()','All Projects'];
+    const backTo = r.guest ? ["go('tasks')",'Tasks'] : S.view==='mytasks' ? ['viewMyTasks()','My Tasks'] : ['viewProjects()','All Projects'];
     const groups=ROLE_ORDER.map(role=>({role, tasks:r.tasks.filter(t=>t.role===role)})).filter(g=>g.tasks.length && (r.type!==CP_TYPE || g.tasks.some(t=>!t.na)));
     const links=r.tasks.filter(t=>t.link);
     const D=r.data;
-    $('main').innerHTML=`<div class="en">
+    $('main').innerHTML=`<div class="en${r.guest?' pguest':''}">
     <button class="btn ghost small" onclick="${backTo[0]}">← ${backTo[1]}</button>
+    ${r.guest?`<div class="notice" style="margin:10px 0" dir="rtl">👀 انت فاتح المشروع ده للقراءة بس، عشان عليك تاسك جانبي فيه. أول ما التاسك تخلص المشروع هيتقفل عندك.</div>`:''}
     ${r.contract&&r.contract.status!=='signed'&&r.status==='Active'?`<div class="notice" style="margin:10px 0">${r.contract.status==='none'?'No contract on this project yet.':'The contract is not signed yet ('+esc(r.contract.status)+').'}${typeof canFinance==='function'&&can('finance.manage')||S.user.founder?` <button class="btn ghost small" onclick="${r.contract.id?`go('finance',{id:'${esc(r.contract.id)}'})`:`go('finance')`}">Open in Finance →</button>`:''}</div>`:''}
     <div class="card phead">
       <div class="row" style="align-items:center;gap:10px">${r.canEdit?`<button type="button" class="pi-btn" title="Change icon" aria-label="Change project icon" onclick="piEdit('${esc(r.id)}','${esc(r.client).replace(/'/g,'')}')">${piTag(r.id,r.client,'pi-lg')}</button>`:piTag(r.id,r.client,'pi-lg')}<h2 style="margin:0">${esc(r.client)}</h2><span class="pill p-out">${esc(r.id)}</span><span class="pill ${PSTAT[r.status]||'p-out'}">${esc(r.status)}</span>${r.blockers&&r.blockers.length?blBadge({open:r.blockers.filter(b=>b.status!=='Resolved').length,total:r.blockers.length,days:r.blockers.reduce((s,b)=>s+b.days,0)}):''}<div class="spacer"></div>
@@ -108,14 +109,15 @@ function renderProject(r,keep){
     <div id="pntBox">${projNotesHTML(r)}</div>
     ${projAccessHTML(r)}
     ${projBlockersHTML(r)}
-    ${D.partner||r.canEdit||(r.clientPortal&&r.clientPortal.on)?`<div id="pnBox">${pnHTML(r,S.pn&&S.pn[r.id])}</div>`:''}
+    ${sideTasksHTML(r)}
+    ${!r.guest&&(D.partner||r.canEdit||(r.clientPortal&&r.clientPortal.on))?`<div id="pnBox">${pnHTML(r,S.pn&&S.pn[r.id])}</div>`:''}
     ${links.length?`<div class="card" style="margin-top:14px"><h3>Deliverables</h3><div class="links">${links.map(t=>oneUrl(t.link)?`<a href="${esc(t.link)}" target="_blank" rel="noopener" class="lnk"><b>${esc(t.linkLabel||t.title)}</b><span>${bd(t.assigneeName)}</span></a>`:`<div class="lnk lnk-t"><b>${esc(t.linkLabel||t.title)}</b><span>${bd(t.assigneeName)}</span><p dir="auto">${txtLinks(t.link)}</p></div>`).join('')}</div></div>`:''}
     ${groups.map(g=>{ const a=g.tasks.find(t=>t.assigneeName); const live=g.tasks.filter(t=>!t.na); const dn=live.filter(t=>t.status==='Done').length;
       return `<div class="card tgroup"><div class="tghead"><h3 style="margin:0">${ROLE_T[g.role]}</h3><span class="muted">${esc(a?a.assigneeName:'Unassigned')}</span><div class="spacer"></div><span class="muted" style="font-size:13px">${live.length?dn+'/'+live.length:'Not in scope'}</span></div>
       ${g.tasks.map(t=>taskRowHTML(t,r.id,r.me,r.isAdmin,r.canEdit)).join('')}</div>`; }).join('')}</div>`;
     if(keep) window.scrollTo(0,y);
     startTicks();
-    if(D.partner||r.canEdit) pnLoad(r);
+    if(!r.guest&&(D.partner||r.canEdit)) pnLoad(r);
   }
 }
 
@@ -179,6 +181,20 @@ function taskRowHTML(t,pid,me,isAdmin,canEdit){
   return `<div class="trow${withOther?' other':''}${t.locked?' locked':''}${t.running||(meH&&meH.since)?' running':''}${t.status==='Done'?' done':''}">
     <div class="tmain"><div class="tt">${esc(t.title)}${howTo}</div>${who}${helpersLine}${wait}${refs}${link}${notes}${tnotes}</div>
     <div class="tside">${lock}${dl}${status}<span class="tsep"></span>${time}${timer}</div></div>`;
+}
+
+/* ----- التاسكات الجانبية المربوطة بالمشروع (من صفحة Tasks) ----- */
+function sideTasksHTML(r){
+  const L=r.sideTasks||[], can=!r.guest;
+  if(!L.length && !can) return '';
+  const open=L.filter(t=>t.status!=='Done'&&t.status!=='Cancelled'), closed=L.length-open.length;
+  const row=t=>{ const meta=[esc(t.ownerName)]; if(t.due) meta.push(`<span style="color:${t.late?'var(--bad)':'inherit'}">${t.late?'Late · ':'Due '}${fmtDay(t.due)}</span>`);
+    const inner=`<span title="${esc(t.priority)}" style="flex:none;width:10px;height:10px;border-radius:3px;margin-top:6px;background:${(typeof PRIO_COL!=='undefined'&&PRIO_COL[t.priority])||'var(--blue)'}"></span>
+      <span class="tx"><b style="${t.status==='Done'||t.status==='Cancelled'?'text-decoration:line-through;color:var(--muted)':''}">${bd(t.title)}</b><span>${meta.join(' · ')}${t.mine?' · <b style="color:var(--brand2)">عليك</b>':''}</span></span>
+      <span class="pill ${(typeof GT_PILL!=='undefined'&&GT_PILL[t.status])||''}">${esc(t.status)}</span>`;
+    return t.canOpen?`<button class="al" onclick="go('tasks',{id:'${esc(t.id)}'})">${inner}</button>`:`<div class="al">${inner}</div>`; };
+  return `<div class="card flush" style="margin-top:14px"><div class="chead"><h3 style="margin:0">📌 Side tasks <span class="muted" style="font-weight:500;font-size:13px">· ${open.length} open${closed?' · '+closed+' finished':''}</span></h3><div class="spacer"></div>${can?`<button class="btn ghost small" onclick="gtEdit('',{project:'${esc(r.id)}'})">+ Side task</button>`:''}</div>
+    ${L.length?L.map(row).join(''):'<div class="empty" style="padding:14px 18px" dir="rtl">مفيش تاسكات جانبية على المشروع ده. أي شغل زيادة برا تاسكات المشروع، اعمله تاسك جانبي من هنا.</div>'}</div>`;
 }
 
 S.openNotes=new Set();

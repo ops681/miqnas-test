@@ -845,3 +845,9 @@ button.cchip{cursor:pointer}button.cchip:hover{border-color:var(--brand-line,#BF
 /* خانات الكلام الحر: Enter بينزل سطر والخانة بتكبر لوحدها */
 textarea.ml{field-sizing:content;min-height:42px;max-height:260px;resize:vertical;line-height:1.5;overflow:auto;display:block}
 .bapp textarea.ml{min-height:44px}
+/* التاسكات الجانبية: فلتر المشروع + المشروع للقراءة بس */
+.gt-bar{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;justify-content:space-between}
+.gt-bar .flt{flex:1;min-width:0}
+.gt-pf{width:auto;max-width:240px;padding:6px 10px;border-radius:99px;font-size:13.5px}
+.gt-pj{color:var(--brand2)}
+.pguest .tnadd,.pguest .thelp .tnbtn,.pguest .tn-del{display:none!important}
