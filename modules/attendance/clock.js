@@ -119,7 +119,7 @@ function breakForm(){
     <p class="muted" dir="rtl" style="text-align:right">السكرين شوتس هتقف، وأي تايمر شغال على تاسك هيقف لوحده لحد ما ترجع.</p>
     ${free?`<div class="brk-paid" dir="rtl">☕ فاضلك <b>${Math.floor(left/6e4)} دقيقة</b> من ساعة البريك بتاعتك النهارده. مش محتاج تكتب سبب.</div>`
       :`${(S.status||{}).breakAllowMs?'<div class="brk-paid over" dir="rtl">خلصت ساعة البريك بتاعتك النهارده، فلازم تكتب السبب وهيتبعت تنبيه للإدارة.</div>':'<div class="brk-paid over" dir="rtl">اكتب سبب البريك، وهيتبعت تنبيه للإدارة.</div>'}`}
-    <label for="brkR">Reason${free?' (optional)':''}</label><input id="brkR" dir="auto" placeholder="مثال: صلاة، غدا، مشوار سريع" maxlength="200">
+    <label for="brkR">Reason${free?' (optional)':''}</label><textarea id="brkR" dir="auto" placeholder="مثال: صلاة، غدا، مشوار سريع" maxlength="200" rows="1" class="ml"></textarea>
     <div class="err" id="brkE"></div>
     <div class="mfoot"><button class="btn primary" id="brkS">Start Break</button><button class="btn" onclick="closeModal()">Cancel</button></div>
   </div></div>`;

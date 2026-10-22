@@ -45,9 +45,9 @@ function blCard(b){
     </div>
     <div style="margin:12px 0 4px;font-size:14.5px;">${bdl(b.details)}</div>
     ${b.evidence?(/^https?:\/\//i.test(b.evidence)?`<a href="${esc(b.evidence)}" target="_blank" rel="noopener" style="font-size:13px">Evidence ↗</a>`:`<span style="font-size:13px;white-space:pre-wrap">Evidence: ${bd(b.evidence)}</span>`):''}
-    ${b.updates.length?`<div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;display:grid;gap:6px">${b.updates.map(u=>`<div style="font-size:13px"><span class="muted">${new Date(u.at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${bd(u.by)}:</span> <span ${bdd(u.text)}>${esc(u.text)}</span></div>`).join('')}</div>`:''}
+    ${b.updates.length?`<div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;display:grid;gap:6px">${b.updates.map(u=>`<div style="font-size:13px"><span class="muted">${new Date(u.at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${bd(u.by)}:</span> <span ${bdd(u.text)}>${bd(u.text)}</span></div>`).join('')}</div>`:''}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center">
-      <input id="note_${esc(b.id)}" placeholder="Add a follow-up (e.g. sent a reminder to the client)" dir="auto" style="flex:1 1 280px;padding:8px 10px;font-size:13px">
+      <textarea id="note_${esc(b.id)}" placeholder="Add a follow-up (e.g. sent a reminder to the client)" dir="auto" style="flex:1 1 280px;padding:8px 10px;font-size:13px" rows="1" class="ml"></textarea>
       <button class="btn small" onclick="blNote('${esc(b.id)}')">Add</button>
       ${open?`<button class="btn small primary" onclick="blResolve('${esc(b.id)}')">Mark resolved</button>`:`<button class="btn small" onclick="blAct('${esc(b.id)}','reopen')">Reopen</button>`}
       <button class="btn small ghost" onclick="blockForm('${esc(b.id)}')">Edit</button>
@@ -67,7 +67,7 @@ async function blockForm(id, projectId){
     <label>Caused by</label><div class="chips" id="bCa">${['Client','Platform'].map(c=>`<button type="button" class="${b.cause===c?'on':''}" data-v="${c}">${c}</button>`).join('')}</div>
     <label for="bD">Details</label><textarea id="bD" rows="4" dir="auto" placeholder="مثال: طلبنا الأكسيس بتاع سلة يوم 3 أكتوبر ولسه مبعتش">${esc(b.details)}</textarea>
     <label for="bS">Started on</label><input type="date" id="bS" value="${esc(b.start)}">
-    <label for="bE">Evidence (optional)</label><input id="bE" value="${esc(b.evidence)}" placeholder="Link or text">
+    <label for="bE">Evidence (optional)</label><textarea id="bE" placeholder="Link or text" dir="auto" rows="1" class="ml">${esc(b.evidence)}</textarea>
     <div class="err" id="bErr"></div>
     <div class="mfoot"><button class="btn primary" id="bSave">${id?'Save':'Add Blocker'}</button><button class="btn" onclick="closeModal()">Cancel</button></div>
   </div></div>`;
@@ -94,7 +94,7 @@ function blResolve(id){
   $('modalRoot').innerHTML=`<div class="modal"><div class="card">
     <h2>Mark as resolved</h2>
     <label for="rD">Resolved on</label><input type="date" id="rD" value="${new Date().toLocaleDateString('en-CA',{timeZone:'Africa/Cairo'})}">
-    <label for="rT">Note (optional)</label><input id="rT" dir="auto" placeholder="مثال: العميل بعت الأكسيس">
+    <label for="rT">Note (optional)</label><textarea id="rT" dir="auto" placeholder="مثال: العميل بعت الأكسيس" rows="1" class="ml"></textarea>
     <div class="mfoot"><button class="btn primary" id="rS">Resolve</button><button class="btn" onclick="closeModal()">Cancel</button></div>
   </div></div>`;
   $('rS').onclick=()=>{ const d=$('rD').value, t=$('rT').value; closeModal(); blAct(id,'resolve',{date:d,text:t}); };
@@ -130,7 +130,7 @@ async function blockersPDF(pid){
         </div>
         <div style="margin-top:8px;font-size:13.5px;">${bdl(b.details)}</div>
         ${b.evidence?`<div style="margin-top:6px;font-size:12px;color:#107366;word-break:break-all">Evidence: ${esc(b.evidence)}</div>`:''}
-        ${b.updates.length?`<div style="margin-top:8px;border-top:1px dashed #DDE6E3;padding-top:6px">${b.updates.map(u=>`<div style="font-size:12px;margin-top:3px"><span style="color:#5B6E6A">${new Date(u.at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} · ${esc(u.by)}:</span> <span ${bdd(u.text)}>${esc(u.text)}</span></div>`).join('')}</div>`:''}
+        ${b.updates.length?`<div style="margin-top:8px;border-top:1px dashed #DDE6E3;padding-top:6px">${b.updates.map(u=>`<div style="font-size:12px;margin-top:3px"><span style="color:#5B6E6A">${new Date(u.at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} · ${esc(u.by)}:</span> <span ${bdd(u.text)}>${bd(u.text)}</span></div>`).join('')}</div>`:''}
       </div>`).join('') || '<div style="color:#5B6E6A">No blockers recorded.</div>'}`;
     document.body.appendChild(host);
     const hr=host.getBoundingClientRect();

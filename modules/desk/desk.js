@@ -62,13 +62,13 @@ function todoCardHTML(D){
   const L=D.todos||[], P=D.todoProjects||[], open=L.filter(t=>!t.done);
   return `<div class="card flush td-card"><div class="chead"><h2>My to-do</h2>${open.length?`<span class="pill p-out">${open.length}</span>`:''}<span class="spacer"></span><span class="muted" style="font-size:12px">Only you see this</span></div>
     <form class="td-add" onsubmit="todoAdd(event)">
-      <input id="tdT" placeholder="Add something to do…" dir="auto" maxlength="300" aria-label="New to-do">
+      <textarea id="tdT" placeholder="Add something to do…" dir="auto" maxlength="300" aria-label="New to-do" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();this.form.requestSubmit();}" rows="1" class="ml"></textarea>
       <input type="date" id="tdD" aria-label="Due date" title="Due date (optional)">
       ${P.length?`<select id="tdP" aria-label="Project (optional)"><option value="">No project</option>${P.map(p=>`<option value="${esc(p.id)}">${esc(p.client)}</option>`).join('')}</select>`:''}
       <button class="btn primary small" type="submit">Add</button></form>
     ${L.length?`<div class="td-list">${L.map(t=>`<div class="td-row${t.done?' done':''}${t.late?' late':''}">
       <button type="button" class="td-chk" role="checkbox" aria-checked="${t.done}" aria-label="${t.done?'Mark not done':'Mark done'}" onclick="todoToggle('${esc(t.id)}')">${t.done?'✓':''}</button>
-      <div class="td-tx"><span ${bdd(t.text)}>${esc(t.text)}</span>${t.due||t.client?`<small>${t.due?`<b class="${t.late?'late':t.today?'today':''}">${t.late?'Overdue · ':t.today?'Today · ':''}${fmtD(t.due)}</b>`:''}${t.due&&t.client?' · ':''}${t.client?esc(t.client):''}</small>`:''}</div>
+      <div class="td-tx"><span ${bdd(t.text)}>${bd(t.text)}</span>${t.due||t.client?`<small>${t.due?`<b class="${t.late?'late':t.today?'today':''}">${t.late?'Overdue · ':t.today?'Today · ':''}${fmtD(t.due)}</b>`:''}${t.due&&t.client?' · ':''}${t.client?esc(t.client):''}</small>`:''}</div>
       <button type="button" class="td-del" aria-label="Delete" title="Delete" onclick="todoDel('${esc(t.id)}')">×</button></div>`).join('')}</div>`
     :`<div class="empty"><b>Nothing here yet</b>Write the small things you don't want to forget.</div>`}</div>`;
 }

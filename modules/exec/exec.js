@@ -120,7 +120,7 @@ function renderPulse(P){
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 18px">
       ${P.metrics.map(m=>`<div><label for="pv_${m.key}">${esc(m.label)} <span class="muted" style="font-weight:400">(${m.unit})</span></label><input id="pv_${m.key}" type="number" min="0" step="any" value="${m.value==null?'':m.value}" placeholder="—"></div>`).join('')}
     </div>
-    <label for="pvNote" style="margin-top:12px">Note (optional)</label><input id="pvNote" maxlength="300" placeholder="Anything leadership should know about these numbers">
+    <label for="pvNote" style="margin-top:12px">Note (optional)</label><textarea id="pvNote" maxlength="300" placeholder="Anything leadership should know about these numbers" dir="auto" rows="1" class="ml"></textarea>
     <div class="mfoot"><span class="spacer"></span><button class="btn primary" id="pvSave" onclick="savePulse()">Save numbers</button></div><div class="err" id="pvErr"></div></div>`:''}
   ${P.canDefs?pulseDefsHTML(P.defs):''}
   </div>`;

@@ -41,7 +41,7 @@ function mtShow(x){
     ${x.actions.length?x.actions.map(a=>`<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line2)"><span class="pill ${GT_PILL[a.status]||''}">${esc(a.status||'—')}</span><span style="flex:1">${bd(a.text)} <span class="muted">· ${esc(a.ownerName)}${a.due?' · due '+fmtD(a.due):''}</span></span>${a.taskId?`<button class="btn small ghost" onclick="closeModal();go('tasks',{id:'${esc(a.taskId)}'})">Open task</button>`:''}</div>`).join(''):'<div class="muted">No action items yet.</div>'}
     ${x.canEdit?`<div style="margin-top:12px;background:var(--bg);border-radius:10px;padding:12px">
       <div class="muted" style="font-size:12.5px;margin-bottom:6px">New action items · each one becomes a task for its owner and they get notified</div>
-      <div id="mtAI">${[0,1,2].map(i=>`<div class="row" style="margin-bottom:6px"><div style="flex:3"><input data-ai="${i}|text" placeholder="Action item"></div><div><select data-ai="${i}|owner">${ownerOpts(S.user.username)}</select></div><div><input type="date" data-ai="${i}|due"></div></div>`).join('')}</div>
+      <div id="mtAI">${[0,1,2].map(i=>`<div class="row" style="margin-bottom:6px"><div style="flex:3"><textarea data-ai="${i}|text" placeholder="Action item" dir="auto" rows="1" class="ml"></textarea></div><div><select data-ai="${i}|owner">${ownerOpts(S.user.username)}</select></div><div><input type="date" data-ai="${i}|due"></div></div>`).join('')}</div>
       <div class="mfoot"><span class="spacer"></span><button class="btn primary" id="mtAB" onclick="mtAddActions()">Create tasks</button></div><div class="err" id="mtErr"></div></div>`:''}
   </div></div>`;
 }

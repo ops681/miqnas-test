@@ -23,7 +23,7 @@ const gated = () => !VA_TAB && !!(!S.mobile && S.user && S.user.clocks && S.cfg 
 // النص العربي جواه إنجليزي: لو الحروف العربي هي الأغلب في السطر يتعرض كله من اليمين للشمال (مايتشقلبش)
 const arDir = s => { s=String(s==null?'':s); const a=(s.match(/[\u0600-\u06FF]/g)||[]).length; return a>0 && a>=(s.match(/[A-Za-z]/g)||[]).length; };
 // بيعرض الأسامي العربي صح جوه الجمل الإنجليزي، والجمل العربي اللي فيها كلام إنجليزي صح برضه (سطر سطر)
-const bd = s => String(s==null?'':s).split('\n').map(L => arDir(L) ? '<bdi dir="rtl">'+esc(L)+'</bdi>' : esc(L).replace(/[\u0600-\u06FF](?:[\u0600-\u06FF\s\d.,،:()\-\/]*[\u0600-\u06FF])?/g, m=>'<bdi>'+m+'</bdi>')).join('\n');
+const bd = s => String(s==null?'':s).split('\n').map(L => arDir(L) ? '<bdi dir="rtl">'+esc(L)+'</bdi>' : esc(L).replace(/[\u0600-\u06FF](?:[\u0600-\u06FF\s\d.,،:()\-\/]*[\u0600-\u06FF])?/g, m=>'<bdi>'+m+'</bdi>')).join('<br>');   // Enter = سطر جديد في العرض كمان
 // اتجاه الصندوق اللي فيه نص مكتوب: عربي → يمين، غير كده تلقائي
 const bdd = s => arDir(s) ? 'dir="rtl"' : 'dir="auto"';
 // نص طويل متعدد السطور: كل سطر بياخد اتجاهه لوحده
@@ -48,3 +48,10 @@ function deviceLabel(){
   const o=/iPhone|iPad/.test(ua)?'iPhone/iPad':/Android/.test(ua)?'Android':/Mac OS X/.test(ua)?'Mac':/Windows/.test(ua)?'Windows':/Linux/.test(ua)?'Linux':'Unknown';
   return b+' · '+o;
 }
+
+// خانات الكلام الحر (textarea.ml): بتكبر مع الكتابة في المتصفحات اللي مابتدعمش field-sizing
+(function(){ try{ if(window.CSS && CSS.supports && CSS.supports('field-sizing','content')) return; }catch(e){}
+  const fit=el=>{ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight+2,260)+'px'; };
+  document.addEventListener('input',e=>{ const t=e.target; if(t && t.matches && t.matches('textarea.ml')) fit(t); });
+  document.addEventListener('focusin',e=>{ const t=e.target; if(t && t.matches && t.matches('textarea.ml')) fit(t); });
+})();

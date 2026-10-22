@@ -842,3 +842,6 @@ button.cchip{cursor:pointer}button.cchip:hover{border-color:var(--brand-line,#BF
 @keyframes lcFall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(105vh) rotate(540deg)}}
 .lc-team{display:flex;justify-content:center;gap:6px;margin-top:6px;flex-wrap:wrap}.lc-team .av{width:34px;height:34px;font-size:12px}
 @media (prefers-reduced-motion:reduce){.lc-conf{display:none}}
+/* خانات الكلام الحر: Enter بينزل سطر والخانة بتكبر لوحدها */
+textarea.ml{field-sizing:content;min-height:42px;max-height:260px;resize:vertical;line-height:1.5;overflow:auto;display:block}
+.bapp textarea.ml{min-height:44px}

@@ -32,7 +32,7 @@ function rqRow(r,mode){
   const s=RQ_STATUS[r.status]||[r.status,''];
   const who=mode!=='mine'?`<span style="color:var(--ink);font-size:14px"><b>${esc(r.name)}</b> <span class="muted">· ${esc(r.job||'')}</span></span>`:'';
   const title=r.kind==='leave'?esc(r.typeLabel):RQ_KIND[r.kind];
-  const trail=r.approvals.map(a=>`${a.decision==='approved'?'✓':'✕'} ${esc(a.step)}: ${esc(a.by)}${a.note?' – '+esc(a.note):''}`).join(' · ');
+  const trail=r.approvals.map(a=>`${a.decision==='approved'?'✓':'✕'} ${esc(a.step)}: ${esc(a.by)}${a.note?' – '+bd(a.note):''}`).join(' · ');
   return `<div class="al" style="cursor:default;align-items:center"><span class="tx">${who}<b>${title}</b><span>${rqWhen(r)}${r.reason?' · '+bd(r.reason):''}${r.link?(/^https?:\/\//i.test(r.link)?` · <a href="${esc(r.link)}" target="_blank" rel="noopener">attachment</a>`:` · ${bd(r.link)}`):''}</span>
       ${r.status==='pending'&&r.waitingOn.length?`<span>Waiting for ${esc(r.step)}: ${r.waitingOn.map(esc).join(' or ')}${mode==='all'&&r.since?` · <b style="color:${rqAge(r.since)>=2?'var(--bad)':'inherit'}">${rqAgeTxt(r.since)}</b>`:''}</span>`:''}${trail?`<span style="font-size:12px">${trail}</span>`:''}</span>
     <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
@@ -70,7 +70,7 @@ function renderRequests(){
     ${M.canManualOt?`<div class="card" style="margin-bottom:18px"><h2>Record overtime</h2><p class="muted" style="margin-top:-6px;font-size:13px">Saved as approved and HR gets notified.</p>
       <div class="row"><div><label for="otU">Employee</label><select id="otU">${(L.balances||[]).map(x=>`<option value="${esc(x.u)}">${esc(x.name)}</option>`).join('')}</select></div>
       <div><label for="otD">Day</label><input id="otD" type="date" value="${M.today}"></div><div style="max-width:120px"><label for="otH">Hours</label><input id="otH" type="number" min="0.25" step="0.25" value="1"></div>
-      <div style="flex:2"><label for="otR">Reason</label><input id="otR" maxlength="300" placeholder="Why"></div><div style="flex:0 0 auto"><button class="btn primary" onclick="otSave()">Save</button></div></div></div>`:''}
+      <div style="flex:2"><label for="otR">Reason</label><textarea id="otR" maxlength="300" placeholder="Why" dir="auto" rows="1" class="ml"></textarea></div><div style="flex:0 0 auto"><button class="btn primary" onclick="otSave()">Save</button></div></div></div>`:''}
     ${L.balances?`<div class="card flush" style="margin-bottom:18px"><div class="chead"><h2>Balances & shifts</h2><span class="muted" style="font-size:13px">${new Date().getFullYear()} · resets every January</span></div>
       <div class="tbl-wrap" style="border:0"><table style="min-width:760px"><tr><th>Employee</th><th>Shift (hours)</th><th>Annual days</th><th>Used</th><th>Waiting</th><th>Left</th><th></th></tr>
       ${L.balances.map(x=>`<tr><td><b>${esc(x.name)}</b><div class="sub2">${esc(x.job)}</div></td><td><input type="number" id="hs_${x.u}" min="1" max="16" step="0.5" value="${x.shift}" style="max-width:90px"></td><td><input type="number" id="ha_${x.u}" min="0" max="60" value="${x.total}" style="max-width:90px"></td>
@@ -110,8 +110,8 @@ function rqNew(kind){
       <div class="muted" id="rqDays" style="font-size:13px;margin-top:6px"></div>`
     :`<label for="rqF">Day</label><input id="rqF" type="date" value="${M.today}">
       <div class="row"><div><label for="rqA">From</label><input id="rqA" type="time"></div><div><label for="rqB">To</label><input id="rqB" type="time"></div></div>`}
-    <label for="rqR">Reason${isLeave?' (optional)':''}</label><input id="rqR" maxlength="500">
-    ${isLeave?`<label for="rqL">Document or note (optional)</label><input id="rqL" placeholder="Link or text, e.g. sick note on Drive" dir="auto">`:''}
+    <label for="rqR">Reason${isLeave?' (optional)':''}</label><textarea id="rqR" maxlength="500" dir="auto" rows="1" class="ml"></textarea>
+    ${isLeave?`<label for="rqL">Document or note (optional)</label><textarea id="rqL" placeholder="Link or text, e.g. sick note on Drive" dir="auto" rows="1" class="ml"></textarea>`:''}
     <div class="muted" style="font-size:12.5px;margin-top:10px">Goes to: ${M.flow.map(f=>esc(f.step)).join(' → ')}</div>
     <div class="err" id="rqErr"></div>
     <div class="mfoot"><span class="spacer"></span><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="rqSB" onclick="rqSend('${kind}')">Send request</button></div></div></div>`;

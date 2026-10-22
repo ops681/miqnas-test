@@ -13,7 +13,7 @@ const SECTIONS = [
   {id:"store_name", label:"اسم المتجر", type:"text"},
   {id:"client_name", label:"اسم العميل", type:"text"},
   {id:"store_lang", label:"لغة المتجر", type:"select", options:["عربي","إنجليزي","عربي وإنجليزي"]},
-  {id:"am_name", label:"اسم الأكاونت مانجر", type:"text", headerOnly:true},
+  {id:"am_name", label:"الأكاونت مانجر", type:"am", headerOnly:true, hint:"هو اللي هيشوف البريف ويعدّل عليه ويكمّله"},
   {id:"zid_id", label:"الرقم التعريفي للمتجر على زد", type:"text", ltr:true},
   {id:"contact_times", label:"الأوقات المناسبة للتواصل", type:"text"},
   {id:"brief_date", label:"تاريخ البريف", type:"date"},
@@ -202,6 +202,8 @@ function editBrief(id){
   route={v:"edit",id}; render(); window.scrollTo(0,0);
 }
 
+// خانات سطر واحد بس (أسماء / أرقام / تليفونات): Enter مايعملش فيها سطر
+const BR_ONE=["store_name","client_name","zid_id","support_phone","verify_phone","products_count"];
 function field(it,a){
   const v=a[it.id], id="f_"+it.id;
   switch(it.type){
@@ -211,13 +213,18 @@ function field(it,a){
     case "cred": { const o=v||{}; return `<div class="credf">${it.named?`<input type="text" data-cred="${it.id}" data-part="n" value="${esc(o.n!=null?o.n:(it.fixed?it.label:""))}" placeholder="اسم المنصة" aria-label="اسم المنصة">`:""}<input type="text" dir="ltr" id="${id}" data-cred="${it.id}" data-part="u" value="${esc(o.u)}" placeholder="الإيميل أو اليوزر" aria-label="${esc(it.label)}: الإيميل أو اليوزر" autocomplete="off"><input type="text" dir="ltr" data-cred="${it.id}" data-part="p" value="${esc(o.p)}" placeholder="${o.pSet?"محفوظ · اكتب باسورد جديد لو عاوز تغيّره":"الباسورد"}" aria-label="${esc(it.label)}: الباسورد" autocomplete="off" spellcheck="false">${it.withLink?`<input type="url" dir="ltr" data-cred="${it.id}" data-part="l" value="${esc(o.l)}" placeholder="لينك الدخول (اختياري)" aria-label="لينك الدخول" style="grid-column:1/-1">`:""}</div>`; }
     case "select": { const opts=[...(typeof it.options==="function"?it.options():it.options)]; if(filled(v)&&!opts.includes(v)) opts.push(v);
       return `<select id="${id}" data-k="${it.id}"${it.plat?' data-plat="1"':""}><option value=""${filled(v)?"":" selected"}>اختار...</option>${opts.map(o=>`<option value="${esc(o)}"${v===o?" selected":""}>${esc(o)}</option>`).join("")}${it.plat&&canWrite?`<option value="__new">+ منصة جديدة…</option>`:""}</select>`; }
+    case "am": {
+      // الأدمن بيختار الـ Account Manager (البريف بيبقى بتاعه). الـ AM نفسه: اسمه ثابت
+      if(!isAdmin) return `<input type="text" id="${id}" value="${esc(v||myName)}" readonly>`;
+      const L=(window.MQ_AMS||[]).map(x=>x.name); if(filled(v)&&!L.includes(v)) L.push(v);
+      return `<select id="${id}" data-k="${it.id}" data-nosearch><option value=""${filled(v)?"":" selected"}>اختار...</option>${L.map(o=>`<option value="${esc(o)}"${v===o?" selected":""}>${esc(o)}</option>`).join("")}</select>`; }
     case "number": return `<input type="number" min="0" inputmode="numeric" id="${id}" data-k="${it.id}" value="${esc(v)}">`;
     case "date": return `<input type="date" id="${id}" data-k="${it.id}" value="${esc(v)}">`;
     case "yn": case "choice": {
       const opts=it.type==="yn"?["أيوه","لا"]:it.options;
       return `<div class="seg" role="group" aria-label="${esc(it.label)}">${opts.map(o=>`<button type="button" data-one="${it.id}" data-v="${esc(o)}" aria-pressed="${v===o}">${esc(o)}</button>`).join("")}</div>`;}
     case "multi": return `<div class="seg" role="group" aria-label="${esc(it.label)}">${it.options.map(o=>`<button type="button" data-many="${it.id}" data-v="${esc(o)}" aria-pressed="${(v||[]).includes(o)}">${esc(o)}</button>`).join("")}</div>`;
-    default: return `<input type="text" id="${id}" data-k="${it.id}" value="${esc(v)}"${it.ltr?' dir="ltr"':""}>`;
+    default: return BR_ONE.includes(it.id)||it.ltr ? `<input type="text" id="${id}" data-k="${it.id}" value="${esc(v)}"${it.ltr?' dir="ltr"':""}>` : `<textarea id="${id}" data-k="${it.id}" rows="1" class="ml" dir="auto">${esc(v)}</textarea>`;
   }
 }
 
@@ -311,7 +318,7 @@ function setLogo(file){
     img.src=rd.result; };
   rd.readAsDataURL(file);
 }
-function bodyOf(d){const a=d.answers,p=progress(a);return {id:d.id,status:d.status,logo:okLogo(d.logo)?d.logo:"",thumb:okLogo(d.thumb)?d.thumb:"",progress:p.pct,createdAt:d.createdAt,answers:a};}
+function bodyOf(d){const a=d.answers,p=progress(a);const am=isAdmin?((window.MQ_AMS||[]).find(x=>x.name===a.am_name)||{}).u||"":"";return {id:d.id,status:d.status,logo:okLogo(d.logo)?d.logo:"",thumb:okLogo(d.thumb)?d.thumb:"",progress:p.pct,createdAt:d.createdAt,answers:a,am};}
 async function flush(force, d=draft){
   clearTimeout(saveTimer);
   if(!d||!me) return;
@@ -322,7 +329,7 @@ async function flush(force, d=draft){
     const body=bodyOf(d); const r=await api("saveBrief",session,body);
     d.isNew=false; d.am=r.owner;
     const prev=briefs.get(d.id)||{};
-    briefs.set(d.id,{...body,id:d.id,owner:r.owner,assigned:prev.assigned||[],canEdit:true,store:String(body.answers.store_name||"").trim(),client:String(body.answers.client_name||"").trim(),amName:(briefs.get(d.id)||{}).amName||myName,updatedAt:r.updatedAt,partial:false});
+    briefs.set(d.id,{...body,id:d.id,owner:r.owner,assigned:prev.assigned||[],canEdit:true,store:String(body.answers.store_name||"").trim(),client:String(body.answers.client_name||"").trim(),amName:String(body.answers.am_name||"").trim()||(briefs.get(d.id)||{}).amName||myName,updatedAt:r.updatedAt,partial:false});
     lastSaved=new Date(); const sv=$("#saved"); if(sv&&draft===d) sv.textContent="اتحفظ "+lastSaved.toLocaleTimeString("ar-EG",{hour:"numeric",minute:"2-digit"});
   }
   catch(e){ const sv=$("#saved"); if(sv) sv.textContent="ماتحفظش. "+(e.message||"اتأكد من النت وجرّب تكتب تاني"); }
@@ -499,13 +506,13 @@ async function exportCSV(){
 // قايمة البريفات المتخزنة (من التحميل في الخلفية) بتظهر على طول
 function primeList(r){
   if(!r||!r.briefs) return;
-  if(r.partners) window.MQ_PARTNERS=r.partners; if(r.platforms) window.MQ_PLATFORMS=r.platforms;
+  if(r.partners) window.MQ_PARTNERS=r.partners; if(r.platforms) window.MQ_PLATFORMS=r.platforms; if(r.ams) window.MQ_AMS=r.ams;
   const m=new Map(); for(const b of r.briefs){ const old=briefs.get(b.id); m.set(b.id, old&&!old.partial&&old.updatedAt>=b.updatedAt?old:b); }
   briefs=m; loaded=true;
 }
 async function loadList(){
   if(!me) return;
-  try{ const r=await api("listBriefs",session); if(r&&r.partners) window.MQ_PARTNERS=r.partners; if(r&&r.platforms) window.MQ_PLATFORMS=r.platforms; try{ if(typeof S!=="undefined"&&S.cache){ S.cache.briefs=r; S.fetched.briefs=Date.now(); if(window.saveCache) saveCache(); } }catch(e){}
+  try{ const r=await api("listBriefs",session); if(r&&r.partners) window.MQ_PARTNERS=r.partners; if(r&&r.platforms) window.MQ_PLATFORMS=r.platforms; if(r&&r.ams) window.MQ_AMS=r.ams; try{ if(typeof S!=="undefined"&&S.cache){ S.cache.briefs=r; S.fetched.briefs=Date.now(); if(window.saveCache) saveCache(); } }catch(e){}
     const m=new Map(); for(const b of r.briefs){ const old=briefs.get(b.id); m.set(b.id, old&&!old.partial&&old.updatedAt>=b.updatedAt?old:b); }
     briefs=m; loaded=true; if(route.v==="list"||(route.v==="view"&&!briefs.has(route.id))) render(); }
   catch(e){ if(!/SESSION|الجلسة/.test(e.message)){ loaded=true; if(route.v==="list") app.innerHTML=`<div class="note">ماقدرتش أحمّل البريفات. ${esc(e.message)}</div>`; } }

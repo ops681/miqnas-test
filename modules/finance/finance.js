@@ -69,7 +69,7 @@ function finPay(cid,iid){
   $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:480px">
     <h2 style="margin:0 0 4px">Mark as paid</h2><div class="muted" style="font-size:13px;margin-bottom:12px">${esc(c.client)} · ${esc(i.label)} · ${sar(i.amount)}</div>
     <div class="pfgrid"><div><label>Paid on</label><input type="date" id="fpD" value="${r.today}"></div><div><label>Method</label><select id="fpM">${r.methods.map(m=>`<option>${esc(m)}</option>`).join('')}</select></div>
-      <div><label>Invoice number</label><input id="fpI" dir="ltr" placeholder="INV-1001"></div><div><label>Note</label><input id="fpN" dir="auto"></div></div>
+      <div><label>Invoice number</label><input id="fpI" dir="ltr" placeholder="INV-1001"></div><div><label>Note</label><textarea id="fpN" dir="auto" rows="1" class="ml"></textarea></div></div>
     <div class="err" id="fpE"></div><div class="mfoot"><button class="btn ghost" onclick="finOpen('${esc(cid)}')">Back</button><div class="spacer"></div><button class="btn primary" id="fpB">Save</button></div></div></div>`;
   $('fpB').onclick=async()=>{ try{ const out=await call('finInst',{act:'pay',id:iid,paidAt:$('fpD').value,method:$('fpM').value,invoice:$('fpI').value,note:$('fpN').value}); S.cache.fin=out; toast('اتسجل الدفع ✓'); finOpen(cid); finRefreshList(); }catch(e){ $('fpE').textContent=e.message; } };
 }
