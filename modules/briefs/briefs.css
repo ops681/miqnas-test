@@ -190,3 +190,18 @@
 .bapp .credr .credv{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bapp .credr{flex-wrap:nowrap}
 .bapp .credr .mini{flex:none}
+/* تعديل أسئلة البريف */
+.bapp .bq-note{background:var(--accent-soft);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:10px 0 4px;font-size:13.5px;line-height:1.7}
+.bapp .bq-tools{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:8px}
+.bapp .bq-st{margin:0 0 0 auto}
+.bapp .bq-b{border:1px solid var(--line);background:var(--card,#fff);color:var(--ink);border-radius:8px;padding:3px 8px;font-size:12.5px;cursor:pointer;line-height:1.4}
+.bapp .bq-b:hover:not(:disabled){border-color:var(--accent)}
+.bapp .bq-b:disabled{opacity:.35;cursor:default}
+.bapp .bq-lock{font-size:13px;opacity:.75}
+.bapp .bq-tag{font-size:11.5px;background:var(--accent-soft);border-radius:99px;padding:2px 8px;color:var(--muted)}
+.bapp .bq-off{opacity:.45}
+.bapp .bq-off .bq-tools{opacity:1}
+.bapp .bq-addsec{margin:14px 0;text-align:center}
+.bq-modal .bq-scope{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+.bq-modal .bq-scope label.check{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;width:auto;margin:0}
+.bq-modal .bq-scope input[type=radio]{width:auto;margin:0}

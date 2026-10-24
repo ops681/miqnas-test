@@ -8,7 +8,7 @@ const briefLink = id => SITE_URL + "#brief=" + id;
 const PAY = ["تابي","تمارا","مدى","Visa","Apple Pay","Zid Pay","Salla Pay","الدفع عند الاستلام"];
 const DOCS = ["وثيقة العمل الحر","الهوية الوطنية (National ID)","شهادة الضريبة (VAT Certificate)","العنوان الوطني (National Address)","الآيبان / شهادة بنكية (IBAN)","رقم توثيق المتجر (Store Verification Phone)","السجل التجاري (CR Number)","الرقم الضريبي (VAT Number)"];
 
-const SECTIONS = [
+const BASE_SECS = [
  {id:"client", title:"بيانات العميل", items:[
   {id:"store_name", label:"اسم المتجر", type:"text"},
   {id:"client_name", label:"اسم العميل", type:"text"},
@@ -111,6 +111,39 @@ const SECTIONS = [
   {id:"designer_note", label:"ملاحظات (Notes)", type:"textarea", optional:true, hideEmpty:true, hint:"اختياري. أي ملاحظات على القسم ده", showIf:a=>a.logo_plan!=="هيفضل زي ما هو"}]}
 ];
 
+/* ----- الأسئلة بتتعدّل من البريف نفسه (للي معاه صلاحية أسئلة البريف) -----
+   الإعدادات لكل البريفات جاية من السيرفر (window.MQ_BQL)، وتعديلات بريف واحد جوه إجاباته (_qx).
+   الحذف = إخفاء. الأسئلة اللي السيستم بيقرا منها مقفولة 🔒 (الاسم والشرح بس). */
+const Q_LOCK=["store_name","client_name","am_name","zid_id","brief_date","drive","project_type","current_platform","target_platform","partner","store_url"];
+const lockedQ=id=>Q_LOCK.includes(id)||/^(acc_|soc_)/.test(id);
+const LOCK_SECS=["client","scope","access","social"], FIXED_SECS=["access","social"];
+const Q_TYPES=[["text","نص قصير"],["textarea","نص طويل"],["yn","أيوه / لا"],["choice","اختيار واحد"],["multi","اختيار أكتر من حاجة"],["select","لستة منسدلة"],["url","لينك"],["date","تاريخ"],["number","رقم"]];
+const OPT_TYPES=["choice","multi","select","checks"];
+let qCan=false, qEdit=false, secMemo={L:null,k:null,v:null};
+const BQL=()=>window.MQ_BQL||{};
+function buildSecs(L,x,all){
+  const it=L.items||{}, so=L.sec||{}, hidOne=new Set((x&&x.hidden)||[]);
+  let list=BASE_SECS.map(s=>Object.assign({},s,{items:s.items.slice()})).concat((L.newSecs||[]).map(s=>({id:s.id,title:s.title,group:s.group||undefined,items:[],custom:true})));
+  const addQ=(q,one)=>{ const sc=list.find(z=>z.id===q.sec); if(sc) sc.items.push(Object.assign({},q,{custom:true,one})); };
+  (L.added||[]).forEach(q=>addQ(q,false)); ((x&&x.added)||[]).forEach(q=>addQ(q,true));
+  list.forEach(sc=>{
+    const o=so[sc.id]||{}; if(o.title) sc.title=o.title; sc.hidden=!!o.hidden;
+    sc.items=sc.items.map(q=>{ const ov=q.custom?{}:(it[q.id]||{}), n=Object.assign({},q);
+      if(ov.label) n.label=ov.label; if(ov.hint!=null) n.hint=ov.hint; if(ov.optional!=null) n.optional=ov.optional;
+      if(ov.options&&Array.isArray(q.options)) n.options=ov.options;
+      const gh=!!(ov.hidden||q.hidden); n.hidden=gh||hidOne.has(q.id); n.hidOne=!gh&&hidOne.has(q.id); n.locked=lockedQ(q.id); return n; });
+    const ord=(L.order||{})[sc.id];
+    if(ord&&ord.length){ const pos=id=>{const i=ord.indexOf(id); return i<0?1e3:i;}; sc.items=sc.items.map((q,i)=>[q,i]).sort((a,b)=>(pos(a[0].id)-pos(b[0].id))||(a[1]-b[1])).map(z=>z[0]); }
+  });
+  const sor=L.secOrder||[];
+  if(sor.length){ const pos=id=>{const i=sor.indexOf(id); return i<0?1e3:i;}; list=list.map((q,i)=>[q,i]).sort((a,b)=>(pos(a[0].id)-pos(b[0].id))||(a[1]-b[1])).map(z=>z[0]); }
+  if(all) return list;
+  return list.filter(sc=>!sc.hidden).map(sc=>Object.assign({},sc,{items:sc.items.filter(q=>!q.hidden)})).filter(sc=>sc.items.length);
+}
+function secsFor(a){ const L=BQL(), k=JSON.stringify((a&&a._qx)||null); if(secMemo.L===L&&secMemo.k===k) return secMemo.v; const v=buildSecs(L,(a&&a._qx)||null,false); secMemo={L,k,v}; return v; }
+// أسئلة اتشالت وليها إجابة (عشان الإجابات القديمة ماتضيعش)
+function hiddenAnswered(a){ const out=[]; buildSecs(BQL(),(a&&a._qx)||null,true).forEach(sc=>sc.items.forEach(q=>{ if((q.hidden||sc.hidden)&&q.type!=="cred"&&filled(a[q.id])) out.push(Object.assign({},q,{secTitle:sc.title})); })); return out; }
+
 const $ = s => document.querySelector(s);
 let app = null;
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -119,7 +152,7 @@ const cntText = c => c.t ? `${c.d} من ${c.t}` : "اختياري";
 const visible = (it, a) => !it.showIf || it.showIf(a);
 function progress(a){
   let t=0,d=0;
-  for (const s of SECTIONS) for (const it of s.items){ if (it.type==="checks"||!visible(it,a)) continue; if (it.optional&&!filled(a[it.id])) continue; t++; if (filled(a[it.id])) d++; }
+  for (const s of secsFor(a)) for (const it of s.items){ if (it.type==="checks"||!visible(it,a)) continue; if (it.optional&&!filled(a[it.id])) continue; t++; if (filled(a[it.id])) d++; }
   return {t,d,pct:t?Math.round(d/t*100):0};
 }
 function secCount(s,a){let t=0,d=0;for(const it of s.items){if(!visible(it,a))continue;if(it.optional&&!filled(a[it.id]))continue;if(it.type==="checks"){t++;if(filled(a[it.id]))d++;continue;}t++;if(filled(a[it.id]))d++;}return {t,d};}
@@ -141,6 +174,7 @@ function setHash(id){ try{ history.replaceState(null,"", id ? "#brief="+id : loc
 
 function go(r){
   if (route.v==="edit" && draft){ flush(false, draft); draft=null; }
+  qEdit=false;
   if(!(r.v==="view"&&backTo&&r.id===backTo.brief) && !(r.v==="edit"&&backTo&&r.id===backTo.brief)) backTo=null;
   if(r.v!=="view"||r.id!==route.id) asgEdit=false;
   route=r; confirmDel=false;
@@ -234,7 +268,9 @@ function renderForm(){
   <div class="topbar">
     <button class="btn ghost" id="back">← All Briefs</button>
     <span class="saved" id="saved">${draft.isNew?"هيتحفظ أول ما تكتب اسم المتجر":"محفوظ"}</span>
+    ${qCan?`<button class="btn${qEdit?" primary":""}" id="qedit" type="button">${qEdit?"✓ خلصت تعديل الأسئلة":"✏️ تعديل الأسئلة"}</button>`:""}
   </div>
+  ${qEdit?`<div class="bq-note">✏️ <b>بتعدّل الأسئلة دلوقتي.</b> جنب كل سؤال: ✏️ تعديل · ↑↓ ترتيب · 🗑 شيل. الأسئلة اللي عليها 🔒 السيستم بيقرا منها، فبيتغيّر اسمها وشرحها بس. الشيل مابيمسحش الإجابات القديمة.</div>`:""}
   <h1 style="font-size:24px">${esc(a.store_name||"بريف جديد")}</h1>
   <div class="logo-pick">
     ${okLogo(draft.logo)
@@ -246,7 +282,8 @@ function renderForm(){
     <div class="progline"><b id="pct">${p.pct}%</b><div class="bar"><i id="pbar" style="width:${p.pct}%"></i></div><span class="muted" style="font-size:13px" id="pcount">${p.d} من ${p.t}</span></div>
     <nav class="rail" id="rail">${railHTML(a)}</nav>
   </div>
-  ${SECTIONS.map(s=>sectionHTML(s,a)).join("")}
+  ${(qEdit?buildSecs(BQL(),a._qx||null,true):secsFor(a)).map((s,i,L)=>sectionHTML(s,a,i,L.length)).join("")}
+  ${qEdit?`<div class="bq-addsec"><button class="btn" type="button" data-bqns>+ قسم جديد</button></div>`:""}
   <div class="formfoot">
     <button class="btn primary" id="finish">Submit Brief</button>
     <span class="muted" style="font-size:13px">التسليم بيعلّم البريف "مكتمل" ويفتح صفحة البريف عشان تبعتها للفريق.</span>
@@ -256,24 +293,38 @@ function renderForm(){
   const ld=$("#logodel"); if(ld) ld.onclick=()=>{draft.logo=""; draft.thumb=""; changed(true);};
   const dz=$("#logodrop"); if(dz){ dz.ondragover=e=>{e.preventDefault();dz.classList.add("over");}; dz.ondragleave=()=>dz.classList.remove("over"); dz.ondrop=e=>{e.preventDefault();dz.classList.remove("over");const f=e.dataTransfer.files[0]; if(f) setLogo(f);}; }
   $("#finish").onclick=async()=>{ if(!filled(a.store_name)){toast("اكتب اسم المتجر الأول");$("#f_store_name").focus();return;} draft.status="done"; const dd=draft; draft=null; await flush(true, dd); const id=dd.id; go({v:"view",id}); };
+  const qe=$("#qedit"); if(qe) qe.onclick=()=>{ qEdit=!qEdit; const y=window.scrollY; renderForm(); window.scrollTo(0,y); };
   bindForm();
+  if(qEdit) bindQEdit();
 }
-function railHTML(a){return SECTIONS.map(s=>{const c=secCount(s,a);return `<button type="button" data-sec="${s.id}" class="${c.t&&c.d===c.t?"full":""}">${esc(s.title)} <span style="font-variant-numeric:tabular-nums">${c.t?c.d+"/"+c.t:"اختياري"}</span></button>`;}).join("");}
-function sectionHTML(s,a){
+function railHTML(a){return (qEdit?buildSecs(BQL(),a._qx||null,true):secsFor(a)).map(s=>{const c=secCount(s,a);return `<button type="button" data-sec="${s.id}" class="${c.t&&c.d===c.t?"full":""}">${esc(s.title)} <span style="font-variant-numeric:tabular-nums">${c.t?c.d+"/"+c.t:"اختياري"}</span></button>`;}).join("");}
+function qTools(s,it,i,n){
+  if(!qEdit) return "";
+  const fixed=FIXED_SECS.includes(s.id), b=(k,t,l,dis)=>`<button type="button" class="bq-b" data-${k}="${esc(it.id)}" data-sec="${esc(s.id)}" title="${esc(l)}" aria-label="${esc(l)}"${dis?" disabled":""}>${t}</button>`;
+  return `<div class="bq-tools">${it.locked?`<span class="bq-lock" title="السيستم بيقرا منه">🔒</span>`:""}${it.one?`<span class="bq-tag">للبريف ده بس</span>`:it.custom?`<span class="bq-tag">جديد</span>`:""}${it.showIf?`<span class="bq-tag">بيظهر بشرط</span>`:""}
+    ${b("bqe","✏️","تعديل")}${fixed||it.one?"":b("bqu","↑","لفوق",i===0)+b("bqd","↓","لتحت",i===n-1)}${it.locked?"":it.hidden?b("bqr","↩︎ رجّع","رجّع السؤال"):b("bqh","🗑","شيل السؤال")}</div>`;
+}
+function sectionHTML(s,a,si,sn){
   const c=secCount(s,a);
-  const body=s.items.filter(it=>visible(it,a)).map(it=>{
-    if(it.type==="checks"){
+  const shown=s.items.filter(it=>qEdit||visible(it,a)), mv=shown.filter(x=>!x.one);
+  const body=shown.map(it=>{
+    const tools=qTools(s,it,mv.indexOf(it),mv.length);
+    if(it.type==="checks"&&!qEdit){
       const sel=a[it.id]||[];
       return `<div class="checks" role="group" aria-label="${esc(it.label)}">${it.options.map(o=>`<label class="chk${sel.includes(o)?" on":""}"><input type="checkbox" data-chk="${it.id}" value="${esc(o)}"${sel.includes(o)?" checked":""}>${esc(o)}</label>`).join("")}</div>`;
     }
-    return `<div class="q${it.showIf?" cond":""}${filled(a[it.id])||it.optional?"":" empty"}" data-q="${it.id}"${it.optional?" data-opt":""}>
-      <div><label class="l" for="f_${it.id}">${esc(it.label)}</label>${it.hint?`<div class="h">${esc(it.hint)}</div>`:""}</div>
-      <div class="a">${field(it,a)}</div></div>`;
+    return `<div class="q${it.showIf?" cond":""}${filled(a[it.id])||it.optional?"":" empty"}${it.hidden||s.hidden?" bq-off":""}" data-q="${it.id}"${it.optional?" data-opt":""}>
+      <div><label class="l" for="f_${it.id}">${esc(it.label)}</label>${it.hint?`<div class="h">${esc(it.hint)}</div>`:""}${tools}</div>
+      <div class="a">${it.type==="checks"?`<div class="checks">${(it.options||[]).map(o=>`<label class="chk${(a[it.id]||[]).includes(o)?" on":""}"><input type="checkbox" data-chk="${it.id}" value="${esc(o)}"${(a[it.id]||[]).includes(o)?" checked":""}>${esc(o)}</label>`).join("")}</div>`:field(it,a)}</div></div>`;
   }).join("");
+  const fixed=FIXED_SECS.includes(s.id);
+  const sb=(k,t,l,dis)=>`<button type="button" class="bq-b" data-${k}="${esc(s.id)}" title="${esc(l)}" aria-label="${esc(l)}"${dis?" disabled":""}>${t}</button>`;
+  const stools=qEdit?`<div class="bq-tools bq-st">${sb("bqse","✏️","تغيير اسم القسم")}${sb("bqsu","↑","القسم لفوق",si===0)}${sb("bqsd","↓","القسم لتحت",si===sn-1)}${LOCK_SECS.includes(s.id)?`<span class="bq-lock" title="فيه أسئلة السيستم بيقرا منها">🔒</span>`:s.hidden?sb("bqsr","↩︎ رجّع","رجّع القسم"):sb("bqsh","🗑","شيل القسم")}</div>`:"";
+  const addQ=qEdit&&!fixed?`<div class="q bq-addq" style="border-top:1px dashed var(--line)"><div></div><div class="a"><button type="button" class="btn" data-bqn="${esc(s.id)}">+ سؤال جديد</button></div></div>`:"";
   const accN=Number(a._acc_n)||1, socN=Number(a._soc_n)||1;
   const more=s.id==="access"&&accN<15?`<div class="q" style="border-top:0"><div></div><div class="a"><button type="button" class="btn" id="accMore">+ إضافة حساب منصة</button></div></div>`
     :s.id==="social"&&socN<8?`<div class="q" style="border-top:0"><div></div><div class="a"><button type="button" class="btn" id="socMore" dir="ltr">+ Add link</button></div></div>`:"";
-  return `<section class="sec" id="s_${s.id}"><div class="sec-h">${s.group?`<span class="grp">${esc(s.group)}</span>`:""}<h2>${esc(s.title)}</h2><span class="cnt">${cntText(c)}</span></div><div class="card">${body}${more}</div></section>`;
+  return `<section class="sec${s.hidden?" bq-off":""}" id="s_${s.id}"><div class="sec-h">${s.group?`<span class="grp">${esc(s.group)}</span>`:""}<h2>${esc(s.title)}</h2><span class="cnt">${cntText(c)}</span>${stools}</div><div class="card">${body||(qEdit?`<div class="q"><div class="muted">القسم ده فاضي. ضيف سؤال.</div></div>`:"")}${qEdit?"":more}${addQ}</div></section>`;
 }
 function bindForm(){
   app.querySelectorAll("[data-k]").forEach(el=>{
@@ -292,11 +343,121 @@ function bindForm(){
   app.querySelectorAll("[data-chk]").forEach(c=>c.onchange=()=>{const k=c.dataset.chk; const arr=[...(draft.answers[k]||[])].filter(x=>x!==c.value); if(c.checked) arr.push(c.value); draft.answers[k]=arr; c.parentElement.classList.toggle("on",c.checked); changed(false);});
   $("#rail").onclick=e=>{const b=e.target.closest("[data-sec]"); if(b) document.getElementById("s_"+b.dataset.sec).scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"});};
 }
+/* ----- وضع تعديل الأسئلة ----- */
+const qState=()=>JSON.parse(JSON.stringify(BQL()));
+function qRerender(){ const y=window.scrollY; renderForm(); window.scrollTo(0,y); }
+async function qSaveL(L){
+  try{ const r=await window.erpCall("briefQSave",{layout:L}); window.MQ_BQL=r; secMemo={};
+    try{ if(typeof S!=="undefined"&&S.cache&&S.cache.briefs){ S.cache.briefs.layout=r; if(window.saveCache) saveCache(); } }catch(e){}
+    toast("اتحفظ لكل البريفات ✓"); if(draft) qRerender(); }
+  catch(e){ toast(e.message); }
+}
+function qOne(){ const a=draft.answers; const x=a._qx=a._qx||{}; x.added=x.added||[]; x.hidden=x.hidden||[]; return x; }
+function qOneDone(){ const x=draft.answers._qx; if(x&&!x.added.length&&!x.hidden.length) delete draft.answers._qx; secMemo={}; changed(true); toast(draft.isNew?"هيتحفظ للبريف ده أول ما تكتب اسم المتجر":"اتحفظ للبريف ده ✓"); }
+function qFind(id){ for(const sc of buildSecs(BQL(),draft.answers._qx||null,true)) for(const q of sc.items) if(q.id===id) return {s:sc,q}; return null; }
+function qModal(html){ const m=document.getElementById("modalRoot"); m.innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card bq-modal" style="max-width:560px" dir="rtl">${html}</div></div>`; return m; }
+const qv=id=>{ const el=document.getElementById(id); return el?el.value:""; };
+function qErr(t){ const e=document.getElementById("bqErr"); if(e) e.textContent=t; }
+function qForm(secId,id){
+  const f=id?qFind(id):null; if(id&&!f) return;
+  const isNew=!id, q=f?f.q:{type:"textarea",label:"",hint:"",options:[]}, custom=isNew||!!q.custom;
+  const canOpts=custom||(!q.locked&&Array.isArray(q.options)&&OPT_TYPES.includes(q.type));
+  const types=Q_TYPES.concat(q.type==="checks"?[["checks","علامات صح"]]:[]);
+  qModal(`<h2>${isNew?"سؤال جديد":"تعديل السؤال"}</h2>
+    <label for="bqL">السؤال</label><input id="bqL" maxlength="200" dir="auto" value="${esc(q.label)}" placeholder="مثال: هل عنده حسابات تانية لازم نربطها؟">
+    <label for="bqH">شرح صغير تحت السؤال <span class="muted" style="font-weight:400">(اختياري)</span></label><input id="bqH" maxlength="300" dir="auto" value="${esc(q.hint||"")}">
+    ${custom?`<label for="bqT">نوع الإجابة</label><select id="bqT">${types.map(t=>`<option value="${t[0]}"${q.type===t[0]?" selected":""}>${t[1]}</option>`).join("")}</select>`:""}
+    <div id="bqOW"${canOpts&&OPT_TYPES.includes(q.type)?"":' style="display:none"'}><label for="bqO">الاختيارات <span class="muted" style="font-weight:400">(كل اختيار في سطر)</span></label><textarea id="bqO" rows="4" dir="auto">${esc((q.options||[]).join("\n"))}</textarea></div>
+    ${q.locked?"":`<label class="check" style="margin-top:12px"><input type="checkbox" id="bqOp"${q.optional?" checked":""}> اختياري: مش لازم يتملى، ومابيتحسبش في نسبة الإكتمال لو فاضي</label>`}
+    ${isNew?`<div class="bq-scope"><b>السؤال ده لـ:</b><label class="check"><input type="radio" name="bqS" value="all" checked> كل البريفات</label><label class="check"><input type="radio" name="bqS" value="one"> البريف ده بس</label></div>`
+      :`<div class="muted" style="margin-top:12px;font-size:13px">${q.one?"السؤال ده للبريف ده بس":q.locked?"🔒 السيستم بيقرا من السؤال ده، فبيتغيّر اسمه وشرحه بس. التعديل بيمشي على كل البريفات":"التعديل بيمشي على كل البريفات"}</div>`}
+    <div class="err" id="bqErr"></div>
+    <div class="mfoot"><span class="spacer"></span><button class="btn" type="button" onclick="closeModal()">إلغاء</button><button class="btn primary" type="button" id="bqSave">حفظ</button></div>`);
+  const T=document.getElementById("bqT"); if(T) T.onchange=()=>{ document.getElementById("bqOW").style.display=OPT_TYPES.includes(T.value)?"":"none"; };
+  setTimeout(()=>{ const l=document.getElementById("bqL"); if(l) l.focus(); },40);
+  document.getElementById("bqSave").onclick=()=>{
+    const label=qv("bqL").trim(), hint=qv("bqH").trim(), type=custom?qv("bqT"):q.type;
+    const opts=qv("bqO").split("\n").map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i);
+    const op=document.getElementById("bqOp"), optional=op?op.checked:undefined;
+    if(!label) return qErr("اكتب السؤال");
+    const needOpts=canOpts&&OPT_TYPES.includes(type); if(needOpts&&!opts.length) return qErr("اكتب الاختيارات، كل اختيار في سطر");
+    const body={label,hint,type,optional:!!optional}; if(needOpts) body.options=opts;
+    if(isNew){
+      const nq=Object.assign({id:"cq_"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),sec:secId},body);
+      const one=(document.querySelector('input[name="bqS"]:checked')||{}).value==="one";
+      closeModal();
+      if(one){ qOne().added.push(nq); qOneDone(); } else { const L=qState(); L.added=(L.added||[]).concat([nq]); qSaveL(L); }
+      return;
+    }
+    closeModal();
+    if(q.one){ const k=qOne().added.find(z=>z.id===id); if(k){ Object.assign(k,body); if(!needOpts) delete k.options; } qOneDone(); return; }
+    const L=qState();
+    if(q.custom){ const k=(L.added||[]).find(z=>z.id===id); if(k){ Object.assign(k,body); if(!needOpts) delete k.options; } }
+    else { L.items=L.items||{}; const o=L.items[id]=Object.assign({},L.items[id]||{}); o.label=label; o.hint=hint; if(!q.locked){ o.optional=!!optional; if(needOpts) o.options=opts; } }
+    qSaveL(L);
+  };
+}
+function qHide(id){
+  const f=qFind(id); if(!f) return; const q=f.q;
+  if(q.one){ qOne().hidden.push(id); qOneDone(); return; }
+  qModal(`<h2>تشيل "${esc(q.label)}"؟</h2><p class="muted" style="margin:6px 0 0">الإجابات القديمة مش هتتمسح، وهتفضل ظاهرة في البريفات القديمة تحت "أسئلة اتشالت". وتقدر ترجّعه بعدين.</p>
+    <div class="mfoot"><button class="btn" type="button" onclick="closeModal()">إلغاء</button><span class="spacer"></span><button class="btn" type="button" id="bqH1">من البريف ده بس</button><button class="btn primary" type="button" id="bqHA">من كل البريفات</button></div>`);
+  document.getElementById("bqH1").onclick=()=>{ closeModal(); qOne().hidden.push(id); qOneDone(); };
+  document.getElementById("bqHA").onclick=()=>{ closeModal(); const L=qState();
+    if(q.custom){ const k=(L.added||[]).find(z=>z.id===id); if(k) k.hidden=true; }
+    else { L.items=L.items||{}; L.items[id]=Object.assign({},L.items[id]||{},{hidden:true}); }
+    qSaveL(L); };
+}
+function qRestore(id){
+  const f=qFind(id); if(!f) return; const q=f.q;
+  if(q.hidOne){ const x=qOne(); x.hidden=x.hidden.filter(z=>z!==id); qOneDone(); return; }
+  const L=qState();
+  if(q.custom){ const k=(L.added||[]).find(z=>z.id===id); if(k) delete k.hidden; }
+  else if(L.items&&L.items[id]) delete L.items[id].hidden;
+  qSaveL(L);
+}
+function qMove(secId,id,dir){
+  const sc=buildSecs(BQL(),draft.answers._qx||null,true).find(z=>z.id===secId); if(!sc) return;
+  const ids=sc.items.filter(q=>!q.one).map(q=>q.id), i=ids.indexOf(id), j=i+dir; if(i<0||j<0||j>=ids.length) return;
+  [ids[i],ids[j]]=[ids[j],ids[i]]; const L=qState(); L.order=Object.assign({},L.order||{}); L.order[secId]=ids; qSaveL(L);
+}
+function qSecMove(secId,dir){
+  const ids=buildSecs(BQL(),null,true).map(z=>z.id), i=ids.indexOf(secId), j=i+dir; if(i<0||j<0||j>=ids.length) return;
+  [ids[i],ids[j]]=[ids[j],ids[i]]; const L=qState(); L.secOrder=ids; qSaveL(L);
+}
+function qSecForm(secId){
+  const sc=secId?buildSecs(BQL(),null,true).find(z=>z.id===secId):null;
+  qModal(`<h2>${sc?"اسم القسم":"قسم جديد"}</h2><label for="bqST">اسم القسم</label><input id="bqST" maxlength="120" dir="auto" value="${esc(sc?sc.title:"")}">
+    ${sc?"":`<label for="bqSG">تبع</label><select id="bqSG"><option value="">قسم لوحده</option><option value="Store Manager">Store Manager</option></select><div class="muted" style="font-size:13px;margin-top:6px">القسم بيتعمل لكل البريفات. بعد ما يتعمل ضيف فيه أسئلة، ومش هيظهر في البريف وهو فاضي</div>`}
+    <div class="err" id="bqErr"></div><div class="mfoot"><span class="spacer"></span><button class="btn" type="button" onclick="closeModal()">إلغاء</button><button class="btn primary" type="button" id="bqSave">حفظ</button></div>`);
+  setTimeout(()=>{ const l=document.getElementById("bqST"); if(l) l.focus(); },40);
+  document.getElementById("bqSave").onclick=()=>{
+    const title=qv("bqST").trim(); if(!title) return qErr("اكتب اسم القسم");
+    const L=qState(); closeModal();
+    if(sc&&sc.custom){ const k=(L.newSecs||[]).find(z=>z.id===secId); if(k) k.title=title; }
+    else if(sc){ L.sec=Object.assign({},L.sec||{}); L.sec[secId]=Object.assign({},L.sec[secId]||{},{title}); }
+    else L.newSecs=(L.newSecs||[]).concat([{id:"cs_"+Date.now().toString(36),title,group:qv("bqSG")}]);
+    qSaveL(L);
+  };
+}
+function qSecHide(secId,hide){
+  if(hide&&!confirm("تشيل القسم ده من كل البريفات؟ الإجابات القديمة مش هتتمسح")) return;
+  const L=qState(); L.sec=Object.assign({},L.sec||{}); const o=L.sec[secId]=Object.assign({},L.sec[secId]||{});
+  if(hide) o.hidden=true; else delete o.hidden; qSaveL(L);
+}
+function bindQEdit(){
+  const on=(k,fn)=>app.querySelectorAll("[data-"+k+"]").forEach(b=>b.onclick=e=>{ e.preventDefault(); fn(b.dataset[k.replace(/-./g,m=>m[1].toUpperCase())],b.dataset.sec); });
+  on("bqe",(id,sec)=>qForm(sec,id)); on("bqh",id=>qHide(id)); on("bqr",id=>qRestore(id));
+  on("bqu",(id,sec)=>qMove(sec,id,-1)); on("bqd",(id,sec)=>qMove(sec,id,1));
+  on("bqn",sec=>qForm(sec)); on("bqse",sec=>qSecForm(sec)); on("bqsu",sec=>qSecMove(sec,-1)); on("bqsd",sec=>qSecMove(sec,1));
+  on("bqsh",sec=>qSecHide(sec,true)); on("bqsr",sec=>qSecHide(sec,false));
+  const ns=app.querySelector("[data-bqns]"); if(ns) ns.onclick=()=>qSecForm();
+}
 function autosize(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight+2,320)+"px";}
 function changed(rerender){
   if(rerender){const y=window.scrollY; renderForm(); window.scrollTo(0,y);}
   else{const a=draft.answers,p=progress(a); $("#pct").textContent=p.pct+"%"; $("#pbar").style.width=p.pct+"%"; $("#pcount").textContent=`${p.d} من ${p.t}`; $("#rail").innerHTML=railHTML(a);
-    app.querySelectorAll(".sec").forEach(sec=>{const s=SECTIONS.find(x=>"s_"+x.id===sec.id);const c=secCount(s,a);sec.querySelector(".cnt").textContent=cntText(c);});}
+    const SL=qEdit?buildSecs(BQL(),a._qx||null,true):secsFor(a); app.querySelectorAll(".sec").forEach(sec=>{const s=SL.find(x=>"s_"+x.id===sec.id); if(!s) return; const c=secCount(s,a);sec.querySelector(".cnt").textContent=cntText(c);});}
   clearTimeout(saveTimer); saveTimer=setTimeout(()=>flush(),1200);
   const sv=$("#saved"); if(sv) sv.textContent="بيتحفظ...";
 }
@@ -376,7 +537,7 @@ function credHTML(o,pdf,key){ o=o||{};
 async function secretOf(key){ const r=await window.erpCall('accessReveal',{brief:route.id,key}); return r.p||""; }
 function briefText(b){
   const a=b.answers||{}; const lines=[`بريف: ${b.store||""}`,`العميل: ${b.client||""}`,`الأكاونت مانجر: ${amOf(b)||"—"}`, ""];
-  for(const s of SECTIONS){ if(s.id==="access"&&!canSeeAccess()) continue; lines.push(`■ ${s.group?s.group+" / ":""}${s.title}`);
+  for(const s of secsFor(a)){ if(s.id==="access"&&!canSeeAccess()) continue; lines.push(`■ ${s.group?s.group+" / ":""}${s.title}`);
     for(const it of s.items){ if(!visible(it,a)||it.headerOnly||(it.hideEmpty&&!filled(a[it.id]))) continue; const v=a[it.id];
       if(it.type==="checks") lines.push(`${it.label}: ${(v||[]).join("، ")||"—"}`);
       else if(it.type==="cred") lines.push(`${(v&&v.n)||it.label}: ${filled(v)?credStr(v):"—"}`);
@@ -395,7 +556,9 @@ function headHTML(b){const a=b.answers||{}; return `
     </div>
     <div class="bar"><i style="width:${b.progress||0}%"></i></div>
 `;}
-function sectionsHTML(a,pdf){let prevGroup=null;return `${SECTIONS.map(s=>{const band=!!s.group&&s.group!==prevGroup; prevGroup=s.group||null;
+function hiddenHTML(a){ const H=hiddenAnswered(a); if(!H.length) return "";
+  return `<section class="sec vsec"><div class="sec-h"><h2>🗂 أسئلة اتشالت</h2><span class="cnt">إجابات قديمة لأسئلة مش موجودة دلوقتي</span></div><div class="card"><dl>${H.map(it=>{const v=a[it.id]; const shown=Array.isArray(v)?v.join("، "):(it.type==="namedurl"&&v?[(v.n||""),(v.u||"")].filter(Boolean).join(": "):v); return `<div class="vq"><dt>${esc(it.label)} <span class="muted" style="font-weight:400;font-size:12px">· ${esc(it.secTitle)}</span></dt><dd>${linkify(shown)}</dd></div>`;}).join("")}</dl></div></section>`; }
+function sectionsHTML(a,pdf){let prevGroup=null;return `${secsFor(a).map(s=>{const band=!!s.group&&s.group!==prevGroup; prevGroup=s.group||null;
   if(s.id==="access") return canSeeAccess()?accessHTML(s,a,pdf):"";
   return `${band?`<div class="grp-band"><span>${esc(s.group)}</span></div>`:""}<section class="sec vsec${s.group?" sub":""}${band?" after-group":""}"><div class="sec-h">${s.group?`<span class="grp">${esc(s.group)}</span>`:""}<h2>${esc(s.title)}</h2></div><div class="card"><dl>
     ${s.items.filter(it=>visible(it,a)&&!it.headerOnly&&!(it.hideEmpty&&!filled(a[it.id]))).map(it=>{const v=a[it.id];
@@ -405,7 +568,7 @@ function sectionsHTML(a,pdf){let prevGroup=null;return `${SECTIONS.map(s=>{const
       const shown=Array.isArray(v)?v.join("، "):(it.type==="date"&&v?fmtDate(v):v);
       const isLink=it.type==="url"&&/^https?:\/\//i.test(v||"");
       return `<div class="vq"><dt>${esc(it.label)}</dt><dd class="${filled(v)?"":"none"}"${it.ltr||it.type==="url"?' dir="ltr" style="text-align:right"':""}>${filled(v)?(isLink?`<a href="${esc(v)}" target="_blank" rel="noopener" style="color:var(--accent)">${esc(v)}</a>`:linkify(shown)):"—"}</dd></div>`;}).join("")}
-  </dl></div></section>`;}).join("")}`;}
+  </dl></div></section>`;}).join("")}${hiddenHTML(a)}`;}
 function renderView(){
   const b=briefs.get(route.id);
   const src=b;
@@ -417,7 +580,7 @@ function renderView(){
   <div class="vhead">
 ${headHTML(b)}
     <div class="actions">
-      ${canEditB(src)?`<button class="btn primary" id="edit">Edit</button>`:""}
+      ${canEditB(src)?`<button class="btn primary" id="edit">Edit</button>`:""}${qCan&&canEditB(src)?`<button class="btn" id="qedit2">✏️ تعديل الأسئلة</button>`:""}
       <button class="btn" id="copytxt">Copy as Text</button>
       ${downloads?`<button class="btn" id="pdf">Download PDF</button>`:""}
       <button class="btn" id="copylink">Copy Link</button>
@@ -429,6 +592,7 @@ ${headHTML(b)}
   ${sectionsHTML(a)}`;
   const bk=$("#back"); if(bk) bk.onclick=()=>{ if(backTo&&backTo.brief===b.id){ const t=backTo; backTo=null; t.back(); } else go({v:"list"}); };
   const ed=$("#edit"); if(ed) ed.onclick=()=>editBrief(src.id);
+  const qe2=$("#qedit2"); if(qe2) qe2.onclick=()=>{ editBrief(src.id); qEdit=true; renderForm(); };
   $("#copytxt").onclick=()=>copy(briefText(b));
   const pb=$("#pdf"); if(pb) pb.onclick=()=>exportPDF(b,pb);
   app.querySelectorAll("[data-reveal]").forEach(btn=>btn.onclick=async()=>{const sp=btn.parentElement.querySelector("[data-secret]"); const hidden=sp.textContent.startsWith("••");
@@ -493,7 +657,7 @@ async function exportPDF(b,btn){
 }
 async function exportCSV(){
   let all; try{ toast("بيجهّز الملف..."); all=await api("exportAll",session); }catch(e){ toast("ماقدرتش أصدّر. "+e.message); return; }
-  const items=[]; for(const s of SECTIONS) for(const it of s.items) if(!it.headerOnly) items.push({sec:s.title,it});
+  const items=[]; for(const s of secsFor({})) for(const it of s.items) if(!it.headerOnly) items.push({sec:s.title,it});
   const cell=v=>{const t=String(v??""); return /[",\n\r]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;};
   const head=["المتجر","العميل","الأكاونت مانجر","الحالة","الإكتمال %","تاريخ الإنشاء","آخر تعديل","لينك البريف",...items.map(x=>x.sec+" - "+x.it.label)];
   const rows=all.sort((x,y)=>(y.updatedAt||0)-(x.updatedAt||0)).map(b=>{const a=b.answers||{};
@@ -506,19 +670,19 @@ async function exportCSV(){
 // قايمة البريفات المتخزنة (من التحميل في الخلفية) بتظهر على طول
 function primeList(r){
   if(!r||!r.briefs) return;
-  if(r.partners) window.MQ_PARTNERS=r.partners; if(r.platforms) window.MQ_PLATFORMS=r.platforms; if(r.ams) window.MQ_AMS=r.ams;
+  if(r.partners) window.MQ_PARTNERS=r.partners; if(r.platforms) window.MQ_PLATFORMS=r.platforms; if(r.ams) window.MQ_AMS=r.ams; if(r.layout) window.MQ_BQL=r.layout;
   const m=new Map(); for(const b of r.briefs){ const old=briefs.get(b.id); m.set(b.id, old&&!old.partial&&old.updatedAt>=b.updatedAt?old:b); }
   briefs=m; loaded=true;
 }
 async function loadList(){
   if(!me) return;
-  try{ const r=await api("listBriefs",session); if(r&&r.partners) window.MQ_PARTNERS=r.partners; if(r&&r.platforms) window.MQ_PLATFORMS=r.platforms; if(r&&r.ams) window.MQ_AMS=r.ams; try{ if(typeof S!=="undefined"&&S.cache){ S.cache.briefs=r; S.fetched.briefs=Date.now(); if(window.saveCache) saveCache(); } }catch(e){}
+  try{ const r=await api("listBriefs",session); if(r&&r.partners) window.MQ_PARTNERS=r.partners; if(r&&r.platforms) window.MQ_PLATFORMS=r.platforms; if(r&&r.ams) window.MQ_AMS=r.ams; if(r&&r.layout) window.MQ_BQL=r.layout; try{ if(typeof S!=="undefined"&&S.cache){ S.cache.briefs=r; S.fetched.briefs=Date.now(); if(window.saveCache) saveCache(); } }catch(e){}
     const m=new Map(); for(const b of r.briefs){ const old=briefs.get(b.id); m.set(b.id, old&&!old.partial&&old.updatedAt>=b.updatedAt?old:b); }
     briefs=m; loaded=true; if(route.v==="list"||(route.v==="view"&&!briefs.has(route.id))) render(); }
   catch(e){ if(!/SESSION|الجلسة/.test(e.message)){ loaded=true; if(route.v==="list") app.innerHTML=`<div class="note">ماقدرتش أحمّل البريفات. ${esc(e.message)}</div>`; } }
 }
 async function loadFull(id){
-  try{ const b=await api("getBrief",session,id); briefs.set(id,b); }
+  try{ const b=await api("getBrief",session,id); if(b.layout){ window.MQ_BQL=b.layout; delete b.layout; } briefs.set(id,b); }
   catch(e){ briefs.delete(id); loaded=true; }
   if(route.v==="view"&&route.id===id) render();
 }
@@ -555,6 +719,7 @@ window.BriefModule={
     app=el; me=user.username; myName=user.name; isAdmin=has("briefs.manage_all");
     myRole=isAdmin?"admin":has("briefs.manage_own")?"am":"team";
     canWrite=isAdmin||myRole==="am"; seeAccess=!!user.seeAccess||has("briefs.access_all");
+    qCan=has("briefs.questions")||has("system.admin"); qEdit=false;
     if(!loaded && typeof S!=="undefined" && S.cache && S.cache.briefs) primeList(S.cache.briefs);
     const id=opts&&opts.id;
     backTo=id&&opts.back?{brief:id,label:opts.back.label,back:opts.back.go}:null; asgEdit=false;
