@@ -60,5 +60,31 @@ function coNotify(left){
   }catch(e){}
 }
 // بنطلب إذن الإشعارات وقت بصمة الدخول (لأن المتصفح بيطلب ضغطة من الشخص)
-function coAsk(){ try{ if(!VA_TAB && S.cfg && S.cfg.coOn && S.cfg.coNotify && 'Notification' in window && Notification.permission==='default') Notification.requestPermission().catch(()=>{}); }catch(e){} }
+function coAsk(){ try{ if(!VA_TAB && S.cfg && ((S.cfg.coOn && S.cfg.coNotify) || (S.cfg.aoOn && S.cfg.aoWarn)) && 'Notification' in window && Notification.permission==='default') Notification.requestPermission().catch(()=>{}); }catch(e){} }
 setInterval(coTick, 15000);
+
+/* ============ تحذير قبل الخروج الأوتوماتيك ============ */
+// السيرفر بيعمل خروج أوتوماتيك لو مفيش من الموظف حاجة (صور / السيستم قدامه) لمدة aoMin دقيقة.
+// لو مشاركة الشاشة وقفت والسيستم مش قدامه (تاب تاني أو برنامج تاني)، بيجيله إشعار من المتصفح قبلها بـ aoWarnMin دقيقة، ومرة كمان قبلها بدقيقتين.
+S.aoSeen=Date.now();
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ S.aoSeen=Date.now(); if(/^⚠️/.test(document.title)) document.title='Miqnas ERP'; } });
+function aoWarnTick(){
+  const c=S.cfg||{}, st=S.status, u=S.user;
+  if(!c.aoOn || c.aoWarn===false || !u || !u.clocks || S.mobile || VA_TAB || !st || !st.clockedIn || st.onBreak) return;
+  if(document.visibilityState==='visible'){ S.aoSeen=Date.now(); return; }
+  const lim=(Number(c.aoMin)||30)*6e4, warn=Math.min((Number(c.aoWarnMin)||10)*6e4, lim-6e4);
+  const last=Math.max(S.aoSeen||0, S.lastShot||0, Number(st.inTs)||0), left=lim-(Date.now()-last);
+  if(left<=0 || left>warn) return;
+  const step=left<=2*6e4?2:1, key=last+':'+step;
+  if(S.aoWarned===key || (step===1 && String(S.aoWarned||'').indexOf(last+':')===0)) return;
+  S.aoWarned=key;
+  document.title='⚠️ ارجع شارك الشاشة';
+  try{
+    if(!('Notification' in window) || Notification.permission!=='granted') return;
+    const n=new Notification(S.sharing?'⚠️ السيستم مش شايفك':'⚠️ مشاركة الشاشة واقفة',{
+      body:`هيتعملك خروج أوتوماتيك كمان ${coDur(left)} لو مارجعتش. افتح Miqnas ERP${S.sharing?'':' وشارك الشاشة تاني'}.`,
+      tag:'mq-autoout', renotify:true, requireInteraction:true, icon:(S.brand&&S.brand.logo)||undefined });
+    n.onclick=()=>{ try{ window.focus(); n.close(); }catch(e){} };
+  }catch(e){}
+}
+setInterval(aoWarnTick, 30000);
