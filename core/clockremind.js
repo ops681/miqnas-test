@@ -70,7 +70,7 @@ S.aoSeen=Date.now();
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ S.aoSeen=Date.now(); if(/^⚠️/.test(document.title)) document.title='Miqnas ERP'; } });
 function aoWarnTick(){
   const c=S.cfg||{}, st=S.status, u=S.user;
-  if(!c.aoOn || c.aoWarn===false || !u || !u.clocks || S.mobile || VA_TAB || !st || !st.clockedIn || st.onBreak) return;
+  if(!c.aoOn || c.aoWarn===false || !u || !u.clocks || S.mobile || VA_TAB || !st || !st.clockedIn || st.onBreak || cfFree()) return;
   if(document.visibilityState==='visible'){ S.aoSeen=Date.now(); return; }
   const lim=(Number(c.aoMin)||30)*6e4, warn=Math.min((Number(c.aoWarnMin)||10)*6e4, lim-6e4);
   const last=Math.max(S.aoSeen||0, S.lastShot||0, Number(st.inTs)||0), left=lim-(Date.now()-last);

@@ -19,6 +19,8 @@ const aoTag = a => a ? ' <span class="pill p-yel" style="font-size:11px" title="
 // صفحات مفتوحة حتى قبل البصمة: البصمة نفسها وطلبات الإجازة والإذن
 const FREE_VIEWS = ['clock','requests'];
 // جلسة الموبايل (أدمن أو Account Manager) للمتابعة: مش محتاجة بصمة، والبصمة نفسها من اللابتوب بس
+// بصمة بس: الإدارة فاتحاله يبصم من غير شير اسكرين ولا لوكيشن (أو البصمة المفتوحة دي اتعملت كده)
+const cfFree = () => !!(S.status && (S.status.free || S.status.mode==='Clock only'));
 const gated = () => !VA_TAB && !!(!S.mobile && S.user && S.user.clocks && S.cfg && S.cfg.clockFirst && S.status && !S.status.clockedIn);
 // النص العربي جواه إنجليزي: لو الحروف العربي هي الأغلب في السطر يتعرض كله من اليمين للشمال (مايتشقلبش)
 const arDir = s => { s=String(s==null?'':s); const a=(s.match(/[\u0600-\u06FF]/g)||[]).length; return a>0 && a>=(s.match(/[A-Za-z]/g)||[]).length; };

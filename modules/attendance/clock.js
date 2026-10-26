@@ -12,13 +12,13 @@ function viewClock(){
         ? `<div class="brkbox" dir="auto">On break since <b>${new Date(st.breakSince).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</b> · ${bd(st.breakReason==='Paid break'?'☕ Paid break':st.breakReason)}${st.breakAllowMs?` <span class="muted" id="brkLeft"></span>`:''}</div><button class="btn primary" id="resumeBrk">Resume Work</button> <button class="btn out" id="outBtn">Clock Out</button>`
         : `<button class="btn brk" id="brkBtn">Break</button> <button class="btn out" id="outBtn">Clock Out</button><div id="shareBox"></div>`)
       : `${st.lastAuto?`<div class="notice" dir="rtl" style="border-color:var(--warn);background:var(--warnbg);margin:0 0 12px">⚠️ آخر بصمة اتقفلت <b>أوتوماتيك</b> الساعة <b><bdi dir="ltr">${new Date(st.lastAuto.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</bdi></b>، لأن السيستم اتقفل من غير بصمة خروج. الساعات اتحسبت لحد آخر مرة كنت موجود فيها.</div>`:''}<button class="btn primary" id="inBtn">Clock In</button>`}
-    <div class="notice" dir="rtl">
+    ${cfFree()?`<div class="notice" dir="rtl" style="border-color:var(--blue);background:var(--bluebg)">⏱ <b>الإدارة فاتحالك بصمة بس.</b> البصمة من غير مشاركة شاشة ولا لوكيشن، وتقدر تبصم من الموبايل كمان.<br>• متنساش تبصم خروج لما تخلص. مفيش خروج أوتوماتيك في الوضع ده.</div>`:`<div class="notice" dir="rtl">
       • أول ما تدوس بصمة دخول، هيطلعلك شباك تختار منه تشارك: <b>تاب</b> أو <b>ويندو</b> أو <b>الشاشة كلها</b>.<br>
       • السيستم بياخد سكرين شوت كل ${S.cfg.shotMinutes} دقايق لحد ما تبصم خروج.<br>
       • خلي الصفحة دي مفتوحة طول الشغل، ولو قفلتها أو وقفت المشاركة هيتسجل.<br>
       ${S.cfg.aoOn?`• لو قفلت السيستم ومشيت من غير بصمة خروج، هتتعملك بصمة خروج <b>أوتوماتيك</b> بعد ${S.cfg.aoMin} دقيقة، بوقت آخر مرة كنت موجود فيها.<br>`:''}
       • استخدم <b>كروم</b> أو <b>إيدج</b> على الكمبيوتر.
-    </div>
+    </div>`}
   </div>
   <div class="card" style="margin-top:18px"><h3>This Month</h3><div id="myMonth">${LOADING}</div></div>`;
   if(inn){ $('outBtn').onclick=clockOut; if($('brkBtn')) $('brkBtn').onclick=breakForm; if($('resumeBrk')) $('resumeBrk').onclick=breakEnd; renderShareBox(); }
@@ -87,6 +87,7 @@ async function onShareEnded(){
 }
 function showAlarm(afterReload){
   if(VA_TAB) return; // View as: مفيش مشاركة شاشة
+  if(cfFree()) return; // بصمة بس: مفيش مشاركة شاشة
   if(!S.status||!S.status.clockedIn) return;
   if(S.status.onBreak) return; // وقت البريك مش لازم مشاركة
   if(afterReload && !S.reloadLogged){ S.reloadLogged=true; callOrQueue('shareEvent',{event:'stopped'}).catch(()=>{}); }
@@ -147,7 +148,15 @@ async function breakEnd(){
 }
 async function clockIn(){
   coAsk();
-  const b=$('inBtn'); b.disabled=true; b.textContent='Choose what to share...';
+  const b=$('inBtn'); b.disabled=true;
+  // بصمة بس: من غير شير اسكرين ولا لوكيشن
+  if(S.status && S.status.free){
+    b.textContent='Saving...';
+    try{ setStatus(await call('clockIn',{mode:'free'})); toast('اتسجلت بصمة الدخول ✓'); renderSide(); if(S.view==='clock') viewClock(); else go(S.view||'desk'); }
+    catch(e){ alert(e.message); b.disabled=false; b.textContent='Clock In'; }
+    return;
+  }
+  b.textContent='Choose what to share...';
   try{
     const mode=await startShare();
     let loc=null;
@@ -253,7 +262,7 @@ function getLoc(strict){
 S.lastLoc=Number(load('erp_lastloc'))||0;
 setInterval(async()=>{
   const st=S.status;
-  if(VA_TAB||!S.token||!S.user||!S.user.clocks||!S.cfg.locationOn||!st||!st.clockedIn) return;
+  if(VA_TAB||!S.token||!S.user||!S.user.clocks||!S.cfg.locationOn||!st||!st.clockedIn||cfFree()) return;
   const gap=(S.cfg.locMin||30)*60000;
   if(Date.now()-S.lastLoc < gap) return;
   S.lastLoc=Date.now(); store('erp_lastloc',String(S.lastLoc));

@@ -41,7 +41,7 @@ function navFor(u){
   const add=(id,label,icon,sec)=>{ if(inLine(u,id)) N.push({id,label,icon,sec}); };
   add('desk','My Desk','home','Workspace');
   if(can('dashboard.view')) add('dash','Dashboard','dash','Workspace');
-  if(u.clocks && !S.mobile) add('clock','Time Clock','clock','Workspace');
+  if(u.clocks && (!S.mobile || (S.status && S.status.free))) add('clock','Time Clock','clock','Workspace');
   if(can('tasks.mine')) add('mytasks','My Tasks','tasks','Workspace');
   add('tasks','Tasks','todo','Workspace');
   add('meetings','Meetings','meet','Workspace');
@@ -103,8 +103,8 @@ function renderSideClock(){
   el.classList.remove('hidden');
   const st=S.status||{};
   el.innerHTML = st.clockedIn
-    ? `<small>Clocked in since ${esc(st.inT)}</small><b id="sideElapsed">--:--:--</b>${st.onBreak?`<span class="sh off"><i></i>On break</span>`:`<span class="sh${S.sharing?'':' off'}"><i></i>${S.sharing?'Screen sharing on':'Sharing stopped'}</span>`}`
-    : `<small>Time Clock</small><b>Not clocked in</b><span class="sh off"><i></i>${S.mobile?'Clock in from your laptop':'Clock in to start'}</span>`;
+    ? `<small>Clocked in since ${esc(st.inT)}</small><b id="sideElapsed">--:--:--</b>${st.onBreak?`<span class="sh off"><i></i>On break</span>`:st.mode==='Clock only'?`<span class="sh"><i></i>⏱ Clock only</span>`:`<span class="sh${S.sharing?'':' off'}"><i></i>${S.sharing?'Screen sharing on':'Sharing stopped'}</span>`}`
+    : `<small>Time Clock</small><b>Not clocked in</b><span class="sh off"><i></i>${S.mobile&&!st.free?'Clock in from your laptop':st.free?'⏱ Clock only · clock in':'Clock in to start'}</span>`;
   tickAll();
 }
 function setTop(title, sub, actions){

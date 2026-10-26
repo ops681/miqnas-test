@@ -23,7 +23,7 @@ function renderDesk(D){
   const T=D.tasks, st=D.status;
   const tile=(label,val,sub,color,goV)=>`<${goV?`button onclick="go('${goV}')" style="text-align:left;cursor:pointer"`:'div'} class="kpi"><span>${label}</span><b style="color:${color||'var(--ink)'}">${val}</b><small>${sub||''}</small></${goV?'button':'div'}>`;
   const tiles=[];
-  if(st) tiles.push(tile('Today',st.clockedIn?(st.onBreak?'On break':'Clocked in'):'Not clocked in',st.clockedIn?'Since '+esc(st.inT):(S.mobile?'Clock in from your laptop':'Clock in to start'),st.clockedIn?(st.onBreak?'var(--blue)':'var(--ok)'):'var(--warn)','clock'));
+  if(st) tiles.push(tile('Today',st.clockedIn?(st.onBreak?'On break':'Clocked in'):'Not clocked in',st.clockedIn?'Since '+esc(st.inT):(S.mobile&&!st.free?'Clock in from your laptop':'Clock in to start'),st.clockedIn?(st.onBreak?'var(--blue)':'var(--ok)'):'var(--warn)','clock'));
   const TP=can('tasks.mine')?'mytasks':'tasks';
   if(T){ tiles.push(tile('Open tasks',T.open,T.ready+' ready to work on',null,TP)); tiles.push(tile('Late',T.late,'Past your deadline',T.late?'var(--bad)':null,TP)); tiles.push(tile('Due today',T.dueToday,'By your deadlines',T.dueToday?'var(--warn)':null,TP)); }
   if(D.toReview) tiles.push(tile('To review',D.toReview,'Tasks waiting for your approval','var(--warn)','tasks'));

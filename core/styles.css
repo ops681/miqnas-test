@@ -167,7 +167,7 @@ tr.clk{cursor:pointer} tr.clk:hover td{background:#F4F8F7}
 /* timeline */
 .tl{position:relative;height:14px;border-radius:5px;background:#EEF2F1;overflow:hidden;min-width:160px}
 .tl i{position:absolute;top:0;bottom:0}
-.tl i.on{background:#7DD3A8}.tl i.off{background:#F4A27A}.tl i.gap{background:#C5CBD3}.tl i.brk{background:#B9C7F0}
+.tl i.free{background:#9DC4E8}.tl i.on{background:#7DD3A8}.tl i.off{background:#F4A27A}.tl i.gap{background:#C5CBD3}.tl i.brk{background:#B9C7F0}
 /* deadlines + revisions */
 .tdl{width:auto;padding:6px 8px;font-size:12.5px;border-radius:9px}
 .tdl.late{border-color:var(--bad);color:var(--bad);background:var(--badbg)}
@@ -851,3 +851,9 @@ textarea.ml{field-sizing:content;min-height:42px;max-height:260px;resize:vertica
 .gt-pf{width:auto;max-width:240px;padding:6px 10px;border-radius:99px;font-size:13.5px}
 .gt-pj{color:var(--brand2)}
 .pguest .tnadd,.pguest .thelp .tnbtn,.pguest .tn-del{display:none!important}
+
+/* بصمة بس */
+.cf-b{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:1px 8px;font-size:12px;cursor:pointer;color:var(--muted);margin-inline-start:4px;vertical-align:middle}
+.cf-b.on{background:var(--bluebg);color:var(--blue);border-color:transparent;font-weight:600}
+.cf-opt{display:flex!important;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin:8px 0!important;cursor:pointer}
+.cf-opt input{width:auto;margin-top:4px}.cf-opt span{display:flex;flex-direction:column}.cf-opt small{color:var(--muted);font-size:12.5px}

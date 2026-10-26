@@ -56,14 +56,28 @@ function renderToday(r,keep){
     <div class="kpi"><span>Not clocked in</span><b>${L.length-came}</b></div>
     <div class="kpi"><span>Alerts</span><b style="color:${alerts?'var(--bad)':'var(--ink)'}">${alerts}</b></div>
   </div>
+  ${r.canFree?`<div class="muted" style="font-size:12.5px;margin:10px 0 0" dir="rtl">⏱ = <b>بصمة بس</b>: يبصم من غير شير اسكرين ولا لوكيشن، ومن الموبايل كمان. دوس على ⏱ جنب أي اسم تفتحها أو تقفلها.</div>`:''}
   <div class="tbl-wrap"><table>
     <tr><th>Name</th><th>Job</th><th>Status</th><th>In</th><th>Out</th><th>Sharing</th><th>Last screenshot</th><th>Stops</th><th>Hours today</th></tr>
-    ${L.map(x=>`<tr>
-      <td><b>${esc(x.name)}</b></td><td class="muted">${esc(x.job)}</td>
+    ${L.map(x=>{ const fr=(r.free||{})[x.username]; return `<tr>
+      <td><b>${esc(x.name)}</b>${r.canFree?` <button type="button" class="cf-b${fr?' on':''}" title="${fr?'بصمة بس: '+(fr==='today'?'النهارده بس':'دايماً'):'بصمة بس'}" aria-label="Clock only" onclick="cfMenu('${esc(x.username)}','${esc(x.name).replace(/'/g,'')}','${fr||''}')">⏱${fr?(fr==='today'?' النهارده':' دايماً'):''}</button>`:(fr?' <span class="cf-b on">⏱</span>':'')}</td><td class="muted">${esc(x.job)}</td>
       <td>${x.staleOpen?`<span class="pill p-bad">Forgot clock-out</span><div class="sub2">Open since ${x.openSince?shortD(x.openSince):'an earlier day'}</div>`:x.alert?'<span class="pill p-bad">No screenshots</span>':x.state==='break'?`<span class="pill p-prog">On Break</span><div class="sub2" ${bdd(x.breakSince)}>${esc(x.breakSince)} · ${esc(x.breakReason)}</div>`:x.state==='in'?'<span class="pill p-in">Working</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>':x.state==='leave'?'<span class="pill" style="background:var(--bluebg);color:var(--blue)">On leave</span>':'<span class="pill p-absent">Absent</span>'}</td>
       <td class="nw">${x.staleOpen?'—':esc(x.inT)||'—'}</td><td class="nw">${esc(x.outT)||'—'}${aoTag(x.autoOut)}</td><td>${esc(x.mode)||'—'}</td>
-      <td class="nw">${esc(x.lastShot)||'—'}</td><td>${x.stops?`<span class="pill p-bad">${x.stops}</span>`:'0'}</td><td>${x.hoursToday}</td></tr>`).join('')}
+      <td class="nw">${esc(x.lastShot)||'—'}</td><td>${x.stops?`<span class="pill p-bad">${x.stops}</span>`:'0'}</td><td>${x.hoursToday}</td></tr>`; }).join('')}
   </table></div>`;
+}
+/* ----- بصمة بس: الإدارة / HR بيفتحوها لموظف (النهارده بس أو دايماً) ----- */
+function cfMenu(un,name,cur){
+  const opt=(v,t,d)=>`<label class="check cf-opt"><input type="radio" name="cfM" value="${v}"${cur===v||(!cur&&v==='today')?' checked':''}><span><b>${t}</b><small>${d}</small></span></label>`;
+  $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:480px" dir="rtl">
+    <h2>⏱ بصمة بس · ${esc(name)}</h2>
+    <p class="muted" style="margin:4px 0 12px;font-size:13.5px">يبصم دخول وخروج من غير شير اسكرين ولا لوكيشن، ومن الموبايل كمان. مفيش خروج أوتوماتيك، واليوم بيتعلّم عليه "Clock only" في التقارير.</p>
+    ${opt('today','النهارده بس','بتتقفل لوحدها آخر اليوم')}${opt('always','دايماً','لحد ما تقفلها بإيدك')}${cur?opt('off','اقفلها','يرجع للبصمة العادية بمشاركة الشاشة'):''}
+    <div class="err" id="cfErr"></div>
+    <div class="mfoot"><span class="spacer"></span><button class="btn" type="button" onclick="closeModal()">إلغاء</button><button class="btn primary" type="button" id="cfSave">حفظ</button></div></div></div>`;
+  $('cfSave').onclick=async()=>{ const m=(document.querySelector('input[name="cfM"]:checked')||{}).value||'today'; $('cfSave').disabled=true;
+    try{ await call('cfSet',{username:un,mode:m}); closeModal(); toast(m==='off'?'رجعت البصمة العادية ✓':'اتفتحت البصمة من غير شير ✓'); call('board',{fresh:true}).then(r=>{ S.cache.board=r; if(S.view==='today'&&!S.attDay) renderToday(r,true); }).catch(()=>{}); }
+    catch(e){ $('cfErr').textContent=e.message; $('cfSave').disabled=false; } };
 }
 
 /* ============ Monthly Report ============ */
@@ -157,7 +171,7 @@ function loadScreen(){
 function renderScreen(r,keep){
   if(r.date!==S.screenDate) return;
   const a=$('driveAll'); if(a){ if(r.root) a.href=r.root; else a.classList.add('hidden'); }
-  const H={check:['Check','p-bad'],some:['Some stops','p-absent'],clean:['Clean','p-in'],absent:['Absent','p-out']};
+  const H={check:['Check','p-bad'],some:['Some stops','p-absent'],clean:['Clean','p-in'],free:['⏱ Clock only','p-prog'],absent:['Absent','p-out']};
   const [lo,hi]=r.range, span=Math.max(60,hi-lo);
   const hours=[]; for(let t=lo;t<=hi;t+=Math.max(60,Math.round(span/6/60)*60)) hours.push(t);
   const t=r.totals;
@@ -180,5 +194,5 @@ function renderScreen(r,keep){
       <td><span class="pill ${h[1]}">${h[0]}</span></td>
       <td>${x.folder?`<a class="btn small" href="${esc(x.folder)}" target="_blank" rel="noopener">Open in Drive</a>`:'<span class="muted" style="font-size:12px">No folder</span>'}</td></tr>`; }).join('')}
   </table></div></div>
-  <div class="legend" style="margin-top:12px"><span><i style="width:12px;height:12px;border-radius:3px;background:#7DD3A8;display:inline-block"></i>Sharing</span><span><i style="width:12px;height:12px;border-radius:3px;background:#F4A27A;display:inline-block"></i>Stopped sharing</span><span><i style="width:12px;height:12px;border-radius:3px;background:#B9C7F0;display:inline-block"></i>Break</span><span><i style="width:12px;height:12px;border-radius:3px;background:#C5CBD3;display:inline-block"></i>No screenshots (page closed / laptop asleep)</span></div>`;
+  <div class="legend" style="margin-top:12px"><span><i style="width:12px;height:12px;border-radius:3px;background:#7DD3A8;display:inline-block"></i>Sharing</span><span><i style="width:12px;height:12px;border-radius:3px;background:#F4A27A;display:inline-block"></i>Stopped sharing</span><span><i style="width:12px;height:12px;border-radius:3px;background:#B9C7F0;display:inline-block"></i>Break</span><span><i style="width:12px;height:12px;border-radius:3px;background:#C5CBD3;display:inline-block"></i>No screenshots (page closed / laptop asleep)</span><span><i style="width:12px;height:12px;border-radius:3px;background:#9DC4E8;display:inline-block"></i>⏱ Clock only (no sharing needed)</span></div>`;
 }
