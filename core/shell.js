@@ -71,13 +71,34 @@ function navFor(u){
   if(can('system.admin')) add('health','System Health','pulse','System');
   return N;
 }
+// القايمة مجموعات بتتفتح وتتقفل (زي HR ← كل صفحاته). My Desk و Dashboard فوق لوحدهم.
+// المجموعة اللي فيها الصفحة المفتوحة بتتفتح لوحدها، والسيستم بيفتكر انت سايب أنهي مجموعات مفتوحة.
+const NAV_TOP=['desk','dash'];
+const NAV_G=[
+  ['work','My Work','todo',['clock','mytasks','tasks','meetings','requests','knowledge']],
+  ['clients','Clients & Projects','folder',['projects','briefs','blockers','zstores','partners','clientrep','finance']],
+  ['lead','Leadership','crown',['board','exec','pulse','crm']],
+  ['lines','Business Lines','trend',['sales','line2']],
+  ['hr','HR','users',['people','teamact','today','monthly','screen','users','devices','locations']],
+  ['sys','System','gear',['org','settings','health']]];
+function navOpen(){ try{ return JSON.parse(load('erp_navg')||'{}')||{}; }catch(e){ return {}; } }
+function navGroupOf(v){ const g=NAV_G.find(x=>x[3].indexOf(v)>=0); return g?g[0]:''; }
+function navToggle(gid){ const o=navOpen(); const el=$('nav').querySelector(`[data-g="${gid}"]`); const open=!(el&&el.classList.contains('open')); o[gid]=open; store('erp_navg',JSON.stringify(o)); if(el) el.classList.toggle('open',open); }
+function navReveal(v){ const gid=navGroupOf(v); if(!gid) return; const el=$('nav')&&$('nav').querySelector(`[data-g="${gid}"]`); if(el&&!el.classList.contains('open')){ el.classList.add('open'); const o=navOpen(); o[gid]=true; store('erp_navg',JSON.stringify(o)); } }
 function renderSide(){
-  const N=navFor(S.user);
-  let sec='', h='';
-  const lock=gated();
-  N.forEach(n=>{ if(n.sec!==sec){ sec=n.sec; h+=`<div class="nsec">${sec}</div>`; } const b=navBadge(n.id); h+=`<button class="nav${S.view===n.id?' on':''}${lock&&FREE_VIEWS.indexOf(n.id)<0?' locked':''}" data-v="${n.id}">${ico(n.icon)}<span>${n.label}</span>${b?`<span class="nb">${b}</span>`:''}</button>`; });
+  const N=navFor(S.user), lock=gated(), O=navOpen(), cur=navGroupOf(S.view);
+  const item=(n,sub)=>{ const b=navBadge(n.id); return `<button class="nav${sub?' sub':''}${S.view===n.id?' on':''}${lock&&FREE_VIEWS.indexOf(n.id)<0?' locked':''}" data-v="${n.id}">${sub?'':ico(n.icon)}<span>${n.label}</span>${b?`<span class="nb">${b}</span>`:''}</button>`; };
+  let h=N.filter(n=>NAV_TOP.indexOf(n.id)>=0).map(n=>item(n,false)).join('');
+  NAV_G.forEach(g=>{
+    const L=g[3].map(id=>N.find(n=>n.id===id)).filter(Boolean); if(!L.length) return;
+    const open=g[0]===cur || O[g[0]]===true || (O[g[0]]==null && g[0]==='work');
+    const tot=L.reduce((s,n)=>s+(Number(navBadge(n.id))||0),0);
+    h+=`<div class="ngrp${open?' open':''}" data-g="${g[0]}"><button class="nav nghead" type="button" onclick="navToggle('${g[0]}')" aria-expanded="${open}">${ico(g[2])}<span>${g[1]}</span>${tot?`<span class="nb ngb">${tot}</span>`:''}<i class="nchev" aria-hidden="true"></i></button><div class="nsub">${L.map(n=>item(n,true)).join('')}</div></div>`;
+  });
+  // أي صفحة مش في مجموعة (احتياطي)
+  const known=NAV_TOP.concat(...NAV_G.map(g=>g[3])); h+=N.filter(n=>known.indexOf(n.id)<0).map(n=>item(n,false)).join('');
   $('nav').innerHTML=h;
-  $('nav').querySelectorAll('.nav').forEach(b=>b.onclick=()=>go(b.dataset.v));
+  $('nav').querySelectorAll('.nav[data-v]').forEach(b=>b.onclick=()=>go(b.dataset.v));
   $('sUser').innerHTML=`<button class="av av-btn" data-u="${esc(S.user.username)}" onclick="avEdit()" title="Change your photo" aria-label="Change your photo">${esc(initials(S.user.name))}</button><div class="nm"><b>${esc(S.user.name)}</b><small>${esc(S.user.roleName)}${S.user.job&&S.user.job!==S.user.roleName?' · '+esc(S.user.job):''}</small></div><button class="iconbtn" onclick="logout()" aria-label="Logout" title="Logout">${ico('out',17)}</button>`;
   renderSideClock();
 }
@@ -145,7 +166,7 @@ function go(v,opts){
   S.view=v; S.vt++; S.proj=null; S.navOpts=opts&&typeof opts==='object'?opts:null; navSave();
   clearInterval(S.viewTimer);
   closeBell();
-  $('nav').querySelectorAll('.nav').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $('nav').querySelectorAll('.nav').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); navReveal(v);
   window.scrollTo(0,0);
   if(gated() && FREE_VIEWS.indexOf(v)<0){ S.lockShown=true; viewLocked(v); return; }
   S.lockShown=false;

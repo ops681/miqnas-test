@@ -857,3 +857,16 @@ textarea.ml{field-sizing:content;min-height:42px;max-height:260px;resize:vertica
 .cf-b.on{background:var(--bluebg);color:var(--blue);border-color:transparent;font-weight:600}
 .cf-opt{display:flex!important;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin:8px 0!important;cursor:pointer}
 .cf-opt input{width:auto;margin-top:4px}.cf-opt span{display:flex;flex-direction:column}.cf-opt small{color:var(--muted);font-size:12.5px}
+
+/* القايمة: مجموعات بتتفتح وتتقفل */
+.ngrp{display:flex;flex-direction:column;gap:2px}
+.nav.nghead .nchev{margin-left:auto;width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s;opacity:.7;flex:none}
+.ngrp.open .nav.nghead{color:#fff}
+.ngrp.open .nav.nghead .nchev{transform:rotate(45deg)}
+.nav.nghead .ngb{margin-left:auto;margin-right:8px}
+.ngrp.open .nav.nghead .ngb{display:none}
+.ngrp .nsub{display:none;flex-direction:column;gap:1px;padding:2px 0 6px}
+.ngrp.open .nsub{display:flex}
+.nav.sub{padding:8px 14px 8px 44px;font-size:13.5px}
+.nav.sub.on{color:#F09A6B;background:rgba(255,255,255,.08)}
+@media (prefers-reduced-motion:reduce){.nav.nghead .nchev{transition:none}}
