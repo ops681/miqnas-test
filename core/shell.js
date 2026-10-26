@@ -49,7 +49,7 @@ function navFor(u){
   add('knowledge','Knowledge','book','Workspace');
   if(canAny(['projects.view_all','projects.manage_all','projects.manage_own'])) add('projects','Projects','folder','Workspace');
   if(canClientRep()) add('clientrep','Client Report','chart','Workspace');
-  if(can('projects.manage_all')) add('partners','Partners','link','Workspace');
+  if(can('projects.manage_all')) add('partners','All Partners','link','Workspace');
   if(canAny(['projects.manage_all','projects.manage_own'])) add('zstores','Zid Stores','folder','Workspace');
   if(canFinance()) add('finance','Finance','money','Workspace');
   if(can('blockers.manage')) add('blockers','Blockers','flag','Workspace');
@@ -76,7 +76,9 @@ function navFor(u){
 const NAV_TOP=['desk','dash'];
 const NAV_G=[
   ['work','My Work','todo',['clock','mytasks','tasks','meetings','requests','knowledge']],
-  ['clients','Clients & Projects','folder',['projects','briefs','blockers','zstores','partners','clientrep','finance']],
+  ['clients','Clients & Projects','folder',['projects','briefs','blockers','clientrep','finance']],
+  // الشركاء: صفحة الشركاء + صفحة لكل شريك (Zid Stores، وأي شريك جديد يتضاف هنا)
+  ['partners','Partners','link',['partners','zstores']],
   ['lead','Leadership','crown',['board','exec','pulse','crm']],
   ['lines','Business Lines','trend',['sales','line2']],
   ['hr','HR','users',['people','teamact','today','monthly','screen','users','devices','locations']],
