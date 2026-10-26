@@ -152,20 +152,26 @@ function mvPreview(data,pv){
 async function setPushCard(){
   let c; try{ c=await call('pushSettingsGet'); }catch(e){ return; }
   const site=location.origin+location.pathname.replace(/[^/]*$/,'');
-  $('setPush').innerHTML=`<div class="card"><h2 style="margin:0 0 4px">Phone notifications</h2>
-    <div class="muted" style="font-size:13px;margin-bottom:12px">${c.ready?`<b style="color:var(--ok)">On.</b> ${c.devices} phone${c.devices===1?'':'s'} registered. People turn it on from the bell on their phone.`:'Off. Connect a free Firebase project to send the bell notifications to phones, even when the app is closed.'}</div>
-    <details${c.ready?'':' open'}><summary style="cursor:pointer;font-weight:600">Firebase settings</summary>
+  $('setPush').innerHTML=`<div class="card"><h2 style="margin:0 0 4px">📱 Phone notifications</h2>
+    <div class="muted" style="font-size:13px;margin-bottom:10px">${c.ready?`<b style="color:var(--ok)">On.</b> ${c.devices} phone${c.devices===1?'':'s'} registered. People turn it on from the bell (📱) on their phone.`:'Off. The bell notifications can also reach phones, even when the app is closed.'}</div>
+    <div class="notice" style="font-size:13px;margin:0 0 10px">Sending: ${c.hasKey?'with the saved service account key.':'<b>with the system owner\'s Google account</b> (no key needed). The account needs Owner or Editor on the Firebase project <b dir="ltr">'+esc(c.projectId)+'</b>.'}</div>
+    ${c.lastErr?`<div class="notice" style="border-color:var(--bad);font-size:13px;margin:0 0 10px" dir="auto">⚠️ Last problem: ${esc(c.lastErr)}</div>`:''}
+    <div class="set" style="padding:0 0 10px"><div class="tx"><label for="pfOn">Turn on phone notifications</label><div>Off = nobody gets them on the phone. They still show in the bell</div></div><input type="checkbox" id="pfOn" ${c.on?'checked':''} style="width:20px;height:20px"></div>
+    <div class="pfgrid">
+      <div><label for="pfQ1">Quiet from (hour)</label><input id="pfQ1" type="number" min="0" max="23" value="${c.quietFrom}"></div><div><label for="pfQ2">Quiet until (hour)</label><input id="pfQ2" type="number" min="0" max="23" value="${c.quietTo}"></div>
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:6px">No phone notifications between these hours. They still show in the bell.</div>
+    <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Firebase project (advanced)</summary>
       <div class="pfgrid" style="margin-top:10px">
         <div><label>apiKey</label><input id="pfA" dir="ltr" value="${esc(c.apiKey)}"></div><div><label>projectId</label><input id="pfP" dir="ltr" value="${esc(c.projectId)}"></div>
         <div><label>messagingSenderId</label><input id="pfS" dir="ltr" value="${esc(c.senderId)}"></div><div><label>appId</label><input id="pfI" dir="ltr" value="${esc(c.appId)}"></div>
         <div style="grid-column:1/-1"><label>Web Push key (VAPID public key)</label><input id="pfV" dir="ltr" value="${esc(c.vapidKey)}"></div>
-        <div style="grid-column:1/-1"><label>Service account key (JSON) ${c.hasKey?'<span class="pill p-in" style="font-size:11px">saved</span>':''}</label><textarea id="pfK" rows="3" dir="ltr" placeholder="${c.hasKey?'Saved. Paste a new key only to replace it.':'Paste the whole JSON file here'}"></textarea><div class="muted" style="font-size:12px">Kept secret on the server and never shown again.</div></div>
-        <div><label>Quiet from (hour)</label><input id="pfQ1" type="number" min="0" max="23" value="${c.quietFrom}"></div><div><label>Quiet until (hour)</label><input id="pfQ2" type="number" min="0" max="23" value="${c.quietTo}"></div>
-      </div>
-      <div class="muted" style="font-size:12px;margin-top:6px">No phone notifications between these hours. They still show in the bell.</div>
-      <div class="err" id="pfE"></div>
-      <div class="mfoot"><div class="spacer"></div><button class="btn primary" id="pfB">Save notification settings</button></div></details></div>`;
-  $('pfB').onclick=async()=>{ try{ await call('pushSettingsSave',{cfg:{apiKey:$('pfA').value,projectId:$('pfP').value,senderId:$('pfS').value,appId:$('pfI').value,vapidKey:$('pfV').value,serviceKey:$('pfK').value.trim(),quietFrom:$('pfQ1').value,quietTo:$('pfQ2').value,site}}); toast('اتحفظت ✓'); setPushCard(); }catch(e){ $('pfE').textContent=e.message; } };
+        <div style="grid-column:1/-1"><label>Service account key (JSON, optional) ${c.hasKey?'<span class="pill p-in" style="font-size:11px">saved</span>':''}</label><textarea id="pfK" rows="3" dir="ltr" placeholder="${c.hasKey?'Saved. Paste a new key only to replace it.':'Not needed. Leave empty to send with the owner\'s Google account'}"></textarea>
+          <div class="muted" style="font-size:12px">Kept secret on the server and never shown again.${c.hasKey?' <label class="check" style="display:inline-flex;margin-left:8px"><input type="checkbox" id="pfDrop"> Remove the key (send with the owner\'s account)</label>':''}</div></div>
+      </div></details>
+    <div class="err" id="pfE"></div>
+    <div class="mfoot"><div class="spacer"></div><button class="btn primary" id="pfB">Save notification settings</button></div></div>`;
+  $('pfB').onclick=async()=>{ try{ await call('pushSettingsSave',{cfg:{on:$('pfOn').checked,apiKey:$('pfA').value,projectId:$('pfP').value,senderId:$('pfS').value,appId:$('pfI').value,vapidKey:$('pfV').value,serviceKey:$('pfK').value.trim(),dropKey:!!($('pfDrop')&&$('pfDrop').checked),quietFrom:$('pfQ1').value,quietTo:$('pfQ2').value,site}}); toast('اتحفظت ✓'); setPushCard(); }catch(e){ $('pfE').textContent=e.message; } };
 }
 async function saveSettings(){
   const v=Object.assign({}, S.cache.settings||{});
