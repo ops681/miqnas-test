@@ -181,7 +181,8 @@ function taskRowHTML(t,pid,me,isAdmin,canEdit){
   const refs=(t.refs||[]).map(r=>`<div class="tlink tref"><span>${esc(r.label)}</span>${r.url?`<a href="${esc(r.url)}" target="_blank" rel="noopener" dir="ltr">${esc(r.text||r.url)}</a>`:`<span class="tl-txt" dir="auto">${txtLinks(r.text||'')}</span>`}${r.copy?`<button type="button" class="btn ghost small tcopy" aria-label="Copy" onclick="event.stopPropagation();navigator.clipboard.writeText(this.dataset.v).then(()=>toast('اتنسخ'))" data-v="${esc(r.text||r.url)}">Copy</button>`:''}</div>`).join('');
   // رجوع للتعديل + توقف (KPIs)
   const RS=t.returns||[], BK=(t.blocks||[]), ob=BK.find(b=>b.status==='open'), isOwner=(t.assignees||[]).indexOf(me)>=0;
-  const canRet=t.status==='Done' && (boss || (!isOwner && (S.projTeam||[]).indexOf(me)>=0));
+  // رجّعها: الـ Account Manager، أو اللي استلم الشغل ده (تاسكته مستنية التاسك دي)
+  const canRet=t.status==='Done' && (boss || (!isOwner && (t.receivers||[]).indexOf(me)>=0));
   const retLine=RS.length?`<div class="tret" dir="rtl" title="${esc(RS.map(x=>x.kindLabel+': '+x.reason).join('\n'))}">↩️ رجعت ${RS.length===1?'مرة':RS.length+' مرات'} · آخر مرة: <b>${esc(RS[RS.length-1].kindLabel)}</b> · ${bd(RS[RS.length-1].reason)} <span class="muted">(${esc(RS[RS.length-1].by)})</span></div>`:'';
   const blkLine=ob?`<div class="tblk" dir="rtl">⛔ <b>متوقفة: ${esc(ob.causeLabel)}</b> · ${bd(ob.details)} <span class="muted">· ${esc(ob.by)} · ${new Date(ob.at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${ob.promoted?' · اترفعت للبورتال':''}</span>
       <span class="tblk-b">${isOwner||boss?`<button class="tnbtn" onclick="tAct(${P},'unblk')">✓ اتحلت</button>`:''}${boss?`<button class="tnbtn" onclick="tBlkRej(${P})">رفض</button>`:''}${boss&&ob.cause==='client'&&!ob.promoted?`<button class="tnbtn" onclick="tAct(${P},'blkup')">ارفعها للبورتال</button>`:''}</span></div>`:'';
