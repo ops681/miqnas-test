@@ -45,7 +45,10 @@ function gtShow(t){
   const c=t.can, btn=[];
   if(c.work && t.status==='To Do') btn.push(`<button class="btn" onclick="gtDo('start')"${t.blocked?' disabled title="Waiting on other tasks"':''}>Start</button>`);
   if(t.owner===S.user.username && (t.status==='To Do'||t.status==='In Progress')) btn.push(`<button class="btn primary" onclick="gtDo('submit',true)"${t.blocked?' disabled':''}>${t.reviewer?'Send for review':'Mark done'}</button>`);
-  if(c.review && t.status==='In Review'){ btn.push(`<button class="btn primary" onclick="gtDo('approve',true)">Approve</button>`); btn.push(`<button class="btn" onclick="gtDo('return',true,true)">Return for changes</button>`); }
+  if(c.review && t.status==='In Review'){ btn.push(`<button class="btn primary" onclick="gtDo('approve',true)">Approve</button>`); btn.push(`<button class="btn" onclick="gtRet('return')">Return for changes</button>`); }
+  const ob=(t.blocks||[]).find(b=>b.status==='open'), open=t.status!=='Done'&&t.status!=='Cancelled';
+  if(c.work && open && !ob) btn.push(`<button class="btn ghost" onclick="gtBlk()">⛔ متوقفة</button>`);
+  if(c.redo && t.status==='Done') btn.push(`<button class="btn" onclick="gtRet('redo')">↩️ رجّعها</button>`);
   if(c.manage && (t.status==='Done'||t.status==='Cancelled')) btn.push(`<button class="btn" onclick="gtDo('reopen',true)">Reopen</button>`);
   if(c.manage && t.status!=='Done' && t.status!=='Cancelled'){ btn.push(`<button class="btn" onclick="closeModal();gtEdit('${esc(t.id)}')">Edit</button>`); btn.push(`<button class="btn ghost danger" onclick="gtDo('cancel',true)">Cancel task</button>`); }
   const kv=(k,v)=>`<div><div class="muted" style="font-size:12px">${k}</div><div style="font-weight:600">${v}</div></div>`;
@@ -58,19 +61,40 @@ function gtShow(t){
         :t.source&&t.source.label?kv('From',esc(t.source.type)+' · '+(t.source.type==='meeting'?`<a href="#" onclick="closeModal();go('meetings',{id:'${esc(t.source.id)}'});return false">${esc(t.source.label)}</a>`:esc(t.source.label))):''}
     </div>
     ${t.desc?`<div style="white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:14px">${bd(t.desc)}</div>`:''}
+    ${(()=>{ const ob=(t.blocks||[]).find(b=>b.status==='open'); return ob?`<div class="tblk" dir="rtl" style="margin-bottom:14px">⛔ <b>متوقفة: ${esc(ob.causeLabel)}</b> · ${bd(ob.details)} <span class="muted">· ${esc(ob.by)}${ob.promoted?' · اترفعت للبورتال':''}</span>
+      <span class="tblk-b">${t.can.work||t.can.judge?`<button class="tnbtn" onclick="gtDo('unblock')">✓ اتحلت</button>`:''}${t.can.judge?`<button class="tnbtn" onclick="gtBlkRej()">رفض</button>`:''}${t.can.judge&&ob.cause==='client'&&t.source&&t.source.type==='project'&&!ob.promoted?`<button class="tnbtn" onclick="gtDo('blockup')">ارفعها للبورتال</button>`:''}</span></div>`:''; })()}
+    ${t.returns?`<div class="tret" dir="rtl" style="margin-bottom:12px">↩️ رجعت ${t.returns===1?'مرة':t.returns+' مرات'} (التفاصيل في السجل تحت)</div>`:''}
     ${t.deps.length?`<div style="margin-bottom:14px"><div class="muted" style="font-size:12px;margin-bottom:4px">Has to wait for</div>${t.deps.map(d=>`<div style="display:flex;gap:8px;margin:4px 0"><span class="pill ${GT_PILL[d.status]||''}">${esc(d.status)}</span><span>${bd(d.title)} <span class="muted">· ${esc(d.owner)}</span></span></div>`).join('')}</div>`:''}
     ${btn.length?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${btn.join('')}</div>`:''}
     <div style="display:flex;gap:8px"><textarea id="gtNote" placeholder="Write a comment" maxlength="1000" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();gtDo('comment',true);}" dir="auto" rows="1" class="ml"></textarea><button class="btn" onclick="gtDo('comment',true)">Comment</button></div>
-    <div style="margin-top:14px;max-height:260px;overflow:auto">${t.log.slice().reverse().map(l=>`<div style="padding:8px 0;border-top:1px solid var(--line2);font-size:13px"><b>${esc(l.by)}</b> <span class="muted" dir="ltr">· ${new Date(l.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span><div>${l.type==='comment'?bd(l.text):l.type==='returned'?'<span style="color:var(--bad)">Returned:</span> '+bd(l.text):l.type==='created'?'Created the task':bd(l.text||l.type)}</div></div>`).join('')}</div>
+    <div style="margin-top:14px;max-height:260px;overflow:auto">${t.log.slice().reverse().map(l=>`<div style="padding:8px 0;border-top:1px solid var(--line2);font-size:13px"><b>${esc(l.by)}</b> <span class="muted" dir="ltr">· ${new Date(l.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span><div>${l.type==='comment'?bd(l.text):l.type==='returned'?'<span style="color:var(--bad)">↩️ Returned'+(l.kind?' ('+esc(l.kind)+')':'')+':</span> '+bd(l.text):l.type==='created'?'Created the task':bd(l.text||l.type)}</div></div>`).join('')}</div>
   </div></div>`;
 }
-async function gtDo(act,withNote,needNote){
+/* ----- KPIs: رجّعها بنوعها / متوقفة ----- */
+function gtRet(act){
+  kpiModal('↩️ رجّع التاسك للتعديل',`${Object.keys(RET_K).map((k,i)=>`<label class="check cf-opt"><input type="radio" name="kmK" value="${k}"${i===0?' checked':''}><span><b>${RET_K[k][0]}</b><small>${RET_K[k][1]}</small></span></label>`).join('')}
+    <label for="kmR">السبب</label><textarea id="kmR" rows="3" dir="auto" class="ml" placeholder="إيه اللي محتاج يتعدّل؟"></textarea>`,()=>{
+    const note=$('kmR').value.trim(); if(!note) return 'اكتب السبب';
+    const kind=(document.querySelector('input[name="kmK"]:checked')||{}).value||'qa';
+    gtDo(act,false,false,{note,kind});
+  });
+}
+function gtBlk(){
+  kpiModal('⛔ التاسك متوقفة',`<label for="kmC">السبب</label><select id="kmC">${Object.keys(TBLK).map(k=>`<option value="${k}">${TBLK[k]}</option>`).join('')}</select>
+    <label for="kmR">التفاصيل</label><textarea id="kmR" rows="3" dir="auto" class="ml"></textarea>`,()=>{
+    const note=$('kmR').value.trim(); if(!note) return 'اكتب التفاصيل';
+    gtDo('block',false,false,{note,cause:$('kmC').value});
+  });
+}
+function gtBlkRej(){ kpiModal('رفض التوقف',`<label for="kmR">ليه؟ (اختياري)</label><textarea id="kmR" rows="2" dir="auto" class="ml"></textarea>`,()=>{ gtDo('blockrej',false,false,{note:$('kmR').value.trim()}); }); }
+async function gtDo(act,withNote,needNote,extra){
   let note='';
-  if(act==='comment'){ note=$('gtNote').value.trim(); if(!note) return; }
+  if(extra){ note=extra.note||''; }
+  else if(act==='comment'){ note=$('gtNote').value.trim(); if(!note) return; }
   else if(needNote){ note=prompt('إيه اللي محتاج يتعدّل؟')||''; if(!note.trim()) return; }
   else if(withNote && act!=='approve' && act!=='submit'){ if(!confirm({cancel:'تلغي التاسك دي؟',reopen:'تفتح التاسك دي تاني؟'}[act]||'متأكد؟')) return; }
   try{
-    const t=await call('gtAct',{id:S.gtCur.id,act,note});
+    const t=await call('gtAct',Object.assign({id:S.gtCur.id,act,note},extra||{}));
     toast(act==='comment'?'اتضاف التعليق ✓':'اتحفظ ✓');
     gtShow(t); gtReload().catch(()=>{}); S.cache.desk=null;
   }catch(e){ alert(e.message); }

@@ -73,6 +73,7 @@ function renderProject(r,keep){
   const y=window.scrollY;
   setTop(r.client, r.id+' · '+r.type);
   S.proj=r;
+  S.projTeam=['am','sm','copy','uiux','designer','dev','fe','cp','cp2','joker'].map(k=>String((r.data||{})[k]||'').toLowerCase()).filter(Boolean);
   {
     const backTo = r.guest ? ["go('tasks')",'Tasks'] : S.view==='mytasks' ? ['viewMyTasks()','My Tasks'] : ['viewProjects()','All Projects'];
     const groups=ROLE_ORDER.map(role=>({role, tasks:r.tasks.filter(t=>t.role===role)})).filter(g=>g.tasks.length && (r.type!==CP_TYPE || g.tasks.some(t=>!t.na)));
@@ -178,8 +179,15 @@ function taskRowHTML(t,pid,me,isAdmin,canEdit){
       : `<div class="tlink"><span>${esc(t.linkLabel)}</span>${t.link?`<span class="tl-txt" dir="auto">${txtLinks(t.link)}</span>`:'<span class="muted">Not yet</span>'}</div>`;
   }
   const refs=(t.refs||[]).map(r=>`<div class="tlink tref"><span>${esc(r.label)}</span>${r.url?`<a href="${esc(r.url)}" target="_blank" rel="noopener" dir="ltr">${esc(r.text||r.url)}</a>`:`<span class="tl-txt" dir="auto">${txtLinks(r.text||'')}</span>`}${r.copy?`<button type="button" class="btn ghost small tcopy" aria-label="Copy" onclick="event.stopPropagation();navigator.clipboard.writeText(this.dataset.v).then(()=>toast('اتنسخ'))" data-v="${esc(r.text||r.url)}">Copy</button>`:''}</div>`).join('');
-  return `<div class="trow${withOther?' other':''}${t.locked?' locked':''}${t.running||(meH&&meH.since)?' running':''}${t.status==='Done'?' done':''}">
-    <div class="tmain"><div class="tt">${esc(t.title)}${howTo}</div>${who}${helpersLine}${wait}${refs}${link}${notes}${tnotes}</div>
+  // رجوع للتعديل + توقف (KPIs)
+  const RS=t.returns||[], BK=(t.blocks||[]), ob=BK.find(b=>b.status==='open'), isOwner=(t.assignees||[]).indexOf(me)>=0;
+  const canRet=t.status==='Done' && (boss || (!isOwner && (S.projTeam||[]).indexOf(me)>=0));
+  const retLine=RS.length?`<div class="tret" dir="rtl" title="${esc(RS.map(x=>x.kindLabel+': '+x.reason).join('\n'))}">↩️ رجعت ${RS.length===1?'مرة':RS.length+' مرات'} · آخر مرة: <b>${esc(RS[RS.length-1].kindLabel)}</b> · ${bd(RS[RS.length-1].reason)} <span class="muted">(${esc(RS[RS.length-1].by)})</span></div>`:'';
+  const blkLine=ob?`<div class="tblk" dir="rtl">⛔ <b>متوقفة: ${esc(ob.causeLabel)}</b> · ${bd(ob.details)} <span class="muted">· ${esc(ob.by)} · ${new Date(ob.at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${ob.promoted?' · اترفعت للبورتال':''}</span>
+      <span class="tblk-b">${isOwner||boss?`<button class="tnbtn" onclick="tAct(${P},'unblk')">✓ اتحلت</button>`:''}${boss?`<button class="tnbtn" onclick="tBlkRej(${P})">رفض</button>`:''}${boss&&ob.cause==='client'&&!ob.promoted?`<button class="tnbtn" onclick="tAct(${P},'blkup')">ارفعها للبورتال</button>`:''}</span></div>`:'';
+  const kpiBtns=`${isOwner&&t.status!=='Done'&&!ob?`<button class="tnbtn" onclick="tBlock(${P})">⛔ متوقفة</button>`:''}${canRet?`<button class="tnbtn" onclick="tReturn(${P})">↩️ رجّعها</button>`:''}`;
+  return `<div class="trow${withOther?' other':''}${t.locked?' locked':''}${t.running||(meH&&meH.since)?' running':''}${t.status==='Done'?' done':''}${ob?' blocked':''}">
+    <div class="tmain"><div class="tt">${esc(t.title)}${howTo}</div>${who}${helpersLine}${wait}${blkLine}${retLine}${refs}${link}${notes}${tnotes}${kpiBtns}</div>
     <div class="tside">${lock}${dl}${status}<span class="tsep"></span>${time}${timer}</div></div>`;
 }
 
@@ -236,10 +244,47 @@ async function projDelete(id){
   if(!confirm('هيتمسح المشروع '+id+' نهائي، ومعاه كل تاسكاته والوقت المتسجل عليه. متأكد؟')) return;
   try{ await call('projDelete',{id}); toast('اتمسح المشروع ✓'); viewProjects(); }catch(e){ alert(e.message); }
 }
-function tStatus(pid,key,sel){
+async function tStatus(pid,key,sel){
   const v=sel.value;
-  if(v==='Done' && !confirm('متأكد إن التاسك دي خلصت؟')){ rerender(); return; }
+  if(v==='Done'){
+    // لينك التسليم إجباري: لو مكتوب ومش محفوظ نحفظه الأول
+    const t=findTask(curData(pid),pid,key), box=document.getElementById('lk_'+(pid+'_'+key).replace(/[^a-z0-9_]/gi,'_'));
+    const typed=box?box.value.trim():'';
+    if(t&&t.linkLabel&&!typed&&!String(t.link||'').trim()){ alert('حط '+t.linkLabel+' الأول وبعدين خليها Done'); rerender(); return; }
+    if(!confirm('متأكد إن التاسك دي خلصت؟')){ rerender(); return; }
+    if(t&&t.linkLabel&&typed&&typed!==String(t.link||'').trim()) await tAct(pid,key,'link',{link:typed});
+  }
   tAct(pid,key,'status',{status:v});
+}
+/* ----- KPIs: رجّعها للتعديل / متوقفة ----- */
+const RET_K={qa:['رفض QA','الشغل ماعدّاش المراجعة'],mistake:['غلطة','غلطة من صاحب التاسك'],client:['تعديل من العميل','العميل غيّر رأيه. مابيتحسبش على صاحب التاسك']};
+const TBLK={client:'رد العميل',access:'Access',docs:'أوراق رسمية',platform:'المنصة',uiux:'مستني UI/UX',copy:'مستني Copywriting',dev:'مستني Development'};
+function kpiModal(title,body,onSave){
+  $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:480px" dir="rtl"><h2 style="margin:0 0 10px">${title}</h2>${body}<div class="err" id="kmE"></div>
+    <div class="mfoot"><span class="spacer"></span><button class="btn" type="button" onclick="closeModal()">إلغاء</button><button class="btn primary" type="button" id="kmS">حفظ</button></div></div></div>`;
+  $('kmS').onclick=async()=>{ const err=onSave(); if(err){ $('kmE').textContent=err; return; } };
+}
+function tReturn(pid,key){
+  kpiModal('↩️ رجّع التاسك للتعديل',`${Object.keys(RET_K).map((k,i)=>`<label class="check cf-opt"><input type="radio" name="kmK" value="${k}"${i===0?' checked':''}><span><b>${RET_K[k][0]}</b><small>${RET_K[k][1]}</small></span></label>`).join('')}
+    <label for="kmR">السبب</label><textarea id="kmR" rows="3" dir="auto" class="ml" placeholder="إيه اللي محتاج يتعدّل؟"></textarea>`,()=>{
+    const reason=$('kmR').value.trim(); if(!reason) return 'اكتب السبب';
+    const kind=(document.querySelector('input[name="kmK"]:checked')||{}).value||'qa';
+    closeModal(); tAct(pid,key,'ret',{kind,reason}).then(()=>toast('التاسك رجعت ✓'));
+  });
+  setTimeout(()=>{ const r=$('kmR'); if(r) r.focus(); },50);
+}
+function tBlock(pid,key){
+  kpiModal('⛔ التاسك متوقفة',`<label for="kmC">السبب</label><select id="kmC">${Object.keys(TBLK).map(k=>`<option value="${k}">${TBLK[k]}</option>`).join('')}</select>
+    <label for="kmR">التفاصيل</label><textarea id="kmR" rows="3" dir="auto" class="ml" placeholder="مثال: العميل مابعتش صور المنتجات من يوم الأحد"></textarea>
+    <div class="muted" style="font-size:12.5px;margin-top:8px">التايمر هيقف. الـ Account Manager هيشوفها، ولو مش حقيقية هيرفضها والتأخير يتحسب عادي. دوس "اتحلت" لما ترجع تشتغل.</div>`,()=>{
+    const details=$('kmR').value.trim(); if(!details) return 'اكتب التفاصيل';
+    const cause=$('kmC').value; closeModal(); tAct(pid,key,'blk',{cause,details}).then(()=>toast('اتسجلت إنها متوقفة ✓'));
+  });
+}
+function tBlkRej(pid,key){
+  kpiModal('رفض التوقف',`<label for="kmR">ليه؟ (اختياري)</label><textarea id="kmR" rows="2" dir="auto" class="ml"></textarea><div class="muted" style="font-size:12.5px;margin-top:8px">التأخير في الفترة دي هيتحسب على صاحب التاسك.</div>`,()=>{
+    const note=$('kmR').value.trim(); closeModal(); tAct(pid,key,'blkrej',{note}).then(()=>toast('اترفض ✓'));
+  });
 }
 function viewRefresh(pid){ if(S.view==='mytasks' && !S.proj) viewMyTasks(true); else viewProject(pid,true); }
 function curData(pid){ return (S.view==='mytasks' && !S.proj) ? S.cache.my : S.cache['p:'+pid]; }

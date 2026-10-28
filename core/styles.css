@@ -870,3 +870,9 @@ textarea.ml{field-sizing:content;min-height:42px;max-height:260px;resize:vertica
 .nav.sub{padding:8px 14px 8px 44px;font-size:13.5px}
 .nav.sub.on{color:#F09A6B;background:rgba(255,255,255,.08)}
 @media (prefers-reduced-motion:reduce){.nav.nghead .nchev{transition:none}}
+
+/* KPIs: رجوع وتوقف على التاسك */
+.tret{font-size:12.5px;margin:6px 0;padding:6px 10px;border-radius:8px;background:var(--warnbg,rgba(240,138,75,.1));color:var(--ink)}
+.tblk{font-size:13px;margin:6px 0;padding:8px 10px;border-radius:8px;border:1px solid var(--bad);background:rgba(217,45,32,.06);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tblk .tblk-b{display:inline-flex;gap:4px;margin-inline-start:auto}
+.trow.blocked{box-shadow:inset 3px 0 0 var(--bad)}
