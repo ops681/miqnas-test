@@ -5,7 +5,7 @@
 html[data-theme="dark"]{
   color-scheme:dark;
   --bg:#0B1311; --card:#131E1B; --ink:#EEF3F1; --muted:#9DB0AA; --line:#22302C; --line2:#1C2925;
-  --ok:#3CC7AC; --okbg:#10302A; --bad:#F38A84; --badbg:#3A1A19; --warn:#F5A46E; --warnbg:#2E1D12; --yel:#F2C66B; --yelbg:#2B230F;
+  --ok:#3CC7AC; --okbg:#10302A; --bad:#F38A84; --badbg:#3A1A19; --warn:#F5A46E; --warnbg:#2E1D12; --amb:#F79009; --ambink:#FDB022; --ambbg:#33230C; --yel:#F2C66B; --yelbg:#2B230F;
   --blue:#9CC4FF; --bluebg:#14263F;
   --side-bg:#0E1916; --hover:#18241F; --soft:#0F1815;
 }

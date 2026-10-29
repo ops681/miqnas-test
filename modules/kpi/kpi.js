@@ -18,7 +18,7 @@ function kpiCardHTML(R,own){
   const x=R.me, g=R.green||85, a=R.amber||70, w=R.w||{};
   const head=`<div class="chead"><h2>📊 ${own?'My scorecard':esc(x?x.name:'Scorecard')}</h2>${R.trial?'<span class="pill p-yel" title="السكور بيتحسب ويظهر من غير أي تأثير">شهر تجريبي</span>':''}<span class="spacer"></span>${own?kpiMonthSel(R,'kpiDeskLoad'):`<span class="muted" style="font-size:13px">${esc(kpiMon(R.month))}</span>`}</div>`;
   if(!x) return `<div class="card flush kpi-card">${head}${own&&R.toRate?`<button class="btn small kpi-rate-b" onclick="kpiRateOpen()">⭐ عندك ${R.toRate} تقييم للشهر ده</button>`:''}<div class="empty"><b>لسه مفيش سكور للشهر ده</b>السكور بيتحسب كل ليلة من التاسكات اللي اتسلّمت والحضور.</div></div>`;
-  const ring=x.total==null?'<div class="kpi-total na">—</div>':`<div class="kpi-total ${x.color}"><b>${x.total}</b><span>من 100</span></div>`;
+  const ring=x.total==null?'<div class="kpi-total na"><div>–</div></div>':`<div class="kpi-total ${x.color}" style="--p:${x.total}"><div><b>${x.total}</b><span>من 100</span></div></div>`;
   const axl=KPI_AX.map(([k,en,ar])=>[k,en,ar+' · '+(w[k]||0)+'%']).concat(Object.keys(x.axes).filter(k=>x.axes[k]&&x.axes[k].custom).map(k=>{ const v=x.axes[k]; return [k,v.name,(v.kind==='manual'?'تقييم':'مقياس')+' · '+v.w+'%']; }));
   const rows=axl.map(([k,en,sub])=>{ const v=x.axes[k]||{}; const c=v.na?'':kpiCol(v.score,g,a);
     return `<details class="kpi-ax"><summary><span class="kpi-an"><b>${esc(en)}</b><small>${esc(sub)}</small></span><span class="kpi-bar"><i class="${c}" style="width:${v.na?0:v.score}%"></i></span><span class="kpi-sc ${c}">${v.na?(v.pending?'<small>⏳ مستني تقييم</small>':'<small>مفيش داتا كفاية</small>'):v.score}</span></summary><div class="kpi-det" dir="rtl">${kpiDetHTML(k,v)}</div></details>`; }).join('');
@@ -52,21 +52,24 @@ async function kpiBoardLoad(id,month){
   catch(e){ if($(id)) $(id).innerHTML=id==='kpiExec'?'':`<div class="card err">${esc(e.message)}</div>`; }
 }
 function kpiBoardHTML(B,id){
-  const g=B.green, a=B.amber, cell=(s,extra)=>s==='pending'?`<td class="kpi-c na" title="مستني تقييم">⏳</td>`:s==null?`<td class="kpi-c na">—</td>`:`<td class="kpi-c ${kpiCol(s,g,a)}"${extra||''}>${s}</td>`;
-  const cols=KPI_AX.map(x=>[x[0],x[1],x[2],B.w[x[0]]]).concat((B.cols||[]).map(c=>[c.id,c.name,c.name,c.w])), DD=B.depts||{};
+  const g=B.green, a=B.amber, col=s=>s==null||s==='pending'?'na':kpiCol(s,g,a);
+  const cols=KPI_AX.map(x=>[x[0],x[1],B.w[x[0]]]).concat((B.cols||[]).map(c=>[c.id,c.name,c.w])), DD=B.depts||{};
   const deps={}; B.list.forEach(x=>{ (deps[x.dept]||(deps[x.dept]={name:x.deptName,list:[]})).list.push(x); });
   const avg=L=>{ const v=L.filter(x=>x.total!=null); return v.length?Math.round(v.reduce((s,x)=>s+x.total,0)/v.length):null; };
+  const row=(k,s)=>`<div class="kb-row"><span class="l"><bdi>${esc(k[1])}</bdi></span><span class="t"><i class="${col(s)}" style="width:${typeof s==='number'?s:0}%"></i></span><span class="v ${col(s)}">${s==='pending'?'⏳':s==null?'–':s}</span></div>`;
+  const load=L=>!L||(!L.max&&!L.projects)?'':L.max?`<div class="kb-f"><span>الحِمل</span><span class="t"><i class="${L.color||''}" style="width:${Math.min(100,L.pct)}%"></i></span><b>${L.pct}%</b><span>${L.projects}/${L.max} مشروع</span></div>`:`<div class="kb-f"><span>الحِمل</span><b>${L.projects}</b><span>مشروع</span></div>`;
+  const card=x=>`<div class="kb-card ${col(x.total)}" onclick="kpiOpen('${esc(x.u)}','${esc(B.month)}')"><div class="kb-h"><span class="av" data-u="${esc(x.u)}">${esc(String(x.name||'?').trim().charAt(0))}</span><div class="nm"><b>${esc(x.name)}</b><small>${esc(x.job||'')}</small></div>
+      <div class="kb-ring ${col(x.total)}" style="--p:${x.total||0}"><span>${x.total==null?'–':x.total}</span></div></div>
+    <div class="kb-ax">${cols.map(k=>row(k,x.axes[k[0]])).filter((h,i)=>i<4||x.axes[cols[i][0]]!==undefined).join('')}</div>${load(x.load)}</div>`;
   S.kpiB=B;
   return `<div class="card flush kpi-board"><div class="chead"><h2>📊 Scorecards</h2>${B.trial?'<span class="pill p-yel">شهر تجريبي</span>':''}${B.locked?'<span class="pill p-out">الشهر اتقفل</span>':''}<span class="spacer"></span>
       ${kpiMonthSel(B,`(m=>kpiBoardLoad('${id}',m))`)}<button class="btn ghost small" onclick="kpiRateOpen('${esc(B.month)}')">⭐ التقييمات</button>${B.admin?`<button class="btn ghost small" onclick="kpiRecalc('${id}','${esc(B.month)}')">إعادة حساب</button>`:''}</div>
-    ${B.list.length?`<div class="tbl-wrap"><table class="kpi-tbl"><tr><th>Employee</th><th>Score</th>${cols.map(x=>`<th title="${esc(x[2])}"><bdi>${esc(x[1])}</bdi> <small dir="ltr">${x[3]}%</small></th>`).join('')}<th>Load</th></tr>
-      ${Object.keys(deps).sort((p,q)=>String(deps[p].name).localeCompare(deps[q].name)).map(d=>{ const D=deps[d]; const av=avg(D.list);
-        return `<tr class="kpi-dep"><td colspan="${cols.length+3}"><b>${esc(D.name)}</b> <span class="muted">· ${D.list.length} · متوسط ${av==null?'—':av}</span>${DD[d]?` <span class="kpi-dd" title="تاسكات اتسجّلت مستنية القسم ده من غير ما يتحدد موظف">⛔ وقّف ناس تانية ${DD[d].days} يوم</span>`:''}</td></tr>`+
-          D.list.sort((p,q)=>(q.total==null?-1:q.total)-(p.total==null?-1:p.total)).map(x=>`<tr class="kpi-r" onclick="kpiOpen('${esc(x.u)}','${esc(B.month)}')"><td><b>${esc(x.name)}</b><div class="sub2">${esc(x.job||'')}${x.am?' · AM':''}</div></td>${cell(x.total,' style="font-weight:700"')}${cols.map(k=>cell(x.axes[k[0]])).join('')}
-            <td class="kpi-c ${x.load&&x.load.color||'na'}">${x.load&&x.load.max?x.load.pct+'%<div class="sub2">'+x.load.projects+' / '+x.load.max+'</div>':(x.load&&x.load.projects?x.load.projects+' مشروع':'—')}</td></tr>`).join(''); }).join('')}
-    </table></div>`:`<div class="empty"><b>لسه مفيش سكور للشهر ده</b>${B.admin?'دوس "إعادة حساب" عشان يتحسب دلوقتي، وبعدها هيتحسب لوحده كل ليلة.':'السكور بيتحسب كل ليلة.'}</div>`}
+    ${B.list.length?`<div class="kb-body">${Object.keys(deps).sort((p,q)=>String(deps[p].name).localeCompare(deps[q].name)).map(d=>{ const D=deps[d], av=avg(D.list);
+        return `<div class="kb-dep"><h3>${esc(D.name)}</h3><span class="muted" dir="rtl">${D.list.length} ${D.list.length===1?'موظف':'موظفين'} · المتوسط</span>${av==null?'':`<span class="kb-chip ${col(av)}">${av}</span>`}${DD[d]?`<span class="kpi-dd">⛔ وقّف ناس تانية ${DD[d].days} يوم</span>`:''}</div>
+          <div class="kb-grid">${D.list.sort((p,q)=>(q.total==null?-1:q.total)-(p.total==null?-1:p.total)).map(card).join('')}</div>`; }).join('')}</div>`
+      :`<div class="empty"><b>لسه مفيش سكور للشهر ده</b>${B.admin?'دوس "إعادة حساب" عشان يتحسب دلوقتي، وبعدها هيتحسب لوحده كل ليلة.':'السكور بيتحسب كل ليلة.'}</div>`}
     ${Object.keys(DD).filter(k=>!deps[k]).map(k=>`<div class="kpi-foot"><span class="kpi-dd">⛔ ${esc(DD[k].name)}: وقّف ناس تانية ${DD[k].days} يوم</span></div>`).join('')}
-    <div class="muted kpi-foot">${B.computedAt?'اتحسب '+new Date(B.computedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' · ':''}Green ≥ ${g} · Amber ≥ ${a} · دوس على أي موظف تشوف التفاصيل</div></div>`;
+    <div class="kpi-legend"><span><i style="background:var(--ok)"></i>Green ≥ ${g}</span><span><i style="background:#DC6803"></i>Amber ≥ ${a}</span><span><i style="background:var(--bad)"></i>Red أقل من ${a}</span><span>– مفيش داتا كفاية</span><span>⏳ مستني تقييم</span><span class="spacer"></span><span>${B.computedAt?'اتحسب '+new Date(B.computedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''} · دوس على أي كارت تشوف التفاصيل</span></div></div>`;
 }
 async function kpiOpen(un,month){
   try{ const r=await call('kpiUser',{username:un,month}); const B=S.kpiB||{};
