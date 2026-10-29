@@ -88,12 +88,12 @@ async function kpiRateOpen(month){
 }
 function kpiRateShow(r){
   S.kpiRate=r;
-  const body=r.list.length?r.list.map(k=>`<div class="kpi-rk"><h3>${esc(k.name)} <small class="muted">· الوزن ${k.w}%</small></h3>
+  const body=r.list.length?r.list.map(k=>`<div class="kpi-rk"><h3>${esc(k.name)} <small class="muted">· الوزن ${k.w}%${k.rater?' · المقيّم: '+esc(k.rater):''}</small></h3>
       ${k.users.map(x=>`<div class="kpi-rr"><span><b>${esc(x.name)}</b><small class="muted"> · ${esc(x.job||'')}</small></span>
         <input type="number" min="0" max="100" id="kr_${esc(k.id)}_${esc(x.u)}" value="${x.score==null?'':x.score}" placeholder="0–100" aria-label="الدرجة" ${r.locked?'disabled':''}>
         <input id="kn_${esc(k.id)}_${esc(x.u)}" value="${esc(x.note||'')}" placeholder="ملاحظة (اختياري)" dir="auto" ${r.locked?'disabled':''}>
         ${r.locked?'':`<button class="btn small" onclick="kpiRateSave('${esc(k.id)}','${esc(x.u)}')">${x.score==null?'حفظ':'تعديل'}</button>`}</div>`).join('')}</div>`).join('')
-    :'<div class="empty"><b>مفيش تقييمات عليك</b>التقييمات بتظهر هنا لو انت الـ seat اللي بيقيّم KPI يدوية، أو رئيس القسم.</div>';
+    :'<div class="empty"><b>مفيش تقييمات عليك</b>التقييمات بتظهر هنا لو فيه KPI يدوية (Settings → KPIs & Capacity → KPIs إضافية) وانت المقيّم بتاعها، أو رئيس القسم، أو أدمن.</div>';
   $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:640px;width:100%" dir="rtl">
     <div style="display:flex;gap:10px;align-items:center"><h2 style="flex:1;margin:0">⭐ التقييمات · ${esc(kpiMon(r.month))}</h2>${r.locked?'<span class="pill p-out">الشهر اتقفل</span>':''}<button class="iconbtn" onclick="closeModal()" aria-label="Close">✕</button></div>
     <div class="muted" style="font-size:13px;margin:6px 0 12px">درجة من 100 لكل موظف. تقدر تعدّلها لحد ما الشهر يتقفل. سيبها فاضية واحفظ عشان تشيل التقييم.</div>${body}</div></div>`;
