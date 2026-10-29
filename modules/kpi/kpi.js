@@ -52,25 +52,31 @@ async function kpiBoardLoad(id,month){
   catch(e){ if($(id)) $(id).innerHTML=id==='kpiExec'?'':`<div class="card err">${esc(e.message)}</div>`; }
 }
 function kpiBoardHTML(B,id){
-  const g=B.green, a=B.amber, col=s=>s==null||s==='pending'?'na':kpiCol(s,g,a);
-  const cols=KPI_AX.map(x=>[x[0],x[1],B.w[x[0]]]).concat((B.cols||[]).map(c=>[c.id,c.name,c.w])), DD=B.depts||{};
-  const deps={}; B.list.forEach(x=>{ (deps[x.dept]||(deps[x.dept]={name:x.deptName,list:[]})).list.push(x); });
-  const avg=L=>{ const v=L.filter(x=>x.total!=null); return v.length?Math.round(v.reduce((s,x)=>s+x.total,0)/v.length):null; };
-  const row=(k,s)=>`<div class="kb-row"><span class="l"><bdi>${esc(k[1])}</bdi></span><span class="t"><i class="${col(s)}" style="width:${typeof s==='number'?s:0}%"></i></span><span class="v ${col(s)}">${s==='pending'?'⏳':s==null?'–':s}</span></div>`;
-  const load=L=>!L||(!L.max&&!L.projects)?'':L.max?`<div class="kb-f"><span>الحِمل</span><span class="t"><i class="${L.color||''}" style="width:${Math.min(100,L.pct)}%"></i></span><b>${L.pct}%</b><span>${L.projects}/${L.max} مشروع</span></div>`:`<div class="kb-f"><span>الحِمل</span><b>${L.projects}</b><span>مشروع</span></div>`;
-  const card=x=>`<div class="kb-card ${col(x.total)}" onclick="kpiOpen('${esc(x.u)}','${esc(B.month)}')"><div class="kb-h"><span class="av" data-u="${esc(x.u)}">${esc(String(x.name||'?').trim().charAt(0))}</span><div class="nm"><b>${esc(x.name)}</b><small>${esc(x.job||'')}</small></div>
-      <div class="kb-ring ${col(x.total)}" style="--p:${x.total||0}"><span>${x.total==null?'–':x.total}</span></div></div>
-    <div class="kb-ax">${cols.map(k=>row(k,x.axes[k[0]])).filter((h,i)=>i<4||x.axes[cols[i][0]]!==undefined).join('')}</div>${load(x.load)}</div>`;
+  const g=B.green,a=B.amber,col=s=>typeof s==='number'?kpiCol(s,g,a):'na';
+  const cols=KPI_AX.map(x=>[x[0],x[1],B.w[x[0]]]).concat((B.cols||[]).map(c=>[c.id,c.name,c.w]));
+  const deps={}; B.list.forEach(x=>{ deps[x.dept]=x.deptName; });
+  const f=S.kbF&&deps[S.kbF]?S.kbF:'';
+  const L=B.list.filter(x=>!f||x.dept===f).slice().sort((p,q)=>(q.total==null?-1:q.total)-(p.total==null?-1:p.total));
+  const sc=L.filter(x=>x.total!=null), avg=sc.length?Math.round(sc.reduce((s,x)=>s+x.total,0)/sc.length):null;
+  const cnt={g:0,a:0,r:0}; sc.forEach(x=>{ const c=col(x.total); cnt[c==='green'?'g':c==='amber'?'a':'r']++; });
+  const pct=k=>sc.length?cnt[k]/sc.length*100:0;
+  const ax=(s,l)=>`<div class="ka-x ${typeof s==='number'?'':'na'}" data-l="${esc(l)}">${s==='pending'?'<b title="مستني تقييم">⏳</b>':typeof s==='number'?`<b class="${col(s)}">${s}</b><u><i class="${col(s)}" style="width:${s}%"></i></u>`:'<b>·</b>'}</div>`;
+  const load=Lo=>!Lo?'':Lo.max?`<div class="ka-l"><b>${Lo.projects}/${Lo.max}</b><small>${Lo.pct}% من الـ Capacity</small></div>`:Lo.projects?`<div class="ka-l"><b>${Lo.projects}</b><small>مشروع</small></div>`:'<div class="ka-l"><small>—</small></div>';
   S.kpiB=B;
-  return `<div class="card flush kpi-board"><div class="chead"><h2>📊 Scorecards</h2>${B.trial?'<span class="pill p-yel">شهر تجريبي</span>':''}${B.locked?'<span class="pill p-out">الشهر اتقفل</span>':''}<span class="spacer"></span>
+  return `<div class="card flush kpi-board ka" style="--n:${cols.length}"><div class="chead"><h2>📊 Scorecards</h2>${B.trial?'<span class="pill p-yel">شهر تجريبي</span>':''}${B.locked?'<span class="pill p-out">الشهر اتقفل</span>':''}<span class="spacer"></span>
       ${kpiMonthSel(B,`(m=>kpiBoardLoad('${id}',m))`)}<button class="btn ghost small" onclick="kpiRateOpen('${esc(B.month)}')">⭐ التقييمات</button>${B.admin?`<button class="btn ghost small" onclick="kpiRecalc('${id}','${esc(B.month)}')">إعادة حساب</button>`:''}</div>
-    ${B.list.length?`<div class="kb-body">${Object.keys(deps).sort((p,q)=>String(deps[p].name).localeCompare(deps[q].name)).map(d=>{ const D=deps[d], av=avg(D.list);
-        return `<div class="kb-dep"><h3>${esc(D.name)}</h3><span class="muted" dir="rtl">${D.list.length} ${D.list.length===1?'موظف':'موظفين'} · المتوسط</span>${av==null?'':`<span class="kb-chip ${col(av)}">${av}</span>`}${DD[d]?`<span class="kpi-dd">⛔ وقّف ناس تانية ${DD[d].days} يوم</span>`:''}</div>
-          <div class="kb-grid">${D.list.sort((p,q)=>(q.total==null?-1:q.total)-(p.total==null?-1:p.total)).map(card).join('')}</div>`; }).join('')}</div>`
-      :`<div class="empty"><b>لسه مفيش سكور للشهر ده</b>${B.admin?'دوس "إعادة حساب" عشان يتحسب دلوقتي، وبعدها هيتحسب لوحده كل ليلة.':'السكور بيتحسب كل ليلة.'}</div>`}
-    ${Object.keys(DD).filter(k=>!deps[k]).map(k=>`<div class="kpi-foot"><span class="kpi-dd">⛔ ${esc(DD[k].name)}: وقّف ناس تانية ${DD[k].days} يوم</span></div>`).join('')}
-    <div class="kpi-legend"><span><i style="background:var(--ok)"></i>Green ≥ ${g}</span><span><i style="background:#DC6803"></i>Amber ≥ ${a}</span><span><i style="background:var(--bad)"></i>Red أقل من ${a}</span><span>– مفيش داتا كفاية</span><span>⏳ مستني تقييم</span><span class="spacer"></span><span>${B.computedAt?'اتحسب '+new Date(B.computedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''} · دوس على أي كارت تشوف التفاصيل</span></div></div>`;
+    <div class="ka-top"><div class="ka-avg"><b class="${col(avg)}" style="color:${avg==null?'var(--muted)':`var(--${col(avg)==='green'?'ok':col(avg)==='amber'?'ambink':'bad'})`}">${avg==null?'–':avg}</b><span>متوسط ${f?esc(deps[f]):'الفريق'}</span></div>
+      <div><div class="ka-dist"><i class="g" style="width:${pct('g')}%"></i><i class="a" style="width:${pct('a')}%"></i><i class="r" style="width:${pct('r')}%"></i></div>
+      <div class="ka-leg"><span><i style="background:var(--ok)"></i>Green ≥ ${g}: <b>${cnt.g}</b></span><span><i style="background:var(--amb)"></i>Amber ≥ ${a}: <b>${cnt.a}</b></span><span><i style="background:var(--bad)"></i>Red: <b>${cnt.r}</b></span></div></div></div>
+    <div class="ka-f"><button class="${f?'':'on'}" onclick="S.kbF='';kpiBoardRe('${id}')">الكل · ${B.list.length}</button>${Object.keys(deps).map(k=>`<button class="${f===k?'on':''}" onclick="S.kbF='${esc(k)}';kpiBoardRe('${id}')">${esc(deps[k])}</button>`).join('')}</div>
+    <div class="ka-g ka-h"><span>Employee</span><span>Score</span>${cols.map(c=>`<span><bdi>${esc(c[1])}</bdi><small dir="ltr">${c[2]}%</small></span>`).join('')}<span style="text-align:end">Load</span></div>
+    ${B.list.length?'':`<div class="empty"><b>لسه مفيش سكور للشهر ده</b>${B.admin?'دوس "إعادة حساب" عشان يتحسب دلوقتي، وبعدها هيتحسب لوحده كل ليلة.':'السكور بيتحسب كل ليلة.'}</div>`}
+    ${L.map(x=>`<div class="ka-g ka-r" tabindex="0" onkeydown="if(event.key==='Enter')this.click()" onclick="kpiOpen('${esc(x.u)}','${esc(B.month)}')"><div class="ka-who"><span class="av" data-u="${esc(x.u)}">${esc(String(x.name||'?').trim().charAt(0))}</span><div><b>${esc(x.name)}</b><small>${esc(x.job||'')}${f?'':' · '+esc(x.deptName||'')}</small></div></div>
+      <div class="ka-s ${col(x.total)}">${x.total==null?'–':x.total}</div><div class="ka-axes">${cols.map(c=>ax(x.axes[c[0]],c[1])).join('')}</div>${load(x.load)}</div>`).join('')}
+    ${Object.keys(B.depts||{}).filter(k=>!f||k===f).map(k=>`<div class="ka-foot"><span class="kpi-dd">⛔ ${esc(B.depts[k].name)}: وقّف ناس تانية ${B.depts[k].days} يوم (تاسكات اتسجّلت مستنية القسم من غير ما يتحدد موظف)</span></div>`).join('')}
+    <div class="ka-foot"><span>· = مفيش داتا كفاية</span><span>⏳ = مستني تقييم</span><span class="spacer"></span><span>${B.computedAt?'اتحسب '+new Date(B.computedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' · ':''}دوس على أي موظف تشوف التفاصيل</span></div></div>`;
 }
+function kpiBoardRe(id){ if(S.kpiB&&$(id)) $(id).innerHTML=kpiBoardHTML(S.kpiB,id); }
 async function kpiOpen(un,month){
   try{ const r=await call('kpiUser',{username:un,month}); const B=S.kpiB||{};
     $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div style="max-width:680px;width:100%">${kpiCardHTML({me:r.me,month,trial:B.trial,w:B.w,green:B.green,amber:B.amber},false).replace('<div class="chead">','<div class="chead"><button class="iconbtn" onclick="closeModal()" aria-label="Close" style="order:9">✕</button>')}</div></div>`;
