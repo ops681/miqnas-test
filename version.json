@@ -1,5 +1,5 @@
 {
- "v":"2026-10-29.1",
+ "v":"2026-10-29.2",
  "css": [
   "core/styles.css",
   "modules/briefs/briefs.css",
@@ -48,6 +48,7 @@
   "modules/finance/finance.js",
   "modules/board/board.js",
   "modules/soon/soon.js",
+  "modules/kpi/kpi.js",
   "core/start.js"
  ]
 }

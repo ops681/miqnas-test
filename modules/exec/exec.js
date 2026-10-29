@@ -42,6 +42,8 @@ function renderExec(X){
     ${X.actions.map(a=>`<button class="al sev-${a.sev}" onclick="goTo(S.execGo[${gid(a.go)}])"><span class="dot"></span><span class="tx"><b>${bd(a.title)}</b><span>${bd(a.detail)}</span></span></button>`).join('')}
   </div>`:`<div class="card" style="border-left:5px solid var(--ok)"><h2 style="margin:0 0 4px">Executive Action Center</h2><div class="muted">Nothing needs a decision right now.</div></div>`}
 
+  <div id="kpiExec">${S.cache['kpiB:']&&typeof kpiBoardHTML==='function'?kpiBoardHTML(S.cache['kpiB:'],'kpiExec'):''}</div>
+
   ${typeof mgmtHTML==='function'?mgmtHTML(X.mgmt).replace('class="card flush mg"','class="card flush"'):''}
 
   ${pulseCard(X.pulse)}
@@ -94,6 +96,7 @@ function renderExec(X){
     ${X.heat.map(h=>`<tr><td><b>${esc(h.name)}</b><div class="muted" style="font-size:12px">${esc(h.line)}</div></td>${cols.map(c=>{ const v=h.cells[c[0]]; return `<td style="text-align:center;background:${v.l?HEAT_BG[v.l]:'transparent'};color:${v.l>1?HEAT_FG[v.l]:'inherit'};font-weight:${v.l>1?700:500}">${esc(v.v)}</td>`; }).join('')}</tr>`).join('')}
     </table></div></div>
   </div>`;
+  if(typeof kpiBoardLoad==='function') kpiBoardLoad('kpiExec');
 }
 
 /* ----- Commercial Pulse (إدخال الأرقام) ----- */

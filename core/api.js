@@ -3,7 +3,7 @@
 // تعديل S.user.perms أو الـ localStorage من الـ Console مابيفتحش حاجة. (والسيرفر برضه بيرفض ويسجل المحاولة)
 const { call, can, canAny, permSeed, srvFlag } = (() => {
 let P = null, F = null;
-const take = (action, d) => { if ((action === 'me' || action === 'login' || action === 'firstSetup') && d && d.user && Array.isArray(d.user.perms)) { P = new Set(d.user.perms.map(String)); F = Object.freeze({ founder: !!d.user.founder, clevel: !!d.user.clevel, ceo: !!d.user.ceo, teamAct: !!(d.teamAct || d.user.teamAct), lines: Object.freeze([].concat(d.user.lines || []).map(String)) }); } return d; };
+const take = (action, d) => { if ((action === 'me' || action === 'login' || action === 'firstSetup') && d && d.user && Array.isArray(d.user.perms)) { P = new Set(d.user.perms.map(String)); F = Object.freeze({ founder: !!d.user.founder, clevel: !!d.user.clevel, ceo: !!d.user.ceo, teamAct: !!(d.teamAct || d.user.teamAct), lines: Object.freeze([].concat(d.user.lines || []).map(String)), heads: Object.freeze([].concat(d.user.heads || []).map(String)) }); } return d; };
 const has = p => !!(P && P.has(p));
 function call(action, params){ return call0(action, params).then(d => take(action, d)); }
 function call0(action, params){
@@ -43,7 +43,7 @@ function call0(action, params){
     });
 }
 // أول فتح من البيانات المتخزنة (للسرعة) لحد ما رد السيرفر ييجي. بتشتغل مرة واحدة بس
-const permSeed = u => { if (P) return; u = u || {}; P = new Set((Array.isArray(u.perms) ? u.perms : []).map(String)); F = Object.freeze({ founder: !!u.founder, clevel: !!u.clevel, ceo: !!u.ceo, teamAct: !!u.teamAct, lines: Object.freeze([].concat(u.lines || []).map(String)) }); };
+const permSeed = u => { if (P) return; u = u || {}; P = new Set((Array.isArray(u.perms) ? u.perms : []).map(String)); F = Object.freeze({ founder: !!u.founder, clevel: !!u.clevel, ceo: !!u.ceo, teamAct: !!u.teamAct, lines: Object.freeze([].concat(u.lines || []).map(String)), heads: Object.freeze([].concat(u.heads || []).map(String)) }); };
 // founder / clevel / ceo / teamAct / lines من رد السيرفر (مش من S.user اللي ممكن يتعدل)
 const srvFlag = k => F ? F[k] : undefined;
 return Object.freeze({ call, can: has, canAny: list => list.some(has), permSeed, srvFlag });

@@ -63,6 +63,7 @@ function navFor(u){
   if(canAny(['attendance.view_all','leave.approve_hr'])) add('people','People Dashboard','dash','People');
   if(srvFlag('teamAct')) add('teamact','Team Activity','chart','People');
   if(can('attendance.view_all')){ add('today','Attendance','cal','People'); add('monthly','Monthly Report','chart','People'); add('screen','Screen Report','monitor','People'); }
+  if(canAny(['executive.view','attendance.view_all','system.admin'])||(srvFlag('heads')||[]).length) add('kpis','Scorecards','chart','People');
   if(can('people.manage')) add('users','Employees','users','People');
   if(can('people.manage')) add('devices','Devices','device','People');
   if(can('location.view')) add('locations','Locations','pin','People');
@@ -81,7 +82,7 @@ const NAV_G=[
   ['partners','Partners','link',['partners','zstores']],
   ['lead','Leadership','crown',['board','exec','pulse','crm']],
   ['lines','Business Lines','trend',['sales','line2']],
-  ['hr','HR','users',['people','teamact','today','monthly','screen','users','devices','locations']],
+  ['hr','HR','users',['people','teamact','today','monthly','screen','kpis','users','devices','locations']],
   ['sys','System','gear',['org','settings','health']]];
 function navOpen(){ try{ return JSON.parse(load('erp_navg')||'{}')||{}; }catch(e){ return {}; } }
 function navGroupOf(v){ const g=NAV_G.find(x=>x[3].indexOf(v)>=0); return g?g[0]:''; }
@@ -172,7 +173,7 @@ function go(v,opts){
   window.scrollTo(0,0);
   if(gated() && FREE_VIEWS.indexOf(v)<0){ S.lockShown=true; viewLocked(v); return; }
   S.lockShown=false;
-  const map={teamact:viewTeamAct,dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,clientrep:()=>viewClientRep(opts),partners:viewPartners,zstores:()=>viewZStores(opts),knowledge:()=>viewKnowledge(opts),finance:()=>viewFinance(opts),board:()=>viewBoard(opts),people:viewPeople,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
+  const map={teamact:viewTeamAct,dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,clientrep:()=>viewClientRep(opts),partners:viewPartners,zstores:()=>viewZStores(opts),knowledge:()=>viewKnowledge(opts),finance:()=>viewFinance(opts),board:()=>viewBoard(opts),people:viewPeople,kpis:viewKpis,sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
   (map[v]||viewDash)();
 }
 function viewLocked(v){

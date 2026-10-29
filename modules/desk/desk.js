@@ -36,6 +36,7 @@ function renderDesk(D){
   if(D.pulseStale!=null) tiles.push(tile('Commercial Pulse',D.pulseStale?'Not entered':'Up to date','This month',D.pulseStale?'var(--warn)':'var(--ok)','pulse'));
   $('main').innerHTML=`<div style="display:grid;gap:20px">
   ${readyCardHTML(D.readyNow).replace('margin-bottom:20px','margin:0')}
+  <div id="kpiDesk">${S.cache.kpiMine&&typeof kpiCardHTML==='function'?kpiCardHTML(S.cache.kpiMine,true):''}</div>
   ${tiles.length?`<div class="grid kpis" style="margin:0">${tiles.join('')}</div>`:''}
   <div class="two" style="margin:0">
     ${typeof finDeskHTML==='function'?finDeskHTML(D.finDue):''}
@@ -52,6 +53,8 @@ function renderDesk(D){
     <div class="card flush"><div class="chead"><h2>Notifications</h2>${D.unread?`<span class="pill p-bad">${D.unread} new</span>`:''}<span class="spacer"></span>${D.unread?`<button class="btn ghost small" onclick="readAll()">Mark all read</button>`:''}</div>
       ${D.notifs.length?D.notifs.map((n,i)=>notifHTML(n,i,'desk')).join(''):`<div class="empty"><b>All caught up</b>When something needs you, it shows up here.</div>`}</div>
   </div></div>`;
+  // الـ Scorecard: بيتجاب كل 5 دقايق بالكتير (والنسخة اللي اتجابت بتظهر على طول)
+  if(typeof kpiDeskLoad==='function' && Date.now()-(S.kpiDeskAt||0)>300000){ S.kpiDeskAt=Date.now(); kpiDeskLoad(); }
 }
 async function readAll(){
   try{ const r=await call('notifRead',{all:true}); S.unread=0; S.notifs=r.list; if(S.cache.desk){ S.cache.desk.notifs.forEach(n=>n.read=true); S.cache.desk.unread=0; } renderBell(); if(S.view==='desk') renderDesk(S.cache.desk); else openBell(); }catch(e){ toast(e.message); }

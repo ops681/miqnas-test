@@ -26,7 +26,7 @@ function viewSettings(){
 }
 function renderSettings(v){
   $('main').innerHTML=`<div style="max-width:900px;display:grid;gap:18px">
-  <div id="setBrand"></div><div id="setAlerts"></div><div id="setSec"></div><div id="setPush"></div><div id="setPlat"></div><div id="setMove"></div>
+  <div id="setBrand"></div><div id="setAlerts"></div><div id="setSec"></div><div id="setPush"></div><div id="setKpi"></div><div id="setPlat"></div><div id="setMove"></div>
   ${SET_GROUPS.map(g=>`<div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>${g[0]}</h2><div class="muted" style="font-size:13px">${g[1]}</div></div>
     ${g[2].map(it=>`<div class="set"><div class="tx"><label for="st_${it[0]}">${it[1]}</label><div>${it[2]}</div></div><input type="number" min="1" id="st_${it[0]}" value="${esc(v[it[0]])}"><span class="u">${it[3]}</span></div>`).join('')}</div>`).join('')}
   <div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>Sign-in security</h2><div class="muted" style="font-size:13px">Turn off only in an emergency</div></div>
@@ -58,7 +58,7 @@ function renderSettings(v){
   <div class="card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><div style="flex:1 1 320px"><h2 style="margin:0 0 4px">Work hours</h2><div class="muted" style="font-size:13px">Off for now, since the team's hours vary. Late-arrival alerts will use this later.</div></div>
     <label class="check" style="margin:0"><input type="checkbox" id="st_late_on" ${v.late_on?'checked':''} disabled>Late-arrival alerts</label></div>
   </div>`;
-  setBrandCard(); setAlertsCard(); setSecCard(); setPushCard(); setPlatCard(); setMoveCard();
+  setBrandCard(); setAlertsCard(); setSecCard(); setPushCard(); if(typeof setKpiCard==='function') setKpiCard(); setPlatCard(); setMoveCard();
 }
 /* ----- هوية الشركة ----- */
 function setBrandCard(){
