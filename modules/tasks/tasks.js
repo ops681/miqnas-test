@@ -61,6 +61,10 @@ function gtShow(t){
         :t.source&&t.source.label?kv('From',esc(t.source.type)+' · '+(t.source.type==='meeting'?`<a href="#" onclick="closeModal();go('meetings',{id:'${esc(t.source.id)}'});return false">${esc(t.source.label)}</a>`:esc(t.source.label))):''}
     </div>
     ${t.desc?`<div style="white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:14px">${bd(t.desc)}</div>`:''}
+    ${t.can.work&&t.status!=='Cancelled'?`<div style="margin-bottom:14px" dir="rtl"><label for="gtLk">التسليم <span class="muted" style="font-weight:400">(اختياري)</span></label>
+      <div style="display:flex;gap:8px;align-items:flex-start"><textarea id="gtLk" class="ml" dir="auto" rows="1" maxlength="2000" placeholder="لينك أو كلام · Enter = سطر جديد" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();gtDeliver();}">${esc(t.link||'')}</textarea><button class="btn" type="button" onclick="gtDeliver()">Save</button></div>
+      ${t.link&&/https?:\/\//i.test(t.link)?`<div class="tl-txt" style="margin-top:6px">${txtLinks(t.link)}</div>`:''}</div>`
+      :t.link?`<div style="margin-bottom:14px;background:var(--bg);border-radius:10px;padding:10px 14px" dir="rtl"><div class="muted" style="font-size:12px;margin-bottom:4px">📎 التسليم</div><div class="tl-txt">${txtLinks(t.link)}</div></div>`:''}
     ${(()=>{ const ob=(t.blocks||[]).find(b=>b.status==='open'); return ob?`<div class="tblk" dir="rtl" style="margin-bottom:14px">⛔ <b>متوقفة: ${esc(ob.causeLabel)}</b> · ${bd(ob.details)} <span class="muted">· ${esc(ob.by)}${ob.promoted?' · اترفعت للبورتال':''}</span>
       <span class="tblk-b">${t.can.work||t.can.judge?`<button class="tnbtn" onclick="gtDo('unblock')">✓ اتحلت</button>`:''}${t.can.judge?`<button class="tnbtn" onclick="gtBlkRej()">رفض</button>`:''}${t.can.judge&&ob.cause==='client'&&t.source&&t.source.type==='project'&&!ob.promoted?`<button class="tnbtn" onclick="gtDo('blockup')">ارفعها للبورتال</button>`:''}</span></div>`:''; })()}
     ${t.returns?`<div class="tret" dir="rtl" style="margin-bottom:12px">↩️ رجعت ${t.returns===1?'مرة':t.returns+' مرات'} (التفاصيل في السجل تحت)</div>`:''}
@@ -86,6 +90,7 @@ function gtBlk(){
     gtDo('block',false,false,{note,cause:$('kmC').value});
   });
 }
+function gtDeliver(){ const el=$('gtLk'); if(!el) return; gtDo('deliver',false,false,{link:el.value.trim()}); }
 function gtBlkRej(){ kpiModal('رفض التوقف',`<label for="kmR">ليه؟ (اختياري)</label><textarea id="kmR" rows="2" dir="auto" class="ml"></textarea>`,()=>{ gtDo('blockrej',false,false,{note:$('kmR').value.trim()}); }); }
 async function gtDo(act,withNote,needNote,extra){
   let note='';
