@@ -83,11 +83,12 @@ function gtRet(act){
     gtDo(act,false,false,{note,kind});
   });
 }
-function gtBlk(){
-  kpiModal('⛔ التاسك متوقفة',`<label for="kmC">السبب</label><select id="kmC">${Object.keys(TBLK).map(k=>`<option value="${k}">${TBLK[k]}</option>`).join('')}</select>
-    <label for="kmR">التفاصيل</label><textarea id="kmR" rows="3" dir="auto" class="ml"></textarea>`,()=>{
+async function gtBlk(){
+  const O=await blkOptsGet();
+  kpiModal('⛔ التاسك متوقفة',blkFormHTML(O,''),()=>{
     const note=$('kmR').value.trim(); if(!note) return 'اكتب التفاصيل';
-    gtDo('block',false,false,{note,cause:$('kmC').value});
+    const b=blkVals(); if(b.err) return b.err;
+    gtDo('block',false,false,Object.assign(b,{note}));
   });
 }
 function gtDeliver(){ const el=$('gtLk'); if(!el) return; gtDo('deliver',false,false,{link:el.value.trim()}); }

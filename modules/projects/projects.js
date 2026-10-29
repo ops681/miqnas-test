@@ -259,7 +259,30 @@ async function tStatus(pid,key,sel){
 }
 /* ----- KPIs: رجّعها للتعديل / متوقفة ----- */
 const RET_K={qa:['رفض QA','الشغل ماعدّاش المراجعة'],mistake:['غلطة','غلطة من صاحب التاسك'],client:['تعديل من العميل','العميل غيّر رأيه. مابيتحسبش على صاحب التاسك']};
-const TBLK={client:'رد العميل',access:'Access',docs:'أوراق رسمية',platform:'المنصة',uiux:'مستني UI/UX',copy:'مستني Copywriting',dev:'مستني Development'};
+const TBLK={client:'رد العميل',access:'Access',docs:'أوراق رسمية',platform:'المنصة'};
+/* ⛔ متوقفة على إيه: أسباب من الإعدادات، أو "مستني حد جوه الشركة" (قسم + موظف اختياري) */
+async function blkOptsGet(){
+  if(S.blkOpts && Date.now()-(S.blkOptsAt||0)<600000) return S.blkOpts;
+  try{ S.blkOpts=await call('blkOpts'); S.blkOptsAt=Date.now(); }catch(e){ if(!S.blkOpts) S.blkOpts={causes:Object.keys(TBLK).map(k=>({id:k,label:TBLK[k]})),depts:[]}; }
+  return S.blkOpts;
+}
+function blkFormHTML(O,ph){
+  return `<label for="kmC">السبب</label><select id="kmC" onchange="blkCauseCh()">${O.causes.map(c=>`<option value="${esc(c.id)}">${esc(c.label)}</option>`).join('')}${O.depts.length?'<option value="int">مستني حد جوه الشركة…</option>':''}</select>
+    <div id="kmInt" hidden><label for="kmD">مستني قسم</label><select id="kmD" onchange="blkDeptCh()"><option value="">— اختار القسم —</option>${O.depts.map(d=>`<option value="${esc(d.id)}">${esc(d.name)}</option>`).join('')}</select>
+      <label for="kmW">مستني مين؟ (اختياري)</label><select id="kmW"><option value="">— القسم كله —</option></select>
+      <div class="muted" style="font-size:12.5px;margin-top:6px">أيام التأخير دي مش هتتحسب عليك. هتتحسب على الموظف اللي هتختاره، ولو اخترت القسم بس هتتسجل على القسم. وهيوصله إشعار إن فيه تاسك مستنياه.</div></div>
+    <label for="kmR">التفاصيل</label><textarea id="kmR" rows="3" dir="auto" class="ml" placeholder="${esc(ph||'')}"></textarea>`;
+}
+function blkCauseCh(){ const i=$('kmInt'); if(i) i.hidden=$('kmC').value!=='int'; }
+function blkDeptCh(){
+  const d=(S.blkOpts.depts||[]).find(x=>x.id===$('kmD').value), me=(S.user&&S.user.username)||'';
+  $('kmW').innerHTML='<option value="">— القسم كله —</option>'+(d?d.people.filter(p=>p.u!==me).map(p=>`<option value="${esc(p.u)}">${esc(p.name)}${p.job?' · '+esc(p.job):''}</option>`).join(''):'');
+}
+function blkVals(){
+  const cause=$('kmC').value, o={cause};
+  if(cause==='int'){ o.dept=$('kmD').value; o.who=$('kmW').value; if(!o.dept) return {err:'اختار القسم اللي التاسك مستنياه'}; }
+  return o;
+}
 function kpiModal(title,body,onSave){
   $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:480px" dir="rtl"><h2 style="margin:0 0 10px">${title}</h2>${body}<div class="err" id="kmE"></div>
     <div class="mfoot"><span class="spacer"></span><button class="btn" type="button" onclick="closeModal()">إلغاء</button><button class="btn primary" type="button" id="kmS">حفظ</button></div></div></div>`;
@@ -274,12 +297,13 @@ function tReturn(pid,key){
   });
   setTimeout(()=>{ const r=$('kmR'); if(r) r.focus(); },50);
 }
-function tBlock(pid,key){
-  kpiModal('⛔ التاسك متوقفة',`<label for="kmC">السبب</label><select id="kmC">${Object.keys(TBLK).map(k=>`<option value="${k}">${TBLK[k]}</option>`).join('')}</select>
-    <label for="kmR">التفاصيل</label><textarea id="kmR" rows="3" dir="auto" class="ml" placeholder="مثال: العميل مابعتش صور المنتجات من يوم الأحد"></textarea>
+async function tBlock(pid,key){
+  const O=await blkOptsGet();
+  kpiModal('⛔ التاسك متوقفة',`${blkFormHTML(O,'مثال: العميل مابعتش صور المنتجات من يوم الأحد')}
     <div class="muted" style="font-size:12.5px;margin-top:8px">التايمر هيقف. الـ Account Manager هيشوفها، ولو مش حقيقية هيرفضها والتأخير يتحسب عادي. دوس "اتحلت" لما ترجع تشتغل.</div>`,()=>{
     const details=$('kmR').value.trim(); if(!details) return 'اكتب التفاصيل';
-    const cause=$('kmC').value; closeModal(); tAct(pid,key,'blk',{cause,details}).then(()=>toast('اتسجلت إنها متوقفة ✓'));
+    const b=blkVals(); if(b.err) return b.err;
+    closeModal(); tAct(pid,key,'blk',Object.assign(b,{details})).then(()=>toast('اتسجلت إنها متوقفة ✓'));
   });
 }
 function tBlkRej(pid,key){
