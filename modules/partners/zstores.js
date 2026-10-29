@@ -17,9 +17,9 @@ function renderZStores(r){
   const lists={ new:L.filter(isNew), all:L.filter(x=>!isClosed(x)), closed:L.filter(isClosed) };
   const PN=r.partner.nameEn||r.partner.name||'Zid';
   setTop(PN+' Stores','Stores '+esc(PN)+' sent us, before and after they become projects',
-    `${r.admin?`<button class="btn ghost" onclick="zsPkgForm()">Packages & sheet</button> `:''}<button class="btn primary" onclick="zsForm()">+ New store from ${esc(r.partner.nameEn||'Zid')}</button>`);
+    `${r.admin?`<button class="btn ghost" onclick="zsPkgForm()">Portal settings</button> `:''}<button class="btn primary" onclick="zsForm()">+ New store from ${esc(r.partner.nameEn||'Zid')}</button>`);
   const T=(k,l)=>`<button class="btn ${tab===k?'primary':'ghost'} small" onclick="S.zsTab='${k}';renderZStores(S.zsR)">${l} · ${lists[k].length}</button>`;
-  const amCol=r.admin;
+  const amCol=r.admin||r.portal;
   const blk=x=>{ const o=x.blog.filter(b=>b.open); return o.length?`<span class="pill p-bad" title="${esc(o.map(b=>b.owner+': '+b.cat).join(' · '))}">${o.length} open</span>`:(x.blog.length?`<span class="muted" style="font-size:12px">${x.blog.length} resolved</span>`:'<span class="muted">—</span>'); };
   const acts=x=>{
     const b=[];
@@ -74,14 +74,14 @@ function zsForm(key){
       <div><label for="zsT">Theme</label><input id="zsT" value="${v('theme')}"></div>
       <div><label for="zsD">Contact started *</label><input id="zsD" type="date" value="${esc(x.contact||today)}"></div>
       <div><label for="zsS">Status *</label>${zsStatusSel(x)}</div>
-      ${r.admin?`<div><label for="zsA">Account Manager *</label><select id="zsA" dir="auto"><option value="">Choose…</option>${r.ams.map(a=>`<option value="${esc(a.u)}"${a.u===x.am?' selected':''}>${esc(a.name)}</option>`).join('')}</select></div>`:''}
+      ${r.assign?`<div><label for="zsA">Account Manager *</label><select id="zsA" dir="auto"><option value="">Choose…</option>${r.ams.map(a=>`<option value="${esc(a.u)}"${a.u===x.am?' selected':''}>${esc(a.name)}</option>`).join('')}</select></div>`:''}
       <div style="grid-column:1/-1"><label for="zsNo">Merchant notes and blockers</label><textarea id="zsNo" rows="2" dir="auto" placeholder="Shows in the portal next to the open blockers">${v('note')}</textarea></div></div>
     <div class="err" id="zsE"></div>
     <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancel</button><div class="spacer"></div><button class="btn primary" id="zsGo">${key?'Save':'Save store'}</button></div></div></div>`;
   $('zsGo').onclick=async()=>{
     const b=$('zsGo'); b.disabled=true;
     const store={partner:S.zsP,id:x.rec||'',project:isVirt?x.project:'',store_id:$('zsI').value.trim(),name:$('zsN').value.trim(),phone:$('zsPh').value.trim(),url:$('zsU').value.trim(),
-      package:$('zsK').value,theme:$('zsT').value.trim(),contact_date:$('zsD').value,note:$('zsNo').value.trim(),am:r.admin?$('zsA').value:'',status:$('zsS')&&!$('zsS').disabled?$('zsS').value:''};
+      package:$('zsK').value,theme:$('zsT').value.trim(),contact_date:$('zsD').value,note:$('zsNo').value.trim(),am:r.assign?$('zsA').value:'',status:$('zsS')&&!$('zsS').disabled?$('zsS').value:''};
     try{ await call('zsSave',{store}); closeModal(); toast('اتحفظ ✓'); zsRefresh(); }catch(e){ $('zsE').textContent=e.message; b.disabled=false; }
   };
 }
@@ -101,11 +101,13 @@ async function zsBriefGo(id){
 function zsPkgForm(){
   const r=S.zsR;
   $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:420px">
-    <h2 style="margin:0 0 4px">${esc(r.partner.nameEn||'Zid')} sheet settings</h2>
+    <h2 style="margin:0 0 4px">${esc(r.partner.nameEn||'Zid')} portal settings</h2>
     <label for="zsPk" style="margin-top:8px">Packages</label><div class="muted" style="font-size:13px;margin-bottom:6px">One per line, the same words ${esc(r.partner.nameEn||'Zid')} uses</div>
     <textarea id="zsPk" rows="5" dir="auto">${esc(r.packages.join('\n'))}</textarea>
     <label for="zsLb" style="margin-top:12px">Our name in their sheet</label><div class="muted" style="font-size:13px;margin-bottom:6px">The "الشريك" row in the Excel file they export from the portal</div>
-    <input id="zsLb" dir="auto" value="${esc(r.label||'')}"><div class="err" id="zsPkE"></div>
+    <input id="zsLb" dir="auto" value="${esc(r.label||'')}">
+    <label style="margin-top:12px">مسؤولين البورتال</label><div class="muted" style="font-size:13px;margin-bottom:6px" dir="rtl">بيشوفوا كل متاجر ${esc(r.partner.name||'الشريك')}، ولما يضيفوا متجر بيختاروا الـ Account Manager اللي هيستلمه ويملا البريف (ويقدروا يغيّروه)</div>
+    <div class="zs-pam">${(r.ams||[]).map(a=>`<label class="check"><input type="checkbox" class="zsPam" value="${esc(a.u)}"${(r.pams||[]).indexOf(a.u)>=0?' checked':''}> ${esc(a.name)}</label>`).join('')||'<span class="muted">مفيش Account Managers</span>'}</div><div class="err" id="zsPkE"></div>
     <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Cancel</button><div class="spacer"></div><button class="btn primary" id="zsPkGo">Save</button></div></div></div>`;
-  $('zsPkGo').onclick=async()=>{ try{ await call('zsPkgSave',{partner:S.zsP,list:$('zsPk').value.split('\n').map(s=>s.trim()).filter(Boolean),label:$('zsLb').value.trim()}); closeModal(); toast('اتحفظ ✓'); zsRefresh(); }catch(e){ $('zsPkE').textContent=e.message; } };
+  $('zsPkGo').onclick=async()=>{ try{ await call('zsPkgSave',{partner:S.zsP,list:$('zsPk').value.split('\n').map(s=>s.trim()).filter(Boolean),label:$('zsLb').value.trim(),pams:[...document.querySelectorAll('.zsPam:checked')].map(x=>x.value)}); closeModal(); toast('اتحفظ ✓'); zsRefresh(); }catch(e){ $('zsPkE').textContent=e.message; } };
 }
