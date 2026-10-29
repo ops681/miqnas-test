@@ -108,8 +108,10 @@ async function kpiRateSave(k,u){
 /* ----- Settings → KPIs & Capacity ----- */
 async function setKpiCard(){
   if(!$('setKpi')) return;
-  let R; try{ R=await call('kpiCfgGet'); }catch(e){ return; }
+  const fail=msg=>{ const b=$('setKpi'); if(b) b.innerHTML=`<div class="card"><h2 style="margin:0 0 6px">📊 KPIs & Capacity</h2><div class="err" dir="rtl">${esc(msg)}</div></div>`; };
+  let R; try{ R=await call('kpiCfgGet'); }catch(e){ return fail('مش قادر أجيب إعدادات الـ KPIs: '+e.message); }
   const el=$('setKpi'); if(!el) return;   // الصفحة ممكن تكون اترسمت تاني وإحنا مستنيين
+  if(!R||!R.cfg||!Array.isArray(R.cfg.causes)||!Array.isArray(R.cfg.custom)||!R.depts) return fail('الكود اللي على السيرفر أقدم من الموقع. الصق آخر Code.gs في Apps Script واعمل Deploy → Manage deployments → ✏️ → New version، وبعدين اعمل Refresh.');
   const c=R.cfg, n=(id,v,u,attr)=>`<input type="number" id="${id}" value="${esc(v)}" ${attr||'min="0" max="100"'} style="max-width:90px">${u?`<span class="u">${u}</span>`:''}`;
   const set=(lab,sub,inp)=>`<div class="set"><div class="tx"><label>${lab}</label>${sub?`<div>${sub}</div>`:''}</div>${inp}</div>`;
   const jobs=R.jobs.slice(); Object.keys(c.cap).forEach(j=>{ if(jobs.indexOf(j)<0) jobs.push(j); });
