@@ -933,3 +933,27 @@ textarea.ml{field-sizing:content;min-height:42px;max-height:260px;resize:vertica
 .kb-body{padding:6px 18px 4px}
 .kpi-legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:14px 18px;color:var(--muted);font-size:12.5px}.kpi-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:5px;vertical-align:-1px}
 .zs-pam{display:flex;flex-wrap:wrap;gap:6px 16px}
+/* Settings: أقسام */
+.set-wrap{display:grid;grid-template-columns:210px minmax(0,900px);gap:22px;align-items:start}
+.set-nav{position:sticky;top:12px;display:flex;flex-direction:column;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:8px}
+.set-nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:start;background:none;border:0;border-radius:10px;padding:10px 12px;font:inherit;font-size:14px;color:var(--ink);cursor:pointer;position:relative}
+.set-nav button span{width:22px;text-align:center}
+.set-nav button:hover{background:var(--bg)}
+.set-nav button.on{background:color-mix(in srgb,var(--brand2) 12%,transparent);color:var(--brand2);font-weight:700}
+.set-nav button.dirty::after{content:"";position:absolute;inset-inline-end:10px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--accent)}
+#setBody{display:grid;gap:18px;min-width:0}
+#setBody>[data-s]{display:none}
+#setBody[data-on="co"]>[data-s="co"],#setBody[data-on="att"]>[data-s="att"],#setBody[data-on="proj"]>[data-s="proj"],#setBody[data-on="kpi"]>[data-s="kpi"],#setBody[data-on="notif"]>[data-s="notif"],#setBody[data-on="sec"]>[data-s="sec"],#setBody[data-on="sys"]>[data-s="sys"]{display:block}
+#setBody>[data-s]:empty{display:none!important}
+#setBody[data-on="co"]>.set-flex[data-s="co"]{display:flex}
+.set-bar{position:sticky;bottom:12px;display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;box-shadow:0 6px 20px rgba(16,35,31,.08);z-index:5}
+.set-bar[hidden]{display:none}
+.set-bar.dirty{border-color:var(--accent)}
+#setDirty{color:var(--accentInk);font-size:13px;font-weight:600}
+@media (max-width:900px){
+  .set-wrap{grid-template-columns:1fr;gap:14px}
+  .set-nav{flex-direction:row;overflow-x:auto;padding:6px;top:0;z-index:6;scrollbar-width:none}
+  .set-nav::-webkit-scrollbar{display:none}
+  .set-nav button{width:auto;flex:none;white-space:nowrap;padding:8px 12px}
+  .set-nav button.dirty::after{inset-inline-end:3px;top:8px;margin-top:0}
+}

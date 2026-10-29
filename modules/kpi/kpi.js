@@ -107,8 +107,9 @@ async function kpiRateSave(k,u){
 
 /* ----- Settings → KPIs & Capacity ----- */
 async function setKpiCard(){
-  const el=$('setKpi'); if(!el) return;
+  if(!$('setKpi')) return;
   let R; try{ R=await call('kpiCfgGet'); }catch(e){ return; }
+  const el=$('setKpi'); if(!el) return;   // الصفحة ممكن تكون اترسمت تاني وإحنا مستنيين
   const c=R.cfg, n=(id,v,u,attr)=>`<input type="number" id="${id}" value="${esc(v)}" ${attr||'min="0" max="100"'} style="max-width:90px">${u?`<span class="u">${u}</span>`:''}`;
   const set=(lab,sub,inp)=>`<div class="set"><div class="tx"><label>${lab}</label>${sub?`<div>${sub}</div>`:''}</div>${inp}</div>`;
   const jobs=R.jobs.slice(); Object.keys(c.cap).forEach(j=>{ if(jobs.indexOf(j)<0) jobs.push(j); });

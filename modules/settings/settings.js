@@ -3,61 +3,82 @@ const SET_GROUPS=[
   ['Project alerts','When a project shows up as At risk, Behind or Overdue',[
     ['risk_days','Warn before Target Launch','Behind-schedule projects turn red this many days before the deadline','days'],
     ['risk_gap','Behind schedule by','Done % vs expected % (based on working days passed)','%'],
-    ['proj_days','Project length','Working days from start date to Target Launch (Friday off). Applies to new and edited projects','days']]],
+    ['proj_days','Project length','Working days from start date to Target Launch (Friday off). Applies to new and edited projects','days']],'proj'],
   ['Task alerts','Catch tasks that are stuck',[
     ['idle_days','Ready but not started','Task is unlocked and nobody started it for','days'],
     ['block_days','Waiting on a teammate','Someone has nothing to do because they wait for a handover for','days'],
-    ['stale_days','In Progress with no activity','Status is In Progress but nothing changed for','days']]],
+    ['stale_days','In Progress with no activity','Status is In Progress but nothing changed for','days']],'proj'],
   ['Screen sharing','Screenshots go straight to Google Drive; only the summary shows in the system',[
     ['shot_min','Screenshot every','How often a screenshot is taken while clocked in','minutes'],
     ['stop_count','Alert after sharing stops','Number of stops in one day before you get an alert','times'],
     ['off_min','Alert after time not shared','Total minutes without sharing in one day','minutes'],
-    ['keep_days','Keep screenshots for','Older screenshots are deleted from Drive automatically','days']]],
+    ['keep_days','Keep screenshots for','Older screenshots are deleted from Drive automatically','days']],'att'],
   ['Attendance','Clock-in and clock-out alerts',[
     ['forgot_h','Forgot to clock out','Alert when someone is still clocked in after','hours'],
     ['paid_break','Paid break (Full time)','Break time per day that counts as work, no reason needed. After it a reason is required and an alert is sent. Part time has no paid break','minutes'],
     ['break_max','Long break','Alert when a break runs longer than','minutes'],
-    ['loc_min','Location every','How often the location is taken during the shift','minutes']]]
+    ['loc_min','Location every','How often the location is taken during the shift','minutes']],'att']
 ];
+// أقسام صفحة الإعدادات: [id, الاسم, الأيقونة, فيه حقول بتتحفظ بـ Save changes؟]
+const SET_SECS=[['co','الشركة','🏢',1],['att','الحضور والبصمة','⏱',1],['proj','المشاريع والتاسكات','📁',1],['kpi','KPIs & Capacity','📊',0],['notif','الإشعارات','🔔',0],['sec','الأمان','🔒',1],['sys','النظام','🛠',0]];
+function setSecNow(){ let k=''; try{ k=load('erp_setsec')||''; }catch(e){} return SET_SECS.some(x=>x[0]===k)?k:'co'; }
+function setSecGo(k){
+  try{ store('erp_setsec',k); }catch(e){}
+  const b=$('setBody'); if(!b) return; b.dataset.on=k;
+  document.querySelectorAll('.set-nav button').forEach(x=>x.classList.toggle('on',x.dataset.k===k));
+  const ab=document.querySelector('.set-nav button.on'); if(ab&&ab.scrollIntoView&&window.innerWidth<=900) ab.scrollIntoView({inline:'center',block:'nearest'});
+  const sec=SET_SECS.find(x=>x[0]===k); $('setBar').hidden=!(sec&&sec[3]);
+  window.scrollTo({top:0});
+}
+function setDirty(on){
+  S.setDirty=on; const d=$('setDirty'); if(d) d.textContent=on?'● عندك تغييرات مش محفوظة':'';
+  const bar=$('setBar'); if(bar) bar.classList.toggle('dirty',!!on);
+  document.querySelectorAll('.set-nav button').forEach(x=>{ x.classList.toggle('dirty',!!on && !!document.querySelector('#setBody [data-s="'+x.dataset.k+'"] .chg')); });
+}
 function viewSettings(){
-  setTop('Settings','Admins only · changes apply to the whole team', `<button class="btn primary" id="setSave">Save changes</button>`);
-  $('setSave').onclick=saveSettings;
+  setTop('Settings','Admins only · changes apply to the whole team');
   swr('settings','settingsGet',{},renderSettings);
 }
 function renderSettings(v){
-  $('main').innerHTML=`<div style="max-width:900px;display:grid;gap:18px">
-  <div id="setBrand"></div><div id="setAlerts"></div><div id="setSec"></div><div id="setPush"></div><div id="setKpi"></div><div id="setPlat"></div><div id="setMove"></div>
-  ${SET_GROUPS.map(g=>`<div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>${g[0]}</h2><div class="muted" style="font-size:13px">${g[1]}</div></div>
+  const on=setSecNow();
+  $('main').innerHTML=`<div class="set-wrap"><nav class="set-nav" aria-label="Settings sections">${SET_SECS.map(x=>`<button type="button" data-k="${x[0]}" class="${x[0]===on?'on':''}" onclick="setSecGo('${x[0]}')"><span>${x[2]}</span>${esc(x[1])}</button>`).join('')}</nav>
+  <div id="setBody" data-on="${on}">
+  <div id="setBrand" data-s="co"></div><div id="setPlat" data-s="co"></div><div id="setAlerts" data-s="notif"></div><div id="setPush" data-s="notif"></div><div id="setSec" data-s="sec"></div><div id="setKpi" data-s="kpi"></div><div id="setMove" data-s="sys"></div>
+  ${SET_GROUPS.map(g=>`<div class="card flush" data-s="${g[3]}"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>${g[0]}</h2><div class="muted" style="font-size:13px">${g[1]}</div></div>
     ${g[2].map(it=>`<div class="set"><div class="tx"><label for="st_${it[0]}">${it[1]}</label><div>${it[2]}</div></div><input type="number" min="1" id="st_${it[0]}" value="${esc(v[it[0]])}"><span class="u">${it[3]}</span></div>`).join('')}</div>`).join('')}
-  <div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>Sign-in security</h2><div class="muted" style="font-size:13px">Turn off only in an emergency</div></div>
+  <div class="card flush" data-s="sec"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>Sign-in security</h2><div class="muted" style="font-size:13px">Turn off only in an emergency</div></div>
     <div class="set"><div class="tx"><label for="st_device_lock">Registered device only</label><div>Each employee signs in from one approved device. A new device needs approval from the Devices page</div></div><input type="checkbox" id="st_device_lock" ${v.device_lock?'checked':''} style="width:20px;height:20px"></div>
     <div class="set"><div class="tx"><label for="st_clock_first">Clock in before anything else</label><div>Employees who clock in see only the Time Clock until they clock in</div></div><input type="checkbox" id="st_clock_first" ${v.clock_first?'checked':''} style="width:20px;height:20px"></div>
     <div class="set"><div class="tx"><label for="st_location_on">Location during the shift</label><div>Location is required to clock in and is taken regularly until clock out</div></div><input type="checkbox" id="st_location_on" ${v.location_on?'checked':''} style="width:20px;height:20px"></div>
     <div class="set"><div class="tx"><label for="st_one_session">One session at a time</label><div>Signing in somewhere else signs the account out of the old place</div></div><input type="checkbox" id="st_one_session" ${v.one_session?'checked':''} style="width:20px;height:20px"></div></div>
-  <div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>⏰ Clock-out reminder</h2><div class="muted" style="font-size:13px">A bar at the top (and a browser notification) reminds each person to clock out before their shift hours end. It stays until they clock out. Shift hours come from Leave &amp; Requests → Balances &amp; shifts</div></div>
+  <div class="card flush" data-s="att"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>⏰ Clock-out reminder</h2><div class="muted" style="font-size:13px">A bar at the top (and a browser notification) reminds each person to clock out before their shift hours end. It stays until they clock out. Shift hours come from Leave &amp; Requests → Balances &amp; shifts</div></div>
     <div class="set"><div class="tx"><label for="st_co_on">Turn on the reminder</label><div>Only for people who clock in, and not during a break</div></div><input type="checkbox" id="st_co_on" ${v.co_on?'checked':''} style="width:20px;height:20px"></div>
     <div class="set"><div class="tx"><label for="st_co_before">Remind before the shift ends</label><div>Worked hours today, without breaks</div></div><input type="number" min="1" max="120" id="st_co_before" value="${esc(v.co_before)}"><span class="u">min</span></div>
     <div class="set"><div class="tx"><label for="st_co_snooze">"Still working · remind me later"</label><div>The bar hides for this long, then comes back</div></div><input type="number" min="5" max="240" id="st_co_snooze" value="${esc(v.co_snooze)}"><span class="u">min</span></div>
     <div class="set"><div class="tx"><label for="st_co_notify">Browser notification too</label><div>Shows in the corner of the screen even when the site is in another tab or app. The browser asks each person once, when they clock in</div></div><input type="checkbox" id="st_co_notify" ${v.co_notify?'checked':''} style="width:20px;height:20px"></div></div>
-  <div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>🪧 Cards in the middle of the screen</h2><div class="muted" style="font-size:13px">A card in the middle of the screen instead of the small corner notification. Not during a break. "بعدين" brings it back after 30 minutes, unless the task was started. Off = the small corner notification like before</div></div>
+  <div class="card flush" data-s="proj"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>🪧 Cards in the middle of the screen</h2><div class="muted" style="font-size:13px">A card in the middle of the screen instead of the small corner notification. Not during a break. "بعدين" brings it back after 30 minutes, unless the task was started. Off = the small corner notification like before</div></div>
     <div class="set"><div class="tx"><label for="st_rd_card">"دورك دلوقتي"</label><div>A task that was waiting for another task is ready: shows who finished and their handover (links and notes)</div></div><input type="checkbox" id="st_rd_card" ${v.rd_card!==false?'checked':''} style="width:20px;height:20px"></div>
     <div class="set"><div class="tx"><label for="st_hp_card">"اتضافت تساعد"</label><div>Someone added you as a helper on a task</div></div><input type="checkbox" id="st_hp_card" ${v.hp_card!==false?'checked':''} style="width:20px;height:20px"></div>
     <div class="set"><div class="tx"><label for="st_gt_card">Side tasks (from the Tasks page)</label><div>📌 Assigned to you · 🤝 helping · 🔓 ready to start · 🔍 waiting for your review · ↩️ returned with a note. Approved ✅ and deadline reminders ⏳ 🚨 stay small in the corner</div></div><input type="checkbox" id="st_gt_card" ${v.gt_card!==false?'checked':''} style="width:20px;height:20px"></div>
     <div class="set"><div class="tx"><label for="st_lc_on">🎉 Thank-you card when a store launches</label><div>Goes to everyone who worked on the project (team, helpers, Account Manager), with confetti. The others get the usual small notification</div></div><input type="checkbox" id="st_lc_on" ${v.lc_on!==false?'checked':''} style="width:20px;height:20px"></div>
     <div class="set" style="align-items:flex-start"><div class="tx"><label for="st_lc_msg">Thank-you message</label><div>{الاسم} = the person's first name · {المتجر} = the store. The first line is the big title</div></div><textarea id="st_lc_msg" rows="3" dir="rtl" style="max-width:380px">${esc(v.lc_msg||'')}</textarea></div>
     <div class="set"><div class="tx"><label for="st_lc_sign">Signed by</label><div>Shows under the message</div></div><input id="st_lc_sign" dir="rtl" value="${esc(v.lc_sign||'')}" style="max-width:260px"></div></div>
-  <div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>🚪 Auto clock-out</h2><div class="muted" style="font-size:13px">For people who close the site or the laptop and leave without clocking out. The clock-out is saved at the last time they were there (last screenshot or the site open in front of them), marked "Auto" in the reports, and they get a notification. Never during a break. Signing out of the site on the laptop always clocks out too</div></div>
+  <div class="card flush" data-s="att"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>🚪 Auto clock-out</h2><div class="muted" style="font-size:13px">For people who close the site or the laptop and leave without clocking out. The clock-out is saved at the last time they were there (last screenshot or the site open in front of them), marked "Auto" in the reports, and they get a notification. Never during a break. Signing out of the site on the laptop always clocks out too</div></div>
     <div class="set"><div class="tx"><label for="st_ao_on">Turn on auto clock-out</label><div>Checked every 5 minutes</div></div><input type="checkbox" id="st_ao_on" ${v.ao_on?'checked':''} style="width:20px;height:20px"></div>
     <div class="set"><div class="tx"><label for="st_ao_min">Clock out after nothing from them for</label><div>10 to 480 minutes. It's never shorter than two screenshots + 5 minutes (now ${2*(Number(v.shot_min)||10)+5} min), so nobody is clocked out between two screenshots</div></div><input type="number" min="10" max="480" id="st_ao_min" value="${esc(v.ao_min)}"><span class="u">min</span></div>
     <div class="set"><div class="tx"><label for="st_ao_warn">⚠️ Warn them first (browser notification)</label><div>If screen sharing stopped and the site isn't in front of them, a browser notification comes before the auto clock-out: "ارجع شارك الشاشة". It reaches them even in another tab or app, as long as the site is still open. The browser asks each person once, when they clock in</div></div><input type="checkbox" id="st_ao_warn" ${v.ao_warn!==false?'checked':''} style="width:20px;height:20px"></div>
     <div class="set"><div class="tx"><label for="st_ao_warn_min">Warn this long before</label><div>And once more 2 minutes before, if they still haven't come back</div></div><input type="number" min="1" max="120" id="st_ao_warn_min" value="${esc(v.ao_warn_min||10)}"><span class="u">min</span></div></div>
-  <div class="card flush"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>Work week & requests</h2><div class="muted" style="font-size:13px">Days off are skipped when counting leave days and project working days</div></div>
+  <div class="card flush" data-s="co"><div class="chead" style="flex-direction:column;align-items:flex-start;gap:2px"><h2>Work week & requests</h2><div class="muted" style="font-size:13px">Days off are skipped when counting leave days and project working days</div></div>
     <div class="set"><div class="tx"><label>Weekly days off</label><div>Tick every day the company is closed</div></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">${[['off_sat','Sat'],['off_sun','Sun'],['off_mon','Mon'],['off_tue','Tue'],['off_wed','Wed'],['off_thu','Thu'],['off_fri','Fri']].map(d=>`<label class="check" style="margin:0"><input type="checkbox" id="st_${d[0]}"${v[d[0]]?' checked':''}>${d[1]}</label>`).join('')}</div></div>
     <div class="set"><div class="tx"><label for="st_permissions_on">Hourly permissions</label><div>Let employees ask for a permission of an hour or two (late arrival / leaving early). Off means the option is hidden</div></div><input type="checkbox" id="st_permissions_on" ${v.permissions_on?'checked':''} style="width:20px;height:20px"></div></div>
-  <div class="card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><div style="flex:1 1 320px"><h2 style="margin:0 0 4px">Work hours</h2><div class="muted" style="font-size:13px">Off for now, since the team's hours vary. Late-arrival alerts will use this later.</div></div>
+  <div class="card set-flex" data-s="co" style="align-items:center;gap:16px;flex-wrap:wrap"><div style="flex:1 1 320px"><h2 style="margin:0 0 4px">Work hours</h2><div class="muted" style="font-size:13px">Off for now, since the team's hours vary. Late-arrival alerts will use this later.</div></div>
     <label class="check" style="margin:0"><input type="checkbox" id="st_late_on" ${v.late_on?'checked':''} disabled>Late-arrival alerts</label></div>
-  </div>`;
+  <div class="set-bar" id="setBar"><span id="setDirty"></span><span class="spacer"></span><button class="btn primary" id="setSave">Save changes</button></div>
+  </div></div>`;
+  $('setSave').onclick=saveSettings; setSecGo(on);
+  const mark=e=>{ const t=e.target; if(t&&t.id&&t.id.indexOf('st_')===0){ t.classList.add('chg'); setDirty(true); } };
+  $('setBody').addEventListener('input',mark); $('setBody').addEventListener('change',mark);
   setBrandCard(); setAlertsCard(); setSecCard(); setPushCard(); if(typeof setKpiCard==='function') setKpiCard(); setPlatCard(); setMoveCard();
 }
 /* ----- هوية الشركة ----- */
@@ -180,7 +201,7 @@ async function saveSettings(){
   ['lc_msg','lc_sign'].forEach(k=>{ const el=$('st_'+k); if(el) v[k]=el.value; });
   ['co_on','co_notify','ao_on','rd_card','hp_card','gt_card','ao_warn','lc_on','device_lock','one_session','clock_first','location_on','permissions_on','off_sat','off_sun','off_mon','off_tue','off_wed','off_thu','off_fri'].forEach(k=>{ const el=$('st_'+k); if(el) v[k]=el.checked; });
   const b=$('setSave'); b.disabled=true; b.textContent='Saving...';
-  try{ const r=await call('settingsSave',{settings:v}); S.cache.settings=r; saveCache(); S.cfg.shotMinutes=r.shot_min; toast('اتحفظت الإعدادات ✓'); refreshDash(); }
+  try{ const r=await call('settingsSave',{settings:v}); S.cache.settings=r; saveCache(); S.cfg.shotMinutes=r.shot_min; toast('اتحفظت الإعدادات ✓'); refreshDash(); document.querySelectorAll('#setBody .chg').forEach(x=>x.classList.remove('chg')); setDirty(false); }
   catch(e){ alert(e.message); }
   b.disabled=false; b.textContent='Save changes';
 }
