@@ -75,18 +75,19 @@ function renderProject(r,keep){
   S.proj=r;
   S.projTeam=['am','sm','copy','uiux','designer','dev','fe','cp','cp2','joker'].map(k=>String((r.data||{})[k]||'').toLowerCase()).filter(Boolean);
   {
-    const backTo = r.guest ? ["go('tasks')",'Tasks'] : S.view==='mytasks' ? ['viewMyTasks()','My Tasks'] : ['viewProjects()','All Projects'];
+    const backTo = r.watching && typeof can==='function' && can('tasks.mine') ? ['viewMyTasks()','My Tasks'] : r.guest ? ["go('tasks')",'Tasks'] : S.view==='mytasks' ? ['viewMyTasks()','My Tasks'] : ['viewProjects()','All Projects'];
     const groups=ROLE_ORDER.map(role=>({role, tasks:r.tasks.filter(t=>t.role===role)})).filter(g=>g.tasks.length && (r.type!==CP_TYPE || g.tasks.some(t=>!t.na)));
     const links=r.tasks.filter(t=>t.link);
     const D=r.data;
     $('main').innerHTML=`<div class="en${r.guest?' pguest':''}">
     <button class="btn ghost small" onclick="${backTo[0]}">← ${backTo[1]}</button>
-    ${r.guest?`<div class="notice" style="margin:10px 0" dir="rtl">👀 انت فاتح المشروع ده للقراءة بس، عشان عليك تاسك جانبي فيه. أول ما التاسك تخلص المشروع هيتقفل عندك.</div>`:''}
+    ${r.guest?(r.watching?`<div class="notice" style="margin:10px 0" dir="rtl">👁 انت متابع للمشروع ده عشان تتعلم: تقدر تشوف التاسكات والتسليمات والبريف للقراءة بس، ومش بيتحسب عليك شغل.</div>`:`<div class="notice" style="margin:10px 0" dir="rtl">👀 انت فاتح المشروع ده للقراءة بس، عشان عليك تاسك جانبي فيه. أول ما التاسك تخلص المشروع هيتقفل عندك.</div>`):''}
     ${r.contract&&r.contract.status!=='signed'&&r.status==='Active'?`<div class="notice" style="margin:10px 0">${r.contract.status==='none'?'No contract on this project yet.':'The contract is not signed yet ('+esc(r.contract.status)+').'}${typeof canFinance==='function'&&can('finance.manage')||S.user.founder?` <button class="btn ghost small" onclick="${r.contract.id?`go('finance',{id:'${esc(r.contract.id)}'})`:`go('finance')`}">Open in Finance →</button>`:''}</div>`:''}
     <div class="card phead">
       <div class="row" style="align-items:center;gap:10px">${r.canEdit?`<button type="button" class="pi-btn" title="Change icon" aria-label="Change project icon" onclick="piEdit('${esc(r.id)}','${esc(r.client).replace(/'/g,'')}')">${piTag(r.id,r.client,'pi-lg')}</button>`:piTag(r.id,r.client,'pi-lg')}<h2 style="margin:0">${esc(r.client)}</h2><span class="pill p-out">${esc(r.id)}</span><span class="pill ${PSTAT[r.status]||'p-out'}">${esc(r.status)}</span>${r.blockers&&r.blockers.length?blBadge({open:r.blockers.filter(b=>b.status!=='Resolved').length,total:r.blockers.length,days:r.blockers.reduce((s,b)=>s+b.days,0)}):''}<div class="spacer"></div>
         ${r.brief_id?`<button class="btn ghost small" onclick="openBriefFrom('${esc(r.brief_id)}','${esc(r.id)}')">Open Brief</button>`:''}
         ${r.canEdit?`<button class="btn ghost small" onclick="projForm('${esc(r.id)}')">Edit Project</button><button class="btn ghost small" onclick="cpAdmin('${esc(r.id)}')">Client portal${r.clientPortal&&r.clientPortal.on?' ●':''}</button>`:''}
+        ${r.canWatch?`<button class="btn ghost small" onclick="pwOpen()">👁 Watchers${(r.watchers||[]).length?' · '+r.watchers.length:''}</button>`:''}
         ${r.isAdmin?`<button class="btn ghost small" style="color:var(--bad)" onclick="projDelete('${esc(r.id)}')">Delete</button>`:''}</div>
       <div class="pinfo">
         <div class="pbox"><h4>Store</h4>
@@ -193,6 +194,29 @@ function taskRowHTML(t,pid,me,isAdmin,canEdit){
 }
 
 /* ----- التاسكات الجانبية المربوطة بالمشروع (من صفحة Tasks) ----- */
+/* ----- متابعين المشروع (Watchers): حد بيتابع المشروع للقراءة بس عشان يتعلم ----- */
+function pwOpen(){
+  const r=S.proj; if(!r||!r.canWatch) return;
+  const L=r.watchers||[], C=(r.watchCands||[]).filter(c=>!L.some(w=>w.u===c.u));
+  $('modalRoot').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:520px">
+    <h2 style="margin:0 0 4px">👁 Watchers · ${esc(r.client)}</h2>
+    <p class="muted" dir="rtl" style="margin:0 0 12px;font-size:13px">المتابع بيشوف المشروع والتاسكات والتسليمات والبريف <b>للقراءة بس</b> عشان يتعلم. مش من فريق المشروع، ومش بيتحسب عليه شغل ولا KPIs. الباسوردات بتظهر بس لو وظيفته عليها صلاحية الأكسيس.</p>
+    ${L.length?`<div class="pw-list">${L.map(w=>`<div class="pw-row"><div class="tx"><b>${bd(w.name)}</b><span class="muted">${[w.job?esc(w.job):'',w.until?'لحد '+fmtDay(w.until):'من غير تاريخ انتهاء',w.notify?'🔔 تنبيه مع كل تسليم':''].filter(Boolean).map(x=>'<bdi>'+x+'</bdi>').join(' · ')}</span></div><button class="btn ghost small" style="color:var(--bad)" onclick="pwDel('${esc(w.u)}')">Remove</button></div>`).join('')}</div>`:'<div class="muted" dir="rtl" style="margin-bottom:10px">مفيش متابعين على المشروع ده.</div>'}
+    <h3 style="margin:14px 0 6px;font-size:15px">Add a watcher</h3>
+    <label for="pwU">Employee</label><select id="pwU" dir="auto"><option value="">Choose…</option>${C.map(c=>`<option value="${esc(c.u)}">${esc(c.name)}${c.job?' · '+esc(c.job):''}</option>`).join('')}</select>
+    <label for="pwD" style="margin-top:10px">Watching until <span class="muted" style="font-weight:400">(optional)</span></label><input id="pwD" type="date" min="${new Date().toISOString().slice(0,10)}">
+    <label class="check" style="margin-top:10px"><input type="checkbox" id="pwN" checked> 🔔 Notify them when a task is handed over</label>
+    <div class="err" id="pwE"></div>
+    <div class="mfoot"><button class="btn ghost" onclick="closeModal()">Close</button><div class="spacer"></div><button class="btn primary" id="pwGo">Add watcher</button></div></div></div>`;
+  $('pwGo').onclick=async()=>{ const u=$('pwU').value; if(!u){ $('pwE').textContent='اختار موظف'; return; }
+    const b=$('pwGo'); b.disabled=true; b.textContent='...';
+    try{ const out=await call('pwSave',{project:r.id,user:u,until:$('pwD').value,notify:$('pwN').checked}); r.watchers=out.watchers; toast('اتضاف متابع ✓'); renderProject(r,true); pwOpen(); }
+    catch(e){ $('pwE').textContent=e.message; b.disabled=false; b.textContent='Add watcher'; } };
+}
+async function pwDel(u){
+  const r=S.proj; if(!r) return;
+  try{ const out=await call('pwRemove',{project:r.id,user:u}); r.watchers=out.watchers; toast('اتشال ✓'); renderProject(r,true); pwOpen(); }catch(e){ toast(e.message); }
+}
 function sideTasksHTML(r){
   const L=r.sideTasks||[], can=!r.guest;
   if(!L.length && !can) return '';
@@ -437,7 +461,9 @@ function renderMyTasks(r,keep){
         ${pnotesRO(p.pnotes)}
         ${p.links.length?`<div class="links sm">${p.links.map(l=>oneUrl(l.link)?`<a href="${esc(l.link)}" target="_blank" rel="noopener" class="lnk"><b>${esc(l.title)}</b><span>${bd(l.by)}</span></a>`:`<div class="lnk lnk-t"><b>${esc(l.title)}</b><span>${bd(l.by)}</span><p dir="auto">${txtLinks(l.link)}</p></div>`).join('')}</div>`:''}
         ${p.tasks.slice().sort((a,b)=>rank(a)-rank(b)).map(t=>taskRowHTML(t,p.id,r.me,false)).join('')}
-      </div>`).join('') : '<div class="card muted">No tasks assigned to you right now.</div>'}</div>`;
+      </div>`).join('') : '<div class="card muted">No tasks assigned to you right now.</div>'}
+    ${(r.watching||[]).length?`<div class="card flush" style="margin-top:14px"><div class="chead"><h3 style="margin:0">👁 بتابعها <span class="muted" style="font-weight:500;font-size:13px">· للقراءة بس، مش من شغلك</span></h3></div>
+      ${r.watching.map(w=>`<button class="al" onclick="viewProject('${esc(w.id)}')">${piTag(w.id,w.client)}<span class="tx"><b>${esc(w.client)}</b><span>${[esc(w.id),esc(w.type),w.done+'/'+w.total+' tasks',w.until?'لحد '+fmtDay(w.until):''].filter(Boolean).map(x=>'<bdi>'+x+'</bdi>').join(' · ')}</span></span><span style="display:flex;align-items:center;gap:8px;min-width:120px">${pbar(w.progress)}<b style="font-size:12px">${w.progress}%</b></span></button>`).join('')}</div>`:''}</div>`;
     if(keep) window.scrollTo(0,y);
     startTicks();
   }

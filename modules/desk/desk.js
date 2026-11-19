@@ -1,6 +1,6 @@
 /* ============ My Desk ============
    الصفحة الشخصية لكل واحد: تاسكاتي، الإشعارات، الموافقات المستنياني، وحالتي النهارده. */
-const NOTIF_IC={approval:'cal',request:'cal',leave:'cal',project:'folder',note:'brief',ready:'tasks',blocker:'flag',brief:'brief',pulse:'chart',task:'todo',review:'todo',returned:'warn',done:'todo',comment:'brief',meeting:'meet',launch:'trend'};
+const NOTIF_IC={approval:'cal',request:'cal',leave:'cal',project:'folder',note:'brief',ready:'tasks',blocker:'flag',brief:'brief',pulse:'chart',task:'todo',review:'todo',returned:'warn',done:'todo',comment:'brief',meeting:'meet',launch:'trend',watch:'folder'};
 function viewDesk(){
   const h=new Date().getHours();
   setTop('أرحب بـ المقناص', String(S.user.name||'')+' · '+new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}));
