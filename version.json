@@ -1,5 +1,5 @@
 {
- "v": "2026-11-21.4",
+ "v": "2026-11-21.5",
  "css": [
   "core/styles.css",
   "modules/briefs/briefs.css",
@@ -14,6 +14,7 @@
   "core/auth.js",
   "core/shell.js",
   "core/look.js",
+  "core/xlsx.js",
   "core/popup.js",
   "core/avatars.js",
   "core/brand.js",
@@ -51,6 +52,7 @@
   "modules/board/board.js",
   "modules/soon/soon.js",
   "modules/kpi/kpi.js",
+  "modules/people/hrleave.js",
   "core/start.js"
  ]
 }
