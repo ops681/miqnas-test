@@ -41,7 +41,7 @@ function renderToday(r,keep){
       ${L.map(x=>`<tr>
         <td><b>${esc(x.name)}</b></td><td class="muted">${esc(x.job)}</td>
         <td>${x.state==='open'?'<span class="pill p-bad">No clock-out</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>'+(x.sessions>1?`<div class="sub2">${x.sessions} sessions</div>`:''):x.state==='leave'?'<span class="pill" style="background:var(--bluebg);color:var(--blue)">On leave</span>':r.workday===false?'<span class="pill p-out">Day off</span>':'<span class="pill p-absent">Absent</span>'}</td>
-        <td class="nw">${esc(x.inT)||'—'}</td><td class="nw">${esc(x.outT)||'—'}${aoTag(x.autoOut)}</td><td>${esc(x.mode)||'—'}</td>
+        <td class="nw">${esc(x.inT)||'—'}</td><td class="nw">${esc(x.outT)||'—'}${aoTag(x.autoOut,x.outWhy)}</td><td>${esc(x.mode)||'—'}</td>
         <td class="nw">${esc(x.lastShot)||'—'}</td><td>${x.stops?`<span class="pill p-bad">${x.stops}</span>`:'0'}</td><td>${x.hoursToday||0}</td></tr>`).join('')}
     </table></div>`;
     return;
@@ -62,7 +62,7 @@ function renderToday(r,keep){
     ${L.map(x=>{ const fr=(r.free||{})[x.username]; return `<tr>
       <td><b>${esc(x.name)}</b>${r.canFree?` <button type="button" class="cf-b${fr?' on':''}" title="${fr?'بصمة بس: '+(fr==='today'?'النهارده بس':'دايماً'):'بصمة بس'}" aria-label="Clock only" onclick="cfMenu('${esc(x.username)}','${esc(x.name).replace(/'/g,'')}','${fr||''}')">⏱${fr?(fr==='today'?' النهارده':' دايماً'):''}</button>`:(fr?' <span class="cf-b on">⏱</span>':'')}</td><td class="muted">${esc(x.job)}</td>
       <td>${x.staleOpen?`<span class="pill p-bad">Forgot clock-out</span><div class="sub2">Open since ${x.openSince?shortD(x.openSince):'an earlier day'}</div>`:x.alert?'<span class="pill p-bad">No screenshots</span>':x.state==='break'?`<span class="pill p-prog">On Break</span><div class="sub2" ${bdd(x.breakSince)}>${esc(x.breakSince)} · ${esc(x.breakReason)}</div>`:x.state==='in'?'<span class="pill p-in">Working</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>':x.state==='leave'?'<span class="pill" style="background:var(--bluebg);color:var(--blue)">On leave</span>':'<span class="pill p-absent">Absent</span>'}</td>
-      <td class="nw">${x.staleOpen?'—':esc(x.inT)||'—'}</td><td class="nw">${esc(x.outT)||'—'}${aoTag(x.autoOut)}</td><td>${esc(x.mode)||'—'}</td>
+      <td class="nw">${x.staleOpen?'—':esc(x.inT)||'—'}${soKindTag(x.kind)}${x.kind==='ot'&&x.otReason?`<div class="sub2" dir="auto">${esc(x.otReason)}</div>`:''}</td><td class="nw">${esc(x.outT)||'—'}${aoTag(x.autoOut,x.outWhy)}</td><td>${esc(x.mode)||'—'}</td>
       <td class="nw">${esc(x.lastShot)||'—'}</td><td>${x.stops?`<span class="pill p-bad">${x.stops}</span>`:'0'}</td><td>${x.hoursToday}</td></tr>`; }).join('')}
   </table></div>`;
 }

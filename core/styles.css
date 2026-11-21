@@ -972,3 +972,16 @@ textarea.ml{field-sizing:content;min-height:42px;max-height:260px;resize:vertica
 }
 .zs-pam{display:flex;flex-wrap:wrap;gap:6px 16px}
 .pw-list{display:flex;flex-direction:column;gap:6px}.pw-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line2);border-radius:8px}.pw-row .tx{flex:1;min-width:0;display:flex;flex-direction:column}.pw-row .tx span{font-size:12.5px}
+/* الخروج عند نهاية الشيفت: اختيار نوع البصمة لما يدخل تاني */
+.so-card h2{margin:0 0 6px}
+.so-opts{display:grid;gap:8px;margin:12px 0}
+.so-opt{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;background:var(--card);text-align:right}
+.so-opt:hover{border-color:var(--blue)}
+.so-opt:has(input:checked){border-color:var(--blue);background:var(--bluebg)}
+.so-opt input{margin-top:4px;width:18px;height:18px;flex:none}
+.so-opt .so-ic{font-size:20px;line-height:1.2;flex:none}
+.so-opt .so-tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.so-opt .so-tx small{color:var(--muted);font-size:12.5px;line-height:1.5}
+.so-opt.off{opacity:.55;cursor:not-allowed}
+.so-opt.off:hover{border-color:var(--line)}
+.so-open{border-color:var(--blue);background:var(--bluebg)}

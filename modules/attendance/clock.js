@@ -11,11 +11,13 @@ function viewClock(){
     ${inn ? (st.onBreak
         ? `<div class="brkbox" dir="auto">On break since <b>${new Date(st.breakSince).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</b> · ${bd(st.breakReason==='Paid break'?'☕ Paid break':st.breakReason)}${st.breakAllowMs?` <span class="muted" id="brkLeft"></span>`:''}</div><button class="btn primary" id="resumeBrk">Resume Work</button> <button class="btn out" id="outBtn">Clock Out</button>`
         : `<button class="btn brk" id="brkBtn">Break</button> <button class="btn out" id="outBtn">Clock Out</button><div id="shareBox"></div>`)
-      : `${st.lastAuto?`<div class="notice" dir="rtl" style="border-color:var(--warn);background:var(--warnbg);margin:0 0 12px">⚠️ آخر بصمة اتقفلت <b>أوتوماتيك</b> الساعة <b><bdi dir="ltr">${new Date(st.lastAuto.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</bdi></b>، لأن السيستم اتقفل من غير بصمة خروج. الساعات اتحسبت لحد آخر مرة كنت موجود فيها.</div>`:''}<button class="btn primary" id="inBtn">Clock In</button>`}
-    ${cfFree()?`<div class="notice" dir="rtl" style="border-color:var(--blue);background:var(--bluebg)">⏱ <b>الإدارة فاتحالك بصمة بس.</b> البصمة من غير مشاركة شاشة ولا لوكيشن، وتقدر تبصم من الموبايل كمان.<br>• متنساش تبصم خروج لما تخلص. مفيش خروج أوتوماتيك في الوضع ده.</div>`:`<div class="notice" dir="rtl">
+      : `${st.lastAuto?soLastAutoMsg(st.lastAuto):''}${soAgainNote(st)}<button class="btn primary" id="inBtn">Clock In</button>`}
+    ${inn?soOpenNote(st):''}
+    ${cfFree()?`<div class="notice" dir="rtl" style="border-color:var(--blue);background:var(--bluebg)">⏱ <b>الإدارة فاتحالك بصمة بس.</b> البصمة من غير مشاركة شاشة ولا لوكيشن، وتقدر تبصم من الموبايل كمان.<br>• متنساش تبصم خروج لما تخلص.${S.cfg.soOn?' البصمة هتقفل لوحدها أول ما ساعات شيفتك تخلص.':' مفيش خروج أوتوماتيك في الوضع ده.'}</div>`:`<div class="notice" dir="rtl">
       • أول ما تدوس بصمة دخول، هيطلعلك شباك تختار منه تشارك: <b>تاب</b> أو <b>ويندو</b> أو <b>الشاشة كلها</b>.<br>
       • السيستم بياخد سكرين شوت كل ${S.cfg.shotMinutes} دقايق لحد ما تبصم خروج.<br>
       • خلي الصفحة دي مفتوحة طول الشغل، ولو قفلتها أو وقفت المشاركة هيتسجل.<br>
+      ${S.cfg.soOn?`• أول ما ساعات شيفتك تخلص البصمة هتقفل لوحدها. لو لسه شغال اعمل بصمة دخول تاني واختار: أوفر تايم، شيفت جديد، أو بكمّل شغل.<br>`:''}
       ${S.cfg.aoOn?`• لو قفلت السيستم ومشيت من غير بصمة خروج، هتتعملك بصمة خروج <b>أوتوماتيك</b> بعد ${S.cfg.aoMin} دقيقة، بوقت آخر مرة كنت موجود فيها.<br>`:''}
       • استخدم <b>كروم</b> أو <b>إيدج</b> على الكمبيوتر.
     </div>`}
@@ -42,7 +44,7 @@ function renderMyMonth(r){
       <div class="kpi"><span>Avg per day</span><b>${s.avg}</b></div>
     </div>
     ${r.days.length?`<div class="tbl-wrap"><table style="min-width:420px"><tr><th>Date</th><th>Day</th><th>In</th><th>Out</th><th>Hours</th></tr>
-    ${r.days.slice().reverse().map(d=>`<tr><td>${esc(d.date)}</td><td>${esc(d.day)}</td><td>${esc(d.inT)}</td><td>${d.open?'<span class="pill p-in">Working</span>':esc(d.outT)+aoTag(d.auto)}</td><td>${d.open?'—':d.hours}</td></tr>`).join('')}
+    ${r.days.slice().reverse().map(d=>`<tr><td>${esc(d.date)}</td><td>${esc(d.day)}</td><td>${esc(d.inT)}</td><td>${d.open?'<span class="pill p-in">Working</span>':esc(d.outT)+aoTag(d.auto,d.why)}${soKindTag(d.kind)}</td><td>${d.open?'—':d.hours}</td></tr>`).join('')}
     </table></div>`:'<p class="muted">No attendance this month yet.</p>'}`;
 }
 async function loadMyMonth(){
@@ -148,12 +150,16 @@ async function breakEnd(){
 }
 async function clockIn(){
   coAsk();
-  const b=$('inBtn'); b.disabled=true;
+  // شيفته النهارده خلص: يختار أوفر تايم / شيفت جديد / بكمّل شغل الأول
+  let so={};
+  if(S.status && S.status.so && S.status.so.need){ so=await soChoose(S.status.so); if(!so) return; }
+  const b=$('inBtn'); if(!b) return; b.disabled=true;
+  const fail=async e=>{ if(/شيفتك النهارده خلص/.test(e.message||'')){ try{ const r=await call('me'); if(r&&r.status){ setStatus(r.status); } }catch(x){} } alert(e.message); if(S.view==='clock') viewClock(); else { b.disabled=false; b.textContent='Clock In'; } };
   // بصمة بس: من غير شير اسكرين ولا لوكيشن
   if(S.status && S.status.free){
     b.textContent='Saving...';
-    try{ setStatus(await call('clockIn',{mode:'free'})); toast('اتسجلت بصمة الدخول ✓'); renderSide(); if(S.view==='clock') viewClock(); else go(S.view||'desk'); }
-    catch(e){ alert(e.message); b.disabled=false; b.textContent='Clock In'; }
+    try{ setStatus(await call('clockIn',Object.assign({mode:'free'},so))); toast('اتسجلت بصمة الدخول ✓'); renderSide(); if(S.view==='clock') viewClock(); else go(S.view||'desk'); }
+    catch(e){ await fail(e); }
     return;
   }
   b.textContent='Choose what to share...';
@@ -162,14 +168,14 @@ async function clockIn(){
     let loc=null;
     if(S.cfg.locationOn){ b.textContent='Allow location...'; loc=await getLoc(true); }
     b.textContent='Saving...';
-    setStatus(await call('clockIn',{mode,loc}));
+    setStatus(await call('clockIn',Object.assign({mode,loc},so)));
     S.lastLoc=Date.now(); store('erp_lastloc',String(S.lastLoc));
     toast('اتسجلت بصمة الدخول ✓');
     startShotLoop(true);
     renderSide();
     if(can('tasks.mine')) go('mytasks'); else viewClock();
     setTimeout(prefetch, 800);
-  }catch(e){ stopStream(); alert(e.message); b.disabled=false; b.textContent='Clock In'; }
+  }catch(e){ stopStream(); await fail(e); }
 }
 async function clockOut(){
   if(!confirm('متأكد إنك عاوز تبصم خروج؟')) return;
@@ -277,3 +283,75 @@ function showLocAlarm(){
     <div class="mfoot" style="justify-content:center"><button class="btn primary" onclick="retryLoc()">تمام، رجّعته</button></div></div></div>`;
 }
 async function retryLoc(){ try{ const loc=await getLoc(); callOrQueue('locPing',{loc}).catch(()=>{}); S.lastLoc=Date.now(); store('erp_lastloc',String(S.lastLoc)); $('modalRoot').innerHTML=''; toast('اللوكيشن رجع ✓'); }catch(e){ toast(e.message); } }
+
+/* ============ الخروج عند نهاية الشيفت ============ */
+// السيرفر بيقفل البصمة لوحده أول ما ساعات الشيفت تخلص (كل 5 دقايق). لو الموقع مفتوح بنقفلها في نفس اللحظة من هنا (clockOut auto).
+// لو دخل تاني بعد ما الشيفت خلص: بيختار أوفر تايم (بسبب) / شيفت جديد (بعد nsGap ساعة من آخر خروج) / بكمّل شغل (ربع ساعة، مرة في اليوم).
+const soHM = ts => new Date(ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+function soLastAutoMsg(a){
+  const t=`<b><bdi dir="ltr">${soHM(a.at)}</bdi></b>`;
+  const tx=a.why==='shift'?`✅ شيفتك خلص، فالبصمة اتقفلت <b>لوحدها</b> الساعة ${t}. لو لسه شغال اعمل بصمة دخول واختار نوعها.`
+    : a.why==='ot'?`⏱ الأوفر تايم وصل للحد الأقصى، فالبصمة اتقفلت الساعة ${t}. طلب الأوفر تايم اتبعت للموافقة.`
+    : a.why==='fin'?`✅ وقت "بكمّل شغل" خلص، فالبصمة اتقفلت الساعة ${t}.`
+    : `⚠️ آخر بصمة اتقفلت <b>أوتوماتيك</b> الساعة ${t}، لأن السيستم اتقفل من غير بصمة خروج. الساعات اتحسبت لحد آخر مرة كنت موجود فيها.`;
+  const warn=!a.why||a.why==='auto'||a.why==='ot';
+  return `<div class="notice" dir="rtl" style="border-color:var(--${warn?'warn':'blue'});background:var(--${warn?'warnbg':'bluebg'});margin:0 0 12px">${tx}</div>`;
+}
+function soAgainNote(st){
+  const so=st.so; if(!so||!so.need) return '';
+  return `<div class="notice" dir="rtl" style="margin:0 0 12px">شيفتك النهارده (${esc(coDur(so.shiftMs))}) خلص. لو هتبصم دخول تاني هتختار: <b>أوفر تايم</b> أو <b>شيفت جديد</b> أو <b>بكمّل شغل</b>.</div>`;
+}
+function soOpenNote(st){
+  const so=st.so; if(!so||!so.open) return '';
+  const left=Math.max(0,so.limitMs-workedMs(st)), end=Date.now()+left;
+  const lbl=so.kind==='ot'?`⏱ <b>أوفر تايم</b>${so.otReason?' · '+bd(so.otReason):''}`:so.kind==='fin'?'✅ <b>بكمّل شغل</b>':so.kind==='new'?'🔄 <b>شيفت جديد</b>':'';
+  return `<div class="notice so-open" dir="rtl" style="margin:12px 0 0">${lbl?lbl+' · ':''}البصمة هتقفل لوحدها ${st.onBreak?'بعد':'الساعة'} <b><bdi dir="ltr">${st.onBreak?esc(coDur(left))+' شغل':soHM(end)}</bdi></b>${so.kind==='ot'?'، وطلب الأوفر تايم هيتبعت للموافقة لما تخرج':''}.</div>`;
+}
+function soChoose(so){
+  return new Promise(res=>{
+    const c=S.cfg||{}, otMax=Number(so.otMax||c.otMax)||4, fin=Number(so.finMin||c.finMin)||15, gap=Number(so.gapH||c.nsGap)||3;
+    const opt=(k,ic,t,d,ok,why)=>`<label class="so-opt${ok?'':' off'}"><input type="radio" name="soK" value="${k}"${ok?'':' disabled'}><span class="so-ic">${ic}</span><span class="so-tx"><b>${t}</b><small>${ok?d:why}</small></span></label>`;
+    $('modalRoot').innerHTML=`<div class="modal"><div class="card so-card" dir="rtl" role="dialog" aria-labelledby="soH">
+      <h2 id="soH">شيفتك النهارده خلص</h2>
+      <p class="muted" style="margin-top:-4px">اشتغلت ${esc(coDur(so.blockMs))} من ${esc(coDur(so.shiftMs))}. البصمة دي إيه؟</p>
+      <div class="so-opts">
+        ${opt('ot','⏱','أوفر تايم',`لازم تكتب السبب. بتقفل لوحدها بعد ${esc(coDur(otMax*36e5))} بالكتير، وطلب الأوفر تايم بيتبعت للموافقة لما تخرج.`,true,'')}
+        ${opt('new','🔄','بداية شيفت جديد','العداد يبدأ من الأول بشيفت كامل.',so.newOk,`متاح بعد ${gap} ساعات من آخر خروج${so.newAt?' (من الساعة <bdi dir="ltr">'+soHM(so.newAt)+'</bdi>)':''}.`)}
+        ${opt('fin','✅','بكمّل شغل بس',`البصمة بتفضل مفتوحة ${esc(coDur(fin*6e4))} وتقفل لوحدها. مرة واحدة في اليوم.`,so.finOk,'اتاخدت النهارده خلاص.')}
+      </div>
+      <div id="soRW" hidden><label for="soR">سبب الأوفر تايم</label><textarea id="soR" dir="auto" maxlength="300" rows="1" class="ml" placeholder="مثال: تسليم متجر النهارده"></textarea></div>
+      <div class="err" id="soE"></div>
+      <div class="mfoot"><button class="btn primary" id="soS">كمّل البصمة</button><button class="btn" id="soC">إلغاء</button></div>
+    </div></div>`;
+    const done=v=>{ $('modalRoot').innerHTML=''; res(v); };
+    document.querySelectorAll('input[name="soK"]').forEach(r=>r.onchange=()=>{ $('soRW').hidden=r.value!=='ot'||!r.checked; if(!$('soRW').hidden) $('soR').focus(); $('soE').textContent=''; });
+    $('soC').onclick=()=>done(null);
+    $('soS').onclick=()=>{
+      const k=(document.querySelector('input[name="soK"]:checked')||{}).value;
+      if(!k){ $('soE').textContent='اختار نوع البصمة'; return; }
+      const reason=k==='ot'?$('soR').value.trim():'';
+      if(k==='ot' && !reason){ $('soE').textContent='اكتب سبب الأوفر تايم'; $('soR').focus(); return; }
+      done(k==='ot'?{kind:k,reason}:{kind:k});
+    };
+  });
+}
+// الموقع مفتوح والحد خلص: نقفلها دلوقتي بوقت النهاية
+async function soTick(){
+  const st=S.status, so=st&&st.so;
+  if(!so||!so.open||!st.clockedIn||VA_TAB||!(S.cfg||{}).soOn) return;
+  if(workedMs(st) < so.limitMs) return;
+  if(S.soBusy && Date.now()-S.soBusy<120000) return;
+  S.soBusy=Date.now();
+  try{
+    if(S.sharing) await takeShot().catch(()=>{});
+    const r=await call('clockOut',{auto:1});
+    stopStream(); setStatus(r); S.soBusy=0;
+    document.title='Miqnas ERP';
+    const why=r&&r.lastAuto&&r.lastAuto.why;
+    toast(why==='ot'?'الأوفر تايم وصل للحد الأقصى، والبصمة اتقفلت ✓':why==='fin'?'وقت "بكمّل شغل" خلص، والبصمة اتقفلت ✓':'شيفتك خلص، والبصمة اتقفلت لوحدها ✓');
+    try{ if(document.visibilityState!=='visible' && 'Notification' in window && Notification.permission==='granted') new Notification('✅ البصمة اتقفلت لوحدها',{body:'ساعات شيفتك خلصت. لو لسه شغال افتح Miqnas ERP واعمل بصمة دخول.',tag:'mq-shiftout',icon:(S.brand&&S.brand.logo)||undefined}); }catch(e){}
+    renderSide();
+    if(S.view==='clock' || (gated() && FREE_VIEWS.indexOf(S.view)<0)) go('clock');
+  }catch(e){ /* السيرفر هيقفلها في الـ 5 دقايق الجاية */ }
+}
+setInterval(soTick, 15000);

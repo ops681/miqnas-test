@@ -14,7 +14,10 @@ function coTick(){
   const c=S.cfg||{}, st=S.status, u=S.user;
   const on=c.coOn && u && u.clocks && !S.mobile && st && st.clockedIn && !st.onBreak;
   if(!on){ coHide(); S.coEp=0; return; }
-  const shift=(Number(u.shift)||8)*36e5, before=(Number(c.coBefore)||5)*6e4, w=coWorkedMs();
+  const so=st.so&&st.so.open?st.so:null;
+  // أوفر تايم / بكمّل شغل: مفيش تذكير، البصمة بتقفل لوحدها
+  if(so && (so.kind==='ot'||so.kind==='fin')){ coHide(); S.coEp=0; return; }
+  const shift=so?so.shiftMs:(Number(u.shift)||8)*36e5, before=(Number(c.coBefore)||5)*6e4, w=so?so.blockMs+workedMs(st):coWorkedMs();
   if(w < shift-before){ coHide(); S.coEp=0; return; }
   const snz=Number(load('co_snz'))||0;
   if(Date.now()<snz){ coHide(); return; }
@@ -33,7 +36,8 @@ function coShow(w, shift){
     document.body.appendChild(b); coDrag(b);
   }
   const left=shift-w;
-  const tx=left>30000?`فاضل <b>${esc(coDur(left))}</b> على نهاية شيفتك (${esc(coDur(shift))}).`:`شيفتك (${esc(coDur(shift))}) خلص${left< -6e4?' من <b>'+esc(coDur(-left))+'</b>':''}.`;
+  const auto=(S.cfg||{}).soOn&&S.status&&S.status.so&&S.status.so.open;
+  const tx=left>30000?`فاضل <b>${esc(coDur(left))}</b> على نهاية شيفتك (${esc(coDur(shift))}).${auto?' البصمة هتقفل لوحدها أول ما يخلص.':''}`:`شيفتك (${esc(coDur(shift))}) خلص${left< -6e4?' من <b>'+esc(coDur(-left))+'</b>':''}.`;
   const q=(k,v,html)=>{ const e=b.querySelector(k); if(e && e.dataset.v!==v){ e.dataset.v=v; html? e.innerHTML=v : e.textContent=v; } };
   q('.co-tx',tx,true); q('.co-w','اشتغلت النهارده '+coDur(w)); q('.co-b2','فكّرني بعد '+(Number((S.cfg||{}).coSnooze)||30)+' دقيقة');
   if(!/^⚠/.test(document.title)) document.title='⏰ متنساش تبصم خروج';
