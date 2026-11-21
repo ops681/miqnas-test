@@ -11,7 +11,10 @@ function renderDash(r,keep){
   const L=r.alerts.map((a,i)=>({a,i})).filter(x=>F==='all'||x.a.cat===F);
   const showPeople = can('attendance.view_all');
   const y=window.scrollY;
+  const hr=new Date().getHours(), pl=(n,w)=>`<b>${n} ${w}${n===1?'':'s'}</b>`;
+  const hello = k.overdue ? `${pl(k.overdue,'project')} ${k.overdue===1?'is':'are'} past the launch date` : k.risk ? `${pl(k.risk,'project')} ${k.risk===1?'is':'are'} behind` : r.alerts.length ? `${pl(r.alerts.length,'thing')} need${r.alerts.length===1?'s':''} your attention` : `Everything is <b>on track</b>`;
   $('main').innerHTML=`
+  <div class="hello2" style="margin-bottom:16px"><div><p>${hr<12?'Good morning':hr<17?'Good afternoon':'Good evening'}, <bdi>${esc(String(S.user.name||'').split(/\s+/)[0])}</bdi></p><h2>${hello}</h2></div></div>
   ${readyCardHTML(r.readyNow)}
   <div class="grid kpis">
     <div class="kpi"><span>Active projects</span><b>${k.active}</b><small>${r.projects.length} tracked</small></div>

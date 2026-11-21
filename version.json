@@ -1,9 +1,10 @@
 {
- "v": "2026-11-19.1",
+ "v": "2026-11-21.3",
  "css": [
   "core/styles.css",
   "modules/briefs/briefs.css",
-  "core/dark.css"
+  "core/dark.css",
+  "core/look.css"
  ],
  "js": [
   "core/config.js",
@@ -12,6 +13,7 @@
   "core/queue.js",
   "core/auth.js",
   "core/shell.js",
+  "core/look.js",
   "core/popup.js",
   "core/avatars.js",
   "core/brand.js",

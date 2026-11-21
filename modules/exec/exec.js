@@ -37,10 +37,10 @@ function renderExec(X){
   const cols=[['people','People'],['present','Present now'],['hours','Hours today'],['open','Open tasks'],['late','Late tasks'],['alerts','Alerts']].filter(c=>!X.noProjects||['people','present','hours'].indexOf(c[0])>=0);
   $('main').innerHTML=`<div style="display:grid;gap:20px">
 
-  ${X.actions.length?`<div class="card flush" style="border-left:5px solid var(--bad)">
-    <div class="chead"><span style="color:var(--bad)">${ico('warn',20)}</span><h2>Executive Action Center</h2><span class="pill p-bad">${X.actions.length}</span><span class="muted" style="font-size:13px">Things that need a decision</span></div>
+  ${X.actions.length?`<div class="card flush exac">
+    <div class="chead"><h2>Needs your decision</h2><span class="cnt warn">${X.actions.length}</span></div>
     ${X.actions.map(a=>`<button class="al sev-${a.sev}" onclick="goTo(S.execGo[${gid(a.go)}])"><span class="dot"></span><span class="tx"><b>${bd(a.title)}</b><span>${bd(a.detail)}</span></span></button>`).join('')}
-  </div>`:`<div class="card" style="border-left:5px solid var(--ok)"><h2 style="margin:0 0 4px">Executive Action Center</h2><div class="muted">Nothing needs a decision right now.</div></div>`}
+  </div>`:`<div class="card"><h2 style="margin:0 0 4px">Needs your decision</h2><div class="muted">Nothing needs a decision right now.</div></div>`}
 
   <div id="kpiExec">${S.cache['kpiB:']&&typeof kpiBoardHTML==='function'?kpiBoardHTML(S.cache['kpiB:'],'kpiExec'):''}</div>
 
