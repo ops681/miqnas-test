@@ -3,7 +3,7 @@
 const NOTIF_IC={approval:'cal',request:'cal',leave:'cal',project:'folder',note:'brief',ready:'tasks',blocker:'flag',brief:'brief',pulse:'chart',task:'todo',review:'todo',returned:'warn',done:'todo',comment:'brief',meeting:'meet',launch:'trend',watch:'folder'};
 function viewDesk(){
   const h=new Date().getHours();
-  setTop('أرحب بـ المقناص', String(S.user.name||'')+' · '+new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}));
+  setTop('My Desk', 'أرحب بـ المقناص · '+new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}));
   swr('desk','deskGet',{},renderDesk);
 }
 function timeAgo(ms){ const s=Math.max(0,(Date.now()-ms)/1000); if(s<60) return 'now'; if(s<3600) return Math.floor(s/60)+' min ago'; if(s<86400) return Math.floor(s/3600)+' h ago'; const d=Math.floor(s/86400); return d===1?'yesterday':d+' days ago'; }
@@ -17,41 +17,70 @@ function openNotif(src,i){
   closeBell();
   if(n.go){ if(n.go.view==='briefs') go('briefs',{id:n.go.brief}); else goTo(n.go); }
 }
+function deskHello(D){
+  const T=D.tasks, n=(x,w)=>`<b>${x} ${w}${x===1?'':'s'}</b>`;
+  if(T&&T.late) return `${n(T.late,'task')} ${T.late===1?'is':'are'} past the deadline`;
+  if(T&&T.dueToday) return `You have ${n(T.dueToday,'task')} due today`;
+  if(D.requests) return `${n(D.requests,'request')} ${D.requests===1?'is':'are'} waiting for you`;
+  if(D.toReview) return `${n(D.toReview,'task')} ${D.toReview===1?'is':'are'} waiting for your review`;
+  if(T&&T.ready) return `${n(T.ready,'task')} ${T.ready===1?'is':'are'} ready for you`;
+  if(T&&T.open) return `${n(T.open,'open task')}, nothing urgent`;
+  return `You're <b>all caught up</b>`;
+}
+// كل تاسك: دايرة الحالة، الاسم وتحته العميل والميعاد، والحالة
+function deskTaskHTML(t){
+  const k=t.running?'run':t.late?'late':t.review?'rev':t.locked?'wait':t.helping?'help':t.status==='In Progress'?'prog':'ready';
+  const tag={run:['Running','p-in'],late:['Late','p-bad'],rev:['In review','p-yel'],wait:['Waiting','p-out'],help:['Helping','p-prog'],prog:['In progress','p-prog'],ready:['Ready','p-in']}[k];
+  return `<button class="dt dt-${k}" onclick="${t.gid?`go('tasks',{id:'${esc(t.gid)}'})`:`go('mytasks')`}"><i class="dt-dot" aria-hidden="true"></i>
+    <span class="dt-tx"><b>${bd(t.title)}</b><small>${t.client?bd(t.client):''}${t.deadline?`<em class="${t.late?'late':''}">${t.late?'Overdue · ':'Due '}${fmtD(t.deadline)}</em>`:''}</small></span>
+    <span class="pill ${tag[1]}">${tag[0]}</span><span class="dt-go" aria-hidden="true">›</span></button>`;
+}
 function renderDesk(D){
   S.deskLast=D;
   S.unread=D.unread; renderBell();
-  const T=D.tasks, st=D.status;
-  const tile=(label,val,sub,color,goV)=>`<${goV?`button onclick="go('${goV}')" style="text-align:left;cursor:pointer"`:'div'} class="kpi"><span>${label}</span><b style="color:${color||'var(--ink)'}">${val}</b><small>${sub||''}</small></${goV?'button':'div'}>`;
-  const tiles=[];
-  if(st) tiles.push(tile('Today',st.clockedIn?(st.onBreak?'On break':'Clocked in'):'Not clocked in',st.clockedIn?'Since '+esc(st.inT):(S.mobile&&!st.free?'Clock in from your laptop':'Clock in to start'),st.clockedIn?(st.onBreak?'var(--blue)':'var(--ok)'):'var(--warn)','clock'));
+  const T=D.tasks, st=D.status, PE=D.people;
+  const h=new Date().getHours(), first=String(S.user.name||'').split(/\s+/)[0];
+  const tile=(label,val,sub,tone,goV)=>`<button class="dk${tone?' '+tone:''}" onclick="go('${goV}')"><span>${label}</span><b>${val}</b><small>${sub||''}</small></button>`;
   const TP=can('tasks.mine')?'mytasks':'tasks';
-  if(T){ tiles.push(tile('Open tasks',T.open,T.ready+' ready to work on',null,TP)); tiles.push(tile('Late',T.late,'Past your deadline',T.late?'var(--bad)':null,TP)); tiles.push(tile('Due today',T.dueToday,'By your deadlines',T.dueToday?'var(--warn)':null,TP)); }
-  if(D.toReview) tiles.push(tile('To review',D.toReview,'Tasks waiting for your approval','var(--warn)','tasks'));
-  if(D.requests) tiles.push(tile('Requests to approve',D.requests,'Leave, permissions, overtime','var(--warn)','requests'));
-  if(D.leaveLeft!=null) tiles.push(tile('Annual leave left',D.leaveLeft,'Days this year',null,'requests'));
-  if(D.approvals!=null) tiles.push(tile('Approvals waiting',D.approvals,'Device requests',D.approvals?'var(--warn)':null,'devices'));
-  if(D.myProjects!=null) tiles.push(tile('My projects',D.myProjects,'Active, you are the AM',null,'projects'));
-  const PE=D.people;
-  if(PE){ tiles.push(tile('Not clocked in',PE.workday?PE.notIn.length:'Day off',PE.workday?PE.in+' of '+PE.clockers+' clocked in':'Weekend or holiday',PE.workday&&PE.notIn.length?'var(--warn)':null,'people')); if(PE.leave.length) tiles.push(tile('On leave today',PE.leave.length,PE.leave.map(x=>x.name).slice(0,2).join(', '),'var(--blue)','people')); }
-  if(D.pulseStale!=null) tiles.push(tile('Commercial Pulse',D.pulseStale?'Not entered':'Up to date','This month',D.pulseStale?'var(--warn)':'var(--ok)','pulse'));
-  $('main').innerHTML=`<div style="display:grid;gap:20px">
+  const tiles=[];
+  if(T){ tiles.push(tile('Open tasks',T.open,T.ready+' ready to work on','',TP)); tiles.push(tile('Late',T.late,'Past your deadline',T.late?'bad':'',TP)); tiles.push(tile('Due today',T.dueToday,'By your deadlines',T.dueToday?'warn':'',TP)); }
+  if(D.toReview) tiles.push(tile('To review',D.toReview,'Waiting for your approval','warn','tasks'));
+  if(D.requests) tiles.push(tile('Requests to approve',D.requests,'Leave, permissions, overtime','warn','requests'));
+  if(D.leaveLeft!=null) tiles.push(tile('Annual leave left',D.leaveLeft,'Days this year','','requests'));
+  if(D.approvals!=null) tiles.push(tile('Device approvals',D.approvals,'Waiting',D.approvals?'warn':'','devices'));
+  if(D.myProjects!=null) tiles.push(tile('My projects',D.myProjects,'Active, you are the AM','','projects'));
+  if(PE){ tiles.push(tile('Not clocked in',PE.workday?PE.notIn.length:'—',PE.workday?PE.in+' of '+PE.clockers+' clocked in':'Weekend or holiday',PE.workday&&PE.notIn.length?'warn':'','people')); if(PE.leave.length) tiles.push(tile('On leave today',PE.leave.length,PE.leave.map(x=>x.name).slice(0,2).join(', '),'','people')); }
+  if(D.pulseStale!=null) tiles.push(tile('Commercial Pulse',D.pulseStale?'Not entered':'Up to date','This month',D.pulseStale?'warn':'','pulse'));
+  // الحضور: زرار واحد واضح فوق على اليمين
+  const clockBtn = !st ? '' : st.clockedIn
+    ? `<button class="dk-clock${st.onBreak?' brk':''}" onclick="go('clock')"><i></i><span><b>${st.onBreak?'On a break':'Clocked in'}</b><small>since ${esc(st.inT)}</small></span></button>`
+    : `<button class="btn-cta" onclick="go('clock')">${ico('clock',18)} ${S.mobile&&!st.free?'Clock in from your laptop':'Clock in'}</button>`;
+  const head=(title,count,tone,btn)=>`<div class="ch2"><h2>${title}${count?` <span class="cnt${tone?' '+tone:''}">${count}</span>`:''}</h2>${btn||''}</div>`;
+  const tasksCard = T ? `<section class="card dcard">${head('My next tasks',T.open,'',`<button class="lnkbtn" onclick="go('${TP}')">All my tasks</button>`)}
+      ${T.list.length?`<div class="dts">${T.list.map(deskTaskHTML).join('')}</div>`:`<div class="empty"><b>Nothing open</b>You have no open tasks.</div>`}</section>` : '';
+  const reqCard = D.reqList&&D.reqList.length ? `<section class="card dcard dk-wait">${head('Waiting for you',D.requests||D.reqList.length,'warn',`<button class="lnkbtn" onclick="go('requests',{tab:'approve'})">Open requests</button>`)}
+      <div class="dts">${D.reqList.map(x=>`<button class="dt dt-rev" onclick="go('requests',{tab:'approve'})"><i class="dt-dot" aria-hidden="true"></i><span class="dt-tx"><b>${bd(x.name)} · ${x.kind==='leave'?esc(x.typeLabel):x.kind==='permission'?'Permission':'Overtime'}</b><small>${fmtD(x.from)}${x.to&&x.to!==x.from?' → '+fmtD(x.to):''}${x.kind==='leave'?' · '+x.days+(x.days===1?' day':' days'):' · '+x.hours+' h'}</small></span><span class="dt-act">Review</span></button>`).join('')}</div></section>` : '';
+  const peopleCard = PE ? `<section class="card dcard">${head('Not clocked in today',PE.workday&&PE.notIn.length?PE.notIn.length:'','warn',`<button class="lnkbtn" onclick="go('people')">People</button>`)}
+      ${!PE.workday?`<div class="empty"><b>Day off</b>Today is a weekend or holiday.</div>`:PE.notIn.length?`<div class="dk-avs">${PE.notIn.map(x=>`<div class="dk-p"><div class="av" data-u="${esc(x.u||'')}">${esc(initials(x.name))}</div><b>${bd(x.name)}</b><small>${esc(x.job||'')}</small></div>`).join('')}</div>`:`<div class="empty"><b>Everyone is in</b>All who clock in have clocked in today.</div>`}</section>` : '';
+  const notifCard = `<section class="card dcard">${head('Notifications',D.unread?D.unread+' new':'','acc',D.unread?`<button class="lnkbtn" onclick="readAll()">Mark all read</button>`:'')}
+      ${D.notifs.length?`<div class="dnl">${D.notifs.map((n,i)=>notifHTML(n,i,'desk')).join('')}</div>`:`<div class="empty"><b>All caught up</b>When something needs you, it shows up here.</div>`}</section>`;
+  $('main').innerHTML=`<div class="desk2">
+  <div class="hello2"><div><p>${h<12?'Good morning':h<17?'Good afternoon':'Good evening'}, <bdi>${esc(first)}</bdi></p><h2>${deskHello(D)}</h2></div>${clockBtn}</div>
+  ${tiles.length?`<div class="dks">${tiles.join('')}</div>`:''}
   ${readyCardHTML(D.readyNow).replace('margin-bottom:20px','margin:0')}
-  <div id="kpiDesk">${S.cache.kpiMine&&typeof kpiCardHTML==='function'?kpiCardHTML(S.cache.kpiMine,true):''}</div>
-  ${tiles.length?`<div class="grid kpis" style="margin:0">${tiles.join('')}</div>`:''}
-  <div class="two" style="margin:0">
-    ${typeof finDeskHTML==='function'?finDeskHTML(D.finDue):''}
-    ${typeof kbDeskHTML==='function'?kbDeskHTML(D.sopUnread):''}
-    ${todoCardHTML(D)}
-    ${T?`<div class="card flush"><div class="chead"><h2>My next tasks</h2><span class="spacer"></span><button class="btn ghost small" onclick="go('${can('tasks.mine')?'mytasks':'tasks'}')">All my tasks →</button></div>
-      ${T.list.length?T.list.map(t=>{ const tag=t.running?['Running','p-in']:t.helping?['Helping','p-prog']:t.late?['Late','p-bad']:t.review?['In review','p-yel']:t.locked?['Waiting','p-yel']:t.status==='In Progress'?['In progress','p-in']:['Ready','p-absent'];
-        return `<button class="al" onclick="${t.gid?`go('tasks',{id:'${esc(t.gid)}'})`:`go('mytasks')`}">${t.project?piTag(t.project,t.client,'pi-sm'):''}<span class="tx"><b>${bd(t.title)}</b><span>${bd(t.client)}${t.deadline?' · due '+fmtD(t.deadline):''}</span></span><span class="pill ${tag[1]}">${tag[0]}</span></button>`; }).join('')
-      :`<div class="empty"><b>Nothing open</b>You have no open tasks.</div>`}</div>`:''}
-    ${PE?`<div class="card flush"><div class="chead"><h2>Not clocked in today</h2>${PE.workday&&PE.notIn.length?`<span class="pill p-absent">${PE.notIn.length}</span>`:''}<span class="spacer"></span><button class="btn ghost small" onclick="go('people')">People Dashboard →</button></div>
-      ${!PE.workday?`<div class="empty"><b>Day off</b>Today is a weekend or holiday.</div>`:PE.notIn.length?PE.notIn.map(x=>`<div class="tm"><div class="av" data-u="${esc(x.u||'')}">${esc(initials(x.name))}<i style="background:#F79009"></i></div><div class="tx"><b>${bd(x.name)}</b><div>${esc(x.job||'')}</div></div></div>`).join(''):`<div class="empty"><b>Everyone is in</b>All who clock in have clocked in today.</div>`}</div>`:''}
-    ${D.reqList?`<div class="card flush"><div class="chead"><h2>Requests waiting for you</h2>${D.reqList.length?`<span class="pill p-absent">${D.requests||D.reqList.length}</span>`:''}<span class="spacer"></span><button class="btn ghost small" onclick="go('requests',{tab:'approve'})">Open requests →</button></div>
-      ${D.reqList.length?D.reqList.map(x=>`<button class="al" onclick="go('requests',{tab:'approve'})"><span class="tx"><b>${bd(x.name)} · ${x.kind==='leave'?esc(x.typeLabel):x.kind==='permission'?'Permission':'Overtime'}</b><span>${fmtD(x.from)}${x.to&&x.to!==x.from?' → '+fmtD(x.to):''}${x.kind==='leave'?' · '+x.days+(x.days===1?' day':' days'):' · '+x.hours+' h'}</span></span><span class="pill p-yel">Waiting</span></button>`).join(''):`<div class="empty"><b>Nothing waiting</b>New leave and permission requests show up here.</div>`}</div>`:''}
-    <div class="card flush"><div class="chead"><h2>Notifications</h2>${D.unread?`<span class="pill p-bad">${D.unread} new</span>`:''}<span class="spacer"></span>${D.unread?`<button class="btn ghost small" onclick="readAll()">Mark all read</button>`:''}</div>
-      ${D.notifs.length?D.notifs.map((n,i)=>notifHTML(n,i,'desk')).join(''):`<div class="empty"><b>All caught up</b>When something needs you, it shows up here.</div>`}</div>
+  <div class="desk-cols">
+    <div class="desk-main">
+      ${reqCard}
+      ${tasksCard}
+      <div id="kpiDesk">${S.cache.kpiMine&&typeof kpiCardHTML==='function'?kpiCardHTML(S.cache.kpiMine,true):''}</div>
+      ${typeof finDeskHTML==='function'?finDeskHTML(D.finDue):''}
+    </div>
+    <div class="desk-side">
+      ${todoCardHTML(D)}
+      ${typeof kbDeskHTML==='function'?kbDeskHTML(D.sopUnread):''}
+      ${peopleCard}
+      ${notifCard}
+    </div>
   </div></div>`;
   // الـ Scorecard: بيتجاب كل 5 دقايق بالكتير (والنسخة اللي اتجابت بتظهر على طول)
   if(typeof kpiDeskLoad==='function' && Date.now()-(S.kpiDeskAt||0)>300000){ S.kpiDeskAt=Date.now(); kpiDeskLoad(); }

@@ -198,3 +198,144 @@ html[data-theme] .bapp .row{border-top:0;background:var(--bg2);border-radius:14p
 html[data-theme] .bapp .row.head{background:transparent;color:var(--faint);font-weight:500;margin:0}
 html[data-theme] .bapp button.row:hover{background:var(--tsoft)}
 html[data-theme] .bapp .tools input{border-radius:999px}
+
+/* ================= الجزء التاني: الكروت والتاسكات جوه الشاشات ================= */
+/* عناوين الكروت الجديدة */
+.ch2{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.ch2 h2{margin:0;font-family:var(--fd);font-weight:500;font-size:16px;display:flex;align-items:center;gap:8px}
+.cnt{font-family:var(--fm);font-size:11.5px;font-weight:500;background:var(--tsoft);color:var(--tink);padding:2px 9px;border-radius:99px}
+.cnt.warn{background:var(--warnbg);color:var(--warn)}
+.cnt.acc{background:var(--accent);color:var(--onacc)}
+.lnkbtn{border:0;background:none;color:var(--tink);font:inherit;font-size:13px;font-weight:500;cursor:pointer;padding:4px 2px}
+.lnkbtn:hover{text-decoration:underline}
+.btn-cta{display:inline-flex;align-items:center;gap:8px;height:46px;padding:0 22px;border-radius:999px;border:0;background:var(--accent);color:var(--onacc);font:inherit;font-weight:600;font-size:14.5px;box-shadow:0 10px 24px rgba(232,117,61,.30);cursor:pointer;white-space:nowrap}
+.btn-cta:hover{filter:brightness(1.04)}
+
+/* My Desk */
+.desk2{display:flex;flex-direction:column;gap:18px}
+.hello2{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:4px 2px}
+.hello2 p{margin:0 0 4px;color:var(--muted);font-size:14px}
+.hello2 h2,html[data-theme] .hello2 h2{margin:0;font-family:var(--fd);font-weight:300;font-size:36px;line-height:1.15;letter-spacing:-.01em;text-wrap:balance}
+.hello2 h2 b{font-weight:500;color:var(--brand)}
+html[data-theme="dark"] .hello2 h2 b{color:var(--brand2)}
+.dk-clock{display:inline-flex;align-items:center;gap:10px;padding:7px 18px 7px 12px;border-radius:999px;background:var(--glass);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--ink);font:inherit;cursor:pointer;text-align:left}
+.dk-clock i{width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px var(--okbg)}
+.dk-clock.brk i{background:var(--blue);box-shadow:0 0 0 4px var(--bluebg)}
+.dk-clock b{display:block;font-size:13.5px}.dk-clock small{color:var(--muted);font-size:12px}
+.dks{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.dk{display:flex;flex-direction:column;gap:2px;text-align:left;padding:14px 16px;border-radius:20px;background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);box-shadow:var(--shadow);font:inherit;color:var(--ink);cursor:pointer}
+.dk:hover{border-color:var(--brand2)}
+.dk span{font-size:12.5px;color:var(--muted)}
+.dk b{font-family:var(--fd);font-weight:300;font-size:32px;line-height:1.15;font-variant-numeric:tabular-nums}
+.dk small{font-size:12px;color:var(--muted)}
+.dk.bad b{color:var(--bad)}.dk.warn b{color:var(--warn)}
+.desk-cols{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr);gap:18px;align-items:start}
+.desk-main,.desk-side{display:flex;flex-direction:column;gap:18px;min-width:0}
+.desk-main>#kpiDesk:empty{display:none}
+html[data-theme] .dcard{padding:18px 18px 12px}
+.dk-wait{background:linear-gradient(180deg,var(--warnbg),transparent 75%),var(--glass)!important}
+@media (max-width:1100px){.desk-cols{grid-template-columns:1fr}}
+@media (max-width:900px){.hello2 h2{font-size:26px}.dk b{font-size:24px}}
+
+/* صف التاسك المختصر (Desk وغيره) */
+.dts{display:flex;flex-direction:column;gap:8px}
+.dt{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border-radius:16px;border:0;background:var(--bg2);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.dt:hover{background:var(--tsoft)}
+.dt-dot{width:18px;height:18px;border-radius:50%;flex:none;border:2px solid var(--line);background:var(--card);position:relative}
+.dt-ready .dt-dot{border-color:var(--ok)}
+.dt-prog .dt-dot,.dt-help .dt-dot{border-color:var(--blue);background:conic-gradient(var(--blue) 50%,var(--card) 0)}
+.dt-run .dt-dot{border-color:var(--accent);background:var(--accent);box-shadow:0 0 0 4px var(--accsoft)}
+.dt-late .dt-dot{border-color:var(--bad);background:var(--badbg)}
+.dt-rev .dt-dot{border-color:var(--warn);background:var(--warnbg)}
+.dt-wait .dt-dot{border-style:dashed;border-color:var(--faint);background:transparent}
+.dt-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.dt-tx b{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dt-tx small{font-size:12.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.dt-tx em{font-style:normal;font-family:var(--fm);font-size:11.5px}
+.dt-tx em.late{color:var(--bad)}
+.dt-go{color:var(--faint);font-size:20px;line-height:1}
+.dt-act{font-size:12.5px;font-weight:600;color:#fff;background:var(--brand);padding:6px 14px;border-radius:999px}
+
+/* الليستات جوه الكروت (إشعارات، نشاط، طلبات): شرايط مدورة بدل خطوط */
+html[data-theme] .card.flush>.al,html[data-theme] .dnl>.al{margin:6px 12px;width:calc(100% - 24px);border:0;border-radius:14px;background:var(--bg2);padding:11px 14px}
+html[data-theme] .card.flush>.al:last-child{margin-bottom:12px}
+html[data-theme] .dnl{display:flex;flex-direction:column;gap:6px}
+html[data-theme] .dnl>.al{margin:0;width:100%}
+html[data-theme] .card.flush>.al:hover,html[data-theme] .dnl>.al:hover{background:var(--tsoft)}
+html[data-theme] .al.unread{background:var(--tsoft)!important}
+html[data-theme] .card.flush>.tm{margin:6px 12px;border:0;border-radius:14px;background:var(--bg2)}
+html[data-theme] .card.flush>.tm:last-child{margin-bottom:12px}
+html[data-theme] .chead{border-bottom:0;padding-bottom:6px}
+
+/* أشخاص مابصموش: صور صغيرة */
+.dk-avs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.dk-p{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:12px 6px;border-radius:16px;background:var(--bg2)}
+.dk-p b{font-size:13px}.dk-p small{font-size:11.5px;color:var(--muted)}
+
+/* الـ To-do */
+html[data-theme] .card.flush.td-card{padding:18px 18px 12px}
+html[data-theme] .td-card .chead{padding:0 0 10px}
+html[data-theme] .td-add{display:flex;gap:8px;flex-wrap:wrap;padding:0 0 10px;border:0}
+html[data-theme] .td-add textarea{flex:1 1 100%;border-radius:14px;min-height:42px}
+html[data-theme] .td-add input,html[data-theme] .td-add select{flex:1;border-radius:999px;padding:7px 12px;font-size:13px}
+html[data-theme] .td-row{border:0;border-radius:14px;background:var(--bg2);margin:6px 0;padding:10px 12px}
+html[data-theme] .td-chk{border-radius:50%}
+
+/* ================= التاسكات جوه المشروع / My Tasks ================= */
+html[data-theme] .tgroup{padding:6px 16px 14px}
+html[data-theme] .tghead{border-bottom:0}
+html[data-theme] .trow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 16px;align-items:start;padding:14px 16px 14px 46px;margin:8px 0;border:0;border-radius:18px;background:var(--bg2);position:relative}
+html[data-theme] .trow:last-child{border-bottom:0}
+html[data-theme] .trow::before{content:"";position:absolute;left:16px;top:16px;width:18px;height:18px;border-radius:50%;border:2px solid var(--ok);background:var(--card);box-sizing:border-box}
+html[data-theme] .trow.locked::before{border:2px dashed var(--line);background:transparent}
+html[data-theme] .trow.running{background:var(--accsoft);margin:8px 0;padding-inline:46px 16px}
+html[data-theme] .trow.running::before{border-color:var(--accent);background:var(--accent);box-shadow:0 0 0 4px rgba(232,117,61,.18)}
+html[data-theme] .trow.done::before{border-color:var(--brand2);background:var(--brand2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12 4 4 8-8'/%3E%3C/svg%3E") center/12px no-repeat}
+html[data-theme] .trow.blocked{box-shadow:none;background:var(--badbg)}
+html[data-theme] .trow.blocked::before{border-color:var(--bad);background:var(--bad)}
+html[data-theme] .trow.done{background:transparent;padding-top:8px;padding-bottom:8px}
+html[data-theme] .trow.done::before{top:10px}
+html[data-theme] .trow.na{background:transparent}
+html[data-theme] .trow.na::before{display:none}
+html[data-theme] .tmain{gap:6px;min-width:0}
+html[data-theme] .tt{font-size:14.5px;font-weight:600}
+html[data-theme] .trow.locked .tt{color:var(--muted);font-weight:500}
+html[data-theme] .twait{font-size:12.5px}
+/* الأزرار الصغيرة (Revisions / Notes / متوقفة / رجّعها): كبسولات تحت التاسك */
+html[data-theme] .tmain>.tnbtn,html[data-theme] .thelp>.tnbtn{display:inline-flex;align-items:center;width:max-content;gap:4px;padding:4px 11px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:12px;font-weight:500}
+html[data-theme] .tmain>.tnbtn:hover{color:var(--ink);border-color:var(--brand2)}
+html[data-theme] .tmain{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center}
+html[data-theme] .tmain>*{flex:1 1 100%}
+html[data-theme] .tmain>.tnbtn{flex:0 0 auto}
+/* الجنب اليمين: ميعاد + حالة + تايمر */
+html[data-theme] .tside{gap:8px;align-items:center;justify-content:flex-end}
+html[data-theme] .tsep{display:none}
+html[data-theme] .tdl{border-radius:999px;padding:6px 12px;font-size:12.5px;width:auto;background:var(--card)}
+html[data-theme] .tstat{border-radius:999px;padding:6px 28px 6px 12px;font-size:12.5px}
+html[data-theme] .ttime{font-family:var(--fm);font-size:12.5px;min-width:0}
+html[data-theme] .tb{border-radius:999px;min-width:0;padding:8px 16px;font-size:13px}
+html[data-theme] .tb.play{background:var(--brand);border-color:var(--brand);color:#fff}
+html[data-theme] .tb.pause{background:var(--accent);border-color:var(--accent);color:var(--onacc)}
+html[data-theme] .trow.locked .tdl,html[data-theme] .trow.locked .tstat{display:none}
+html[data-theme] .trow.done .tdl{display:none}
+/* مكان التسليم (لينك): خانة صغيرة بتكبر لما تكتب */
+html[data-theme] .tlink-ed .tl-in{min-height:40px;height:40px;border-radius:14px;resize:none;transition:height .15s}
+html[data-theme] .tlink-ed .tl-in:focus{height:96px}
+html[data-theme] .tlink-ed{background:var(--card);border-radius:16px;padding:8px 10px;border:1px solid var(--line2)}
+html[data-theme] .tlink-ed>span:first-child{font-size:12px;font-weight:600;color:var(--muted)}
+html[data-theme] .tret,html[data-theme] .tblk{border-radius:12px}
+@media (prefers-reduced-motion:reduce){html[data-theme] .tlink-ed .tl-in{transition:none}}
+@media (max-width:900px){html[data-theme] .trow{grid-template-columns:1fr}html[data-theme] .tside{justify-content:flex-start}}
+
+/* Live Activity: كل حدث شريط مدور، والوقت على الطرف */
+html[data-theme] .la-list{gap:6px;max-height:360px}
+html[data-theme] .la-i{align-items:center;padding:9px 14px;border:0;border-radius:14px;background:var(--bg2)}
+html[data-theme] .la-i .la-t{order:3;margin-left:auto;font-family:var(--fm);font-size:12px;min-width:0}
+html[data-theme] .la-i .la-ic{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--card);flex:none;font-size:13px}
+html[data-theme] .la-c .chead h2{font-family:var(--fd);font-weight:500}
+/* كروت الداشبورد اللي جواها خلفية بيضا ثابتة */
+html[data-theme] .blgrid{background:transparent;gap:10px;padding:0 12px 12px}
+html[data-theme] .blgrid>div{background:var(--bg2)!important;border-radius:16px}
+/* كروت جوه كروت (صفحة المشروع): من غير ظل، خلفية هادية */
+html[data-theme] .phead .pbox{background:var(--bg2);box-shadow:none;backdrop-filter:none;border:0;border-radius:18px}
+html[data-theme] .pbox .kv{border-bottom:1px solid var(--line2)}
