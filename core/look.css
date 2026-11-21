@@ -389,3 +389,18 @@ html[data-theme] #nav .ngrp.open .nav.nghead:not(.on){color:var(--muted);font-we
 /* نوتس المشروع: كارت عادي بدل الأصفر */
 html[data-theme] .pnt-card{background:var(--glass);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:22px;padding:18px 20px}
 html[data-theme] .pnt-card h3{font-family:var(--fd);font-weight:500}
+
+/* Round 4: View-as bar as a floating glass pill (bottom centre), done tasks struck through */
+html[data-theme] .va-bar{position:fixed;top:auto;bottom:18px;left:50%;transform:translateX(-50%);z-index:999;width:max-content;max-width:calc(100vw - 32px);gap:10px;padding:7px 8px 7px 16px;border-radius:999px;background:var(--card);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.18);color:var(--ink);font-size:13.5px;font-weight:500}
+html[data-theme] .va-bar .va-ic{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px;background:var(--tsoft);flex:none}
+html[data-theme] .va-bar .va-tx{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-theme] .va-bar .spacer{flex:0 0 4px}
+html[data-theme] .va-bar .btn,html[data-theme] .va-bar.edit .btn{background:var(--brand)!important;color:#fff!important;border:1px solid var(--brand)!important;border-radius:999px;font-weight:600;padding:6px 14px}
+html[data-theme] .va-bar .btn.ghost,html[data-theme] .va-bar.edit .btn.ghost{background:transparent!important;color:var(--ink)!important;border-color:var(--line2,var(--line))!important}
+html[data-theme] .va-bar.edit{background:var(--accsoft);border-color:var(--accent)}
+html[data-theme] .va-bar.edit .va-ic{background:var(--accent)}
+html[data-theme] .va-bar.edit .btn:not(.ghost){background:var(--accent)!important;border-color:var(--accent)!important;color:var(--onacc)!important}
+body.va-on{padding-bottom:110px}
+@media (max-width:700px){html[data-theme] .va-bar{bottom:54px;width:calc(100vw - 24px);border-radius:20px;font-size:12.5px}html[data-theme] .va-bar .va-tx{white-space:normal}}
+html[data-theme] .trow.done .tt{text-decoration:line-through;text-decoration-color:var(--muted);text-decoration-thickness:1.5px;color:var(--muted)}
+html[data-theme] .td-row.done .td-tx span{text-decoration-color:var(--muted);text-decoration-thickness:1.5px}
