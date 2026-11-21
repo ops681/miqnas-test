@@ -22,7 +22,7 @@ function renderOrg(){
   if(T==='TREE') body=orgTreeHTML();
   if(T==='DEPTS') body=`<div class="tbl-wrap"><table style="min-width:700px"><tr><th>Code</th><th>Name</th><th>Business line</th><th>Department head</th><th></th></tr>
     ${o.depts.map((d,i)=>`<tr><td><input data-f="depts|${i}|id" value="${esc(d.id)}"${ro} dir="ltr"></td><td><input data-f="depts|${i}|name" value="${esc(d.name)}"${ro}></td><td><input data-f="depts|${i}|line" value="${esc(d.line)}"${ro} placeholder="Line 1"></td><td>${orgSelect(`dh_${i}`,users,d.head,'— none —')}</td><td>${ed?`<button class="btn small ghost danger" onclick="orgDel('depts',${i})">Remove</button>`:''}</td></tr>`).join('')}</table></div>
-    <p class="muted" style="font-size:13px">Requests go: Team Leader → Department head → Operations Manager → HR. A department without a head skips that step.</p>`;
+    <p class="muted" style="font-size:13px">Leave and permission requests go: Team Leader (if the employee has one) → Operations Manager → HR. The department head is not an approval step.</p>`;
   if(T==='JOBS') body=`<div class="tbl-wrap"><table style="min-width:760px"><tr><th>Job title</th><th>Department</th><th>Project tasks</th><th>Sees brief access</th><th></th></tr>
     ${o.jobs.map((j,i)=>`<tr><td><input data-f="jobs|${i}|name" value="${esc(j.name)}"${ro}></td><td>${orgSelect(`jd_${i}`,depts,j.dept,'—')}</td><td>${orgSelect(`js_${i}`,Object.keys(SLOT_NAMES).filter(k=>k).map(k=>[k,SLOT_NAMES[k]]),j.slot,SLOT_NAMES[''])}</td><td><input type="checkbox" data-b="jobs|${i}|access"${j.access?' checked':''}${ro}></td><td>${ed?`<button class="btn small ghost danger" onclick="orgDel('jobs',${i})">Remove</button>`:''}</td></tr>`).join('')}</table></div>
     <p class="muted" style="font-size:13px">"Project tasks" decides which slot of a project this job can fill. "Sees brief access" is the default for new employees with this job.</p>`;
@@ -31,11 +31,12 @@ function renderOrg(){
       <div style="flex:0 0 120px"><label>Level (1–5)</label><input type="number" min="1" max="5" data-f="roles|${i}|level" value="${esc(r.level)}"${ro}></div>
       ${ed?`<div style="flex:0 0 auto"><button class="btn small ghost danger" onclick="orgDel('roles',${i})">Remove</button></div>`:''}</div>
       ${permBoxes('roles',i,r.perms)}</div>`).join('')}</div>`;
-  if(T==='SEATS') body=`<div class="tbl-wrap"><table style="min-width:720px"><tr><th>Code</th><th>Seat</th><th>Department</th><th>Holder</th><th></th></tr>
-    ${o.seats.map((s,i)=>`<tr><td><input data-f="seats|${i}|id" value="${esc(s.id)}"${ro} dir="ltr"></td><td><input data-f="seats|${i}|title" value="${esc(s.title)}"${ro}></td><td>${orgSelect(`sd_${i}`,depts,s.dept,'—')}</td><td>${orgSelect(`sh_${i}`,users,s.holder,'Vacant')}</td><td>${ed?`<button class="btn small ghost danger" onclick="orgDel('seats',${i})">Remove</button>`:''}</td></tr>`).join('')}</table></div>
-    <p class="muted" style="font-size:13px">A seat stays when people change. To hand it over, pick the new holder.</p>`;
+  if(T==='SEATS') body=`<div class="tbl-wrap"><table style="min-width:720px"><tr><th>Code</th><th>Seat</th><th>Department</th><th>Holder</th><th title="Nobody can open this person's account with View as, not even admins">No View as</th><th></th></tr>
+    ${o.seats.map((s,i)=>`<tr><td><input data-f="seats|${i}|id" value="${esc(s.id)}"${ro} dir="ltr"></td><td><input data-f="seats|${i}|title" value="${esc(s.title)}"${ro}></td><td>${orgSelect(`sd_${i}`,depts,s.dept,'—')}</td><td>${orgSelect(`sh_${i}`,users,s.holder,'Vacant')}</td><td style="text-align:center"><input type="checkbox" data-b="seats|${i}|noVa"${s.noVa?' checked':''}${ro} aria-label="No View as for ${esc(s.title)}"></td><td>${ed?`<button class="btn small ghost danger" onclick="orgDel('seats',${i})">Remove</button>`:''}</td></tr>`).join('')}</table></div>
+    <p class="muted" style="font-size:13px">A seat stays when people change. To hand it over, pick the new holder. "No View as": nobody can open the holder's account with 👁 View as, not even admins.</p>`;
   if(T==='GROUPS') body=`<div style="display:grid;gap:14px">${o.groups.map((g,i)=>`<div class="card"><div class="row" style="align-items:flex-end">
       <div><label>Code</label><input data-f="groups|${i}|id" value="${esc(g.id)}"${ro} dir="ltr"></div><div><label>Name</label><input data-f="groups|${i}|name" value="${esc(g.name)}"${ro}></div>
+      <div style="flex:0 0 auto"><label class="check" style="margin:0 0 10px"><input type="checkbox" data-b="groups|${i}|noVa"${g.noVa?' checked':''}${ro}>No View as for members</label></div>
       ${ed?`<div style="flex:0 0 auto"><button class="btn small ghost danger" onclick="orgDel('groups',${i})">Remove</button></div>`:''}</div>
       <h3 style="margin:16px 0 4px">Members</h3><div class="chips">${o.users.map(x=>`<label class="check" style="margin:4px 12px 4px 0"><input type="checkbox" data-mem="${i}|${esc(x.u)}"${g.members.indexOf(x.u)>=0?' checked':''}${ro}>${esc(x.name)}</label>`).join('')}</div>
       <h3 style="margin:16px 0 4px">Extra permissions for members</h3><p class="muted" style="font-size:12.5px;margin:0">Added on top of each member's role. A group never removes permissions.</p>
@@ -60,7 +61,7 @@ function orgCollect(){
 function orgTab(t){ if(S.orgDraft.canEdit) orgCollect(); S.orgTab=t; renderOrg(); }
 function orgAdd(k){
   orgCollect();
-  const blank={depts:{id:'',name:'',line:'',head:''},jobs:{name:'',dept:'',slot:'',access:false},roles:{id:'',name:'',level:1,perms:[]},seats:{id:'',title:'',dept:'',holder:''},groups:{id:'',name:'',members:[],perms:[]}}[k];
+  const blank={depts:{id:'',name:'',line:'',head:''},jobs:{name:'',dept:'',slot:'',access:false},roles:{id:'',name:'',level:1,perms:[]},seats:{id:'',title:'',dept:'',holder:'',noVa:false},groups:{id:'',name:'',members:[],perms:[],noVa:false}}[k];
   S.orgDraft[k].push(blank); renderOrg();
 }
 function orgDel(k,i){ orgCollect(); S.orgDraft[k].splice(i,1); renderOrg(); }

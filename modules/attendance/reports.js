@@ -84,10 +84,10 @@ function cfMenu(un,name,cur){
 let monthlyData=null;
 function viewMonthly(){
   const m=new Date().toISOString().slice(0,7);
-  setTop('Monthly Report','Attendance, leave and workload per employee', `<input type="month" id="mSel" value="${m}" style="width:auto"><button class="btn" id="csvBtn">Download Excel (CSV)</button>`);
+  setTop('Monthly Report','Attendance, leave and workload per employee', `<input type="month" id="mSel" value="${m}" style="width:auto">`);
   if(!S.mrF) S.mrF={dept:'',q:'',sort:'hours',dir:-1};
   $('main').innerHTML=`<div id="mBody">${LOADING}</div>`;
-  $('mSel').onchange=loadMonthly; $('csvBtn').onclick=exportCsv;
+  $('mSel').onchange=loadMonthly;
   loadMonthly();
 }
 const MR_COLS=[['name','Name'],['deptName','Department'],['days','Days'],['hours','Hours'],['avg','Avg / day'],['leaveDays','Leave days'],['permHours','Permission h'],['otHours','Overtime h'],['missed','Missed clock-outs'],['stops','Sharing stops'],['projects','Active projects']];
