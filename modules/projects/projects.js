@@ -83,30 +83,23 @@ function renderProject(r,keep){
     <button class="btn ghost small" onclick="${backTo[0]}">← ${backTo[1]}</button>
     ${r.guest?(r.watching?`<div class="notice" style="margin:10px 0" dir="rtl">👁 انت متابع للمشروع ده عشان تتعلم: تقدر تشوف التاسكات والتسليمات والبريف للقراءة بس، ومش بيتحسب عليك شغل.</div>`:`<div class="notice" style="margin:10px 0" dir="rtl">👀 انت فاتح المشروع ده للقراءة بس، عشان عليك تاسك جانبي فيه. أول ما التاسك تخلص المشروع هيتقفل عندك.</div>`):''}
     ${r.contract&&r.contract.status!=='signed'&&r.status==='Active'?`<div class="notice" style="margin:10px 0">${r.contract.status==='none'?'No contract on this project yet.':'The contract is not signed yet ('+esc(r.contract.status)+').'}${typeof canFinance==='function'&&can('finance.manage')||S.user.founder?` <button class="btn ghost small" onclick="${r.contract.id?`go('finance',{id:'${esc(r.contract.id)}'})`:`go('finance')`}">Open in Finance →</button>`:''}</div>`:''}
-    <div class="card phead">
-      <div class="row" style="align-items:center;gap:10px">${r.canEdit?`<button type="button" class="pi-btn" title="Change icon" aria-label="Change project icon" onclick="piEdit('${esc(r.id)}','${esc(r.client).replace(/'/g,'')}')">${piTag(r.id,r.client,'pi-lg')}</button>`:piTag(r.id,r.client,'pi-lg')}<h2 style="margin:0">${esc(r.client)}</h2><span class="pill p-out">${esc(r.id)}</span><span class="pill ${PSTAT[r.status]||'p-out'}">${esc(r.status)}</span>${r.blockers&&r.blockers.length?blBadge({open:r.blockers.filter(b=>b.status!=='Resolved').length,total:r.blockers.length,days:r.blockers.reduce((s,b)=>s+b.days,0)}):''}<div class="spacer"></div>
-        ${r.brief_id?`<button class="btn ghost small" onclick="openBriefFrom('${esc(r.brief_id)}','${esc(r.id)}')">Open Brief</button>`:''}
-        ${r.canEdit?`<button class="btn ghost small" onclick="projForm('${esc(r.id)}')">Edit Project</button><button class="btn ghost small" onclick="cpAdmin('${esc(r.id)}')">Client portal${r.clientPortal&&r.clientPortal.on?' ●':''}</button>`:''}
+    <div class="card phead ph2">
+      <div class="ph-top">${r.canEdit?`<button type="button" class="pi-btn" title="Change icon" aria-label="Change project icon" onclick="piEdit('${esc(r.id)}','${esc(r.client).replace(/'/g,'')}')">${piTag(r.id,r.client,'pi-lg')}</button>`:piTag(r.id,r.client,'pi-lg')}
+        <div class="ph-name"><h2>${esc(r.client)}</h2><div class="ph-sub"><span class="mono">${esc(r.id)}</span> · <bdi>${esc(r.type)}</bdi>${D.cur_platform||D.target_platform?` · ${esc(D.cur_platform||'—')} → ${esc(D.target_platform||'—')}`:''} <span class="pill ${PSTAT[r.status]||'p-out'}">${esc(r.status)}</span>${r.blockers&&r.blockers.length?' '+blBadge({open:r.blockers.filter(b=>b.status!=='Resolved').length,total:r.blockers.length,days:r.blockers.reduce((s,b)=>s+b.days,0)}):''}</div></div>
+        <div class="ph-acts">
         ${r.canWatch?`<button class="btn ghost small" onclick="pwOpen()">👁 Watchers${(r.watchers||[]).length?' · '+r.watchers.length:''}</button>`:''}
-        ${r.isAdmin?`<button class="btn ghost small" style="color:var(--bad)" onclick="projDelete('${esc(r.id)}')">Delete</button>`:''}</div>
-      <div class="pinfo">
-        <div class="pbox"><h4>Store</h4>
-          <div class="kv"><b>Type</b><span>${esc(r.type)}</span></div>
-          <div class="kv"><b>Brand Identity</b><span>${esc(D.identity||'—')}</span></div>
-          <div class="kv"><b>Platform</b><span>${esc(D.cur_platform||'—')} → ${esc(D.target_platform||'—')}</span></div>
-          ${D.store_url?`<div class="kv"><b>Store</b><span><a href="${esc(D.store_url)}" target="_blank" rel="noopener">${esc(D.store_url)}</a></span></div>`:''}
-          <div class="kv"><b>Start</b><span>${fmtDay(r.start_date)}</span></div>
-          <div class="kv"><b>Target Launch</b><span>${r.overdue?`<span style="color:var(--bad);font-weight:600">${fmtDay(r.target_launch)} · Overdue</span>`:fmtDay(r.target_launch)}</span></div>
-          ${r.go_live?`<div class="kv"><b>Go Live</b><span>${fmtDay(r.go_live)}</span></div>`:''}
-          ${D.partner?`<div class="kv"><b>Partner</b><span><span class="pill p-prog">${esc(r.partnerName||D.partner)}</span> ${esc([D.partner_ref,D.priority,D.delivery_mode].filter(Boolean).join(' · '))}</span></div>`:''}
-          ${D.referral_date?`<div class="kv"><b>Referral</b><span>${fmtDay(D.referral_date)}</span></div>`:''}
-        </div>
-        <div class="pbox"><h4>Team <span class="pill p-prog" style="margin-left:6px">${r.type===CP_TYPE?'Copy-Paste':esc(r.build_mode)}</span></h4>
-          <div class="kv"><b>Account Manager</b><span>${esc(r.amName||'—')}</span></div>
-          ${r.type===CP_TYPE?`<div class="kv"><b>Transfer (all tasks)</b><span>${bd(r.team.cp||'—')}</span></div>`:ROLE_ORDER.filter(k=>k!=='cp').map(k=>`<div class="kv"><b>${ROLE_T[k]}</b><span>${bd(r.team[k]||'—')}</span></div>`).join('')}
-        </div>
+        ${r.canEdit?`<button class="btn ghost small" onclick="cpAdmin('${esc(r.id)}')">Client portal${r.clientPortal&&r.clientPortal.on?' ●':''}</button><button class="btn ghost small" onclick="projForm('${esc(r.id)}')">Edit</button>`:''}
+        ${r.isAdmin?`<button class="btn ghost small" style="color:var(--bad)" onclick="projDelete('${esc(r.id)}')">Delete</button>`:''}
+        ${r.brief_id?`<button class="btn primary" onclick="openBriefFrom('${esc(r.brief_id)}','${esc(r.id)}')">Open Brief</button>`:''}</div></div>
+      <div class="ph-facts">
+        <div class="ph-f ph-prog"><span>Progress</span><b>${r.progress}%</b><div class="ph-bar"><i style="width:${Math.max(1,r.progress)}%"></i></div><small>${r.done}/${r.total} tasks · ${r.hours} h</small></div>
+        <div class="ph-f${r.overdue?' bad':''}"><span>Target launch</span><b>${fmtDay(r.target_launch)}</b><small>${r.overdue?'Overdue':r.go_live?'Live '+fmtDay(r.go_live):'Started '+fmtDay(r.start_date)}</small></div>
+        <div class="ph-f"><span>Brand identity</span><b class="sm"><bdi>${esc(D.identity||"—")}</bdi></b><small>${D.store_url?`<a href="${esc(D.store_url)}" target="_blank" rel="noopener">Open store</a>`:'No store link'}</small></div>
+        ${D.partner?`<div class="ph-f"><span>Partner</span><b class="sm">${esc(r.partnerName||D.partner)}</b><small>${esc([D.partner_ref,D.priority,D.delivery_mode].filter(Boolean).join(' · '))||'—'}</small></div>`:''}
       </div>
-      <div style="display:flex;align-items:center;gap:10px">${pbar(r.progress)}<b style="font-size:14px">${r.progress}%</b><span class="muted" style="font-size:13px">${r.done}/${r.total} tasks · ${r.hours} h</span></div>
+      <div class="ph-team"><div class="ph-th">Team <span class="muted">· ${r.type===CP_TYPE?'Copy-Paste':esc(r.build_mode)}</span></div>
+        <div class="ph-people">${[['Account Manager',r.amName]].concat(r.type===CP_TYPE?[['Transfer',r.team.cp]]:ROLE_ORDER.filter(k=>k!=='cp').map(k=>[ROLE_T[k],r.team[k]])).map(x=>`<div class="ph-p${x[1]?'':' none'}"><div class="av">${x[1]?esc(initials(x[1])):'?'}</div><div><b>${x[1]?bd(x[1]):'Not set'}</b><small>${esc(x[0])}</small></div></div>`).join('')}</div>
+      </div>
     </div>
     <div id="pntBox">${projNotesHTML(r)}</div>
     ${projAccessHTML(r)}

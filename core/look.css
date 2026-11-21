@@ -339,3 +339,53 @@ html[data-theme] .blgrid>div{background:var(--bg2)!important;border-radius:16px}
 /* كروت جوه كروت (صفحة المشروع): من غير ظل، خلفية هادية */
 html[data-theme] .phead .pbox{background:var(--bg2);box-shadow:none;backdrop-filter:none;border:0;border-radius:18px}
 html[data-theme] .pbox .kv{border-bottom:1px solid var(--line2)}
+
+/* ===== الجولة 3: شاشات أهدى ===== */
+.mono{font-family:var(--fm);font-size:12.5px}
+
+/* رأس المشروع: اسم كبير، 3 أرقام بس، والفريق صور */
+html[data-theme] .ph2{box-shadow:var(--shadow);padding:22px 24px;display:flex;flex-direction:column;gap:22px}
+.ph-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.ph-name{flex:1;min-width:220px}
+html[data-theme] .ph-name h2{margin:0;font-family:var(--fd);font-weight:500;font-size:26px}
+.ph-sub{color:var(--muted);font-size:13px;margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ph-acts{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.ph-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.ph-f{display:flex;flex-direction:column;gap:3px;padding:14px 16px;border-radius:18px;background:var(--bg2)}
+.ph-f span{font-size:12.5px;color:var(--muted)}
+.ph-f b{font-family:var(--fd);font-weight:300;font-size:28px;line-height:1.15}
+.ph-f b.sm{font-size:18px;font-weight:400;line-height:1.4}
+.ph-f small{font-size:12px;color:var(--muted)}
+.ph-f.bad b,.ph-f.bad small{color:var(--bad)}
+.ph-bar{height:5px;border-radius:99px;background:var(--line2);overflow:hidden;margin:4px 0 2px}
+.ph-bar i{display:block;height:100%;background:var(--brand2);border-radius:99px}
+.ph-th{font-family:var(--fd);font-weight:500;font-size:15px;margin-bottom:10px}
+.ph-th .muted{font-family:var(--fb);font-weight:400;font-size:13px}
+.ph-people{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.ph-p{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:999px}
+.ph-p b{display:block;font-size:13.5px;font-weight:600}
+.ph-p small{display:block;font-size:12px;color:var(--muted)}
+.ph-p.none{opacity:.55}
+html[data-theme] .ph2{border-top:0}
+
+/* القرارات (Executive): قايمة هادية، نقطة صغيرة، من غير شرايط ولا خط أحمر */
+html[data-theme] .exac .chead{padding:18px 22px 6px}
+html[data-theme] .exac>.al{background:transparent!important;margin:0 22px;width:calc(100% - 44px);border-radius:0;border-bottom:1px solid var(--line2);padding:14px 0}
+html[data-theme] .exac>.al:last-child{border-bottom:0;margin-bottom:8px}
+html[data-theme] .exac>.al:hover{background:transparent!important}
+html[data-theme] .exac>.al:hover b{color:var(--brand2)}
+html[data-theme] .exac .al .dot{width:8px;height:8px;margin-top:7px}
+html[data-theme] .exac .al .tx b{font-weight:500}
+
+/* الساعات في الشهر: كروت صغيرة بدل عواميد طويلة */
+html[data-theme] .mr-bars{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+html[data-theme] .mr-bar{grid-template-columns:1fr auto;grid-template-areas:"n v" "t t";gap:8px 10px;padding:12px 14px;border-radius:16px;background:var(--bg2)}
+html[data-theme] .mr-bar:hover{background:var(--tsoft)}
+html[data-theme] .mr-bar .mr-n{grid-area:n;font-weight:600}
+html[data-theme] .mr-bar b{grid-area:v;font-family:var(--fd);font-weight:300;font-size:20px;line-height:1}
+html[data-theme] .mr-bar .mr-t{grid-area:t;height:4px;background:var(--line2)}
+html[data-theme] .mr-bar .mr-t i{background:var(--brand2);opacity:.7}
+html[data-theme] #nav .ngrp.open .nav.nghead:not(.on){color:var(--muted);font-weight:400}
+/* نوتس المشروع: كارت عادي بدل الأصفر */
+html[data-theme] .pnt-card{background:var(--glass);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:22px;padding:18px 20px}
+html[data-theme] .pnt-card h3{font-family:var(--fd);font-weight:500}
