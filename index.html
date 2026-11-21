@@ -15,7 +15,7 @@
 <title>Miqnas ERP – TEST</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Readex+Pro:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=Readex+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script>
 /* النايت مود: بيتحدد قبل ما الصفحة ترسم عشان مايحصلش وميض أبيض. أول مرة بيمشي على إعداد الجهاز */
 (function(){ var t=null; try{ t=localStorage.getItem('test_theme'); }catch(e){}
@@ -74,8 +74,8 @@ html[data-theme="dark"] #ld{background:#0B1311;color:#9DB0AA}</style>
    version.json بيتقرا من غير كاش، فأول ما رقم النسخة يتغير كل الملفات بتتحمّل جديدة.
    قايمة الملفات نفسها جوه version.json، فلو الصفحة دي متخزنة قديمة في المتصفح الملفات الجديدة برضه بتتحمّل. */
 (function () {
-  var CSS = ["core/styles.css", "modules/briefs/briefs.css", "core/dark.css"];
-  var JS = [ "core/config.js", "core/time12.js", "core/api.js", "core/queue.js", "core/auth.js", "core/shell.js", "core/popup.js", "core/avatars.js", "core/picker.js", "modules/dashboard/dashboard.js", "modules/attendance/clock.js", "modules/attendance/reports.js", "modules/attendance/locations.js", "modules/people/employees.js", "modules/people/devices.js", "modules/people/peopledash.js", "modules/settings/settings.js", "modules/settings/health.js", "modules/blockers/blockers.js", "modules/projects/projects.js", "modules/org/org.js", "modules/briefs/briefs.js", "modules/desk/desk.js", "modules/tasks/tasks.js", "modules/meetings/meetings.js", "modules/requests/requests.js", "modules/exec/exec.js", "modules/crm/crm.js", "modules/clients/report.js", "modules/soon/soon.js", "core/start.js" ];
+  var CSS = ["core/styles.css", "modules/briefs/briefs.css", "core/dark.css", "core/look.css"];
+  var JS = [ "core/config.js", "core/time12.js", "core/api.js", "core/queue.js", "core/auth.js", "core/shell.js", "core/look.js", "core/popup.js", "core/avatars.js", "core/picker.js", "modules/dashboard/dashboard.js", "modules/attendance/clock.js", "modules/attendance/reports.js", "modules/attendance/locations.js", "modules/people/employees.js", "modules/people/devices.js", "modules/people/peopledash.js", "modules/settings/settings.js", "modules/settings/health.js", "modules/blockers/blockers.js", "modules/projects/projects.js", "modules/org/org.js", "modules/briefs/briefs.js", "modules/desk/desk.js", "modules/tasks/tasks.js", "modules/meetings/meetings.js", "modules/requests/requests.js", "modules/exec/exec.js", "modules/crm/crm.js", "modules/clients/report.js", "modules/soon/soon.js", "core/start.js" ];
   function fail() { var d = document.getElementById('ld'); if (d) d.textContent = 'مشكلة في التحميل. اعمل ريفريش.'; }
   fetch('version.json?ts=' + Date.now(), { cache: 'no-store' })
     .then(function (r) { return r.json(); })

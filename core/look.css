@@ -1,0 +1,200 @@
+/* ============ الشكل الجديد (2026-11) ============
+   كروت زجاج مدورة، قايمة جانبية عايمة، أرقام رفيعة، أزرار دايرية.
+   ألوان مقناص زي ما هي: الأخضر للأساسي، والبرتقالي كخلفية بس (عليه كلام غامق).
+   الملف ده بيتحمّل آخر حاجة وبيغطي على styles.css و dark.css. */
+
+html[data-theme="light"],html:not([data-theme]){
+  --bg:#E9F0EE; --bg2:#F3F7F5; --card:#FFFFFF; --glass:rgba(255,255,255,.82); --soft:#F3F7F5; --hover:rgba(18,63,58,.05);
+  --ink:#10231F; --muted:#55686A; --faint:#66797A; --line:rgba(18,63,58,.11); --line2:rgba(18,63,58,.07);
+  --brand:#123F3A; --brand2:#107366; --brand3:#1C5A52; --on-brand:#fff; --brand-hover:#0D332F;
+  --tsoft:#DCEFEA; --tink:#0E6A5E; --accent:#E8753D; --accsoft:#FCE8DB; --onacc:#0B2622; --avink:#9A4416;
+  --shadow:0 1px 1px rgba(18,63,58,.03),0 12px 32px rgba(18,63,58,.07);
+  --blob1:rgba(16,115,102,.16); --blob2:rgba(232,117,61,.11); --ring:rgba(18,63,58,.07);
+}
+html[data-theme="dark"]{
+  --bg:#0A1311; --bg2:#0F1A17; --card:#16231F; --glass:rgba(20,32,29,.80); --soft:#0F1A17; --hover:rgba(255,255,255,.04);
+  --ink:#EEF3F1; --muted:#A3B5B0; --faint:#8A9E98; --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.055);
+  --brand:#17695C; --brand2:#3CC7AC; --brand3:#1F8473; --on-brand:#fff; --brand-hover:#1F8473;
+  --tsoft:#10302A; --tink:#5ED6BD; --accent:#F08A4B; --accsoft:#3A2416; --onacc:#1A0E06; --avink:#F6B489;
+  --shadow:0 1px 1px rgba(0,0,0,.2),0 12px 32px rgba(0,0,0,.3);
+  --blob1:rgba(60,199,172,.10); --blob2:rgba(240,138,75,.07); --ring:rgba(255,255,255,.05);
+}
+html{
+  --fd:"Readex Pro","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --fm:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+
+/* الخلفية: بقع ألوان هادية + دواير رفيعة */
+html[data-theme] body{background:var(--bg)}
+html[data-theme] body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(560px 440px at 6% 0%,var(--blob1),transparent 70%),radial-gradient(560px 440px at 0% 85%,var(--blob2),transparent 70%),radial-gradient(700px 400px at 75% 110%,var(--blob1),transparent 70%),
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='640'%3E%3Cg fill='none' stroke='%23123F3A' stroke-opacity='.07' stroke-width='1.2'%3E%3Ccircle cx='160' cy='160' r='120'/%3E%3Ccircle cx='160' cy='160' r='190'/%3E%3Ccircle cx='160' cy='160' r='260'/%3E%3Ccircle cx='160' cy='160' r='300'/%3E%3C/g%3E%3C/svg%3E") -160px -160px/640px 640px no-repeat}
+html[data-theme="dark"] body::before{background:radial-gradient(560px 440px at 6% 0%,var(--blob1),transparent 70%),radial-gradient(560px 440px at 0% 85%,var(--blob2),transparent 70%),radial-gradient(700px 400px at 75% 110%,var(--blob1),transparent 70%),
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='640'%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-opacity='.05' stroke-width='1.2'%3E%3Ccircle cx='160' cy='160' r='120'/%3E%3Ccircle cx='160' cy='160' r='190'/%3E%3Ccircle cx='160' cy='160' r='260'/%3E%3Ccircle cx='160' cy='160' r='300'/%3E%3C/g%3E%3C/svg%3E") -160px -160px/640px 640px no-repeat}
+
+/* ---------- القايمة الجانبية: كارت أبيض عايم ---------- */
+html[data-theme] #appView{gap:18px;padding:18px}
+html[data-theme] #side{background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:24px;color:var(--ink);top:18px;height:calc(100vh - 36px);padding:18px 12px;width:240px}
+html[data-theme] #side .logo{color:var(--ink);font-family:var(--fd);font-weight:600;font-size:17px;padding:2px 10px 18px}
+html[data-theme] #side .logo span,html[data-theme] .login .logo span{color:var(--muted);font-weight:500}
+html[data-theme] .logo i{border-radius:11px;color:#123F3A}
+html[data-theme] .nsec{color:var(--faint);font-weight:500;letter-spacing:.06em}
+html[data-theme] .nav{color:var(--muted);border-radius:14px;padding:9px 14px;white-space:nowrap}
+html[data-theme] .nav:hover{background:var(--hover);color:var(--ink)}
+html[data-theme] .nav.on{background:var(--brand);color:#fff;box-shadow:0 8px 20px rgba(18,63,58,.22)}
+html[data-theme] .ngrp.open .nav.nghead{color:var(--ink);font-weight:600}
+html[data-theme] .nav.sub{padding:7px 14px 7px 45px}
+html[data-theme] .nav.sub.on{background:var(--tsoft);color:var(--tink);box-shadow:none;font-weight:600}
+html[data-theme] .nav .nb{background:var(--accent);color:var(--onacc);font-family:var(--fm);font-weight:500;min-width:22px;text-align:center}
+html[data-theme] .sclock{background:var(--bg2);color:var(--ink);border:1px solid var(--line2);border-radius:18px}
+html[data-theme] .sclock:hover{background:var(--hover)}
+html[data-theme] .sclock small{color:var(--muted)}
+html[data-theme] .sclock b{font-family:var(--fd);font-weight:300;font-size:26px}
+html[data-theme] .sclock .sh{color:var(--ok)}
+html[data-theme] .sclock .sh i{background:var(--ok)}
+html[data-theme] .sclock .sh.off{color:var(--bad)}
+html[data-theme] .sclock .sh.off i{background:var(--bad)}
+html[data-theme] .suser{border-top:1px solid var(--line2)}
+html[data-theme] .suser .nm small{color:var(--muted)}
+html[data-theme] .iconbtn{background:var(--bg2);color:var(--muted);border-radius:50%}
+html[data-theme] .iconbtn:hover{background:var(--hover);color:var(--ink)}
+
+/* ---------- الصور الشخصية ---------- */
+html[data-theme] .av{background-color:var(--accsoft);color:var(--avink);font-weight:600}
+html[data-theme] .av.has-img{color:transparent}
+
+/* ---------- الشريط اللي فوق ---------- */
+html[data-theme] #top{position:static;background:transparent;backdrop-filter:none;border:0;padding:8px 6px 6px}
+html[data-theme] #top h1{font-family:var(--fd);font-weight:500;font-size:22px}
+html[data-theme] #pgSub{color:var(--muted)}
+html[data-theme] #themeBtn,html[data-theme] #bell{border-radius:50%;background:var(--glass);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--ink)}
+html[data-theme] #bell .cnt{background:var(--accent);color:var(--onacc);border:2px solid var(--card)}
+html[data-theme] #bellPanel{background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 60px rgba(10,26,24,.18)}
+html[data-theme] #main{padding:6px 6px 60px;max-width:1340px}
+
+/* صف صفحات القسم (زي Projects · Briefs · Blockers) */
+#pillNav{display:flex;gap:10px;flex-wrap:wrap;padding:2px 6px 14px}
+#pillNav:empty{display:none}
+#pillNav .pn{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 16px 0 6px;border-radius:999px;font:inherit;font-size:13.5px;color:var(--muted);background:var(--glass);border:1px solid var(--line);box-shadow:var(--shadow);cursor:pointer;white-space:nowrap}
+#pillNav .pn i{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--bg2);font-style:normal}
+#pillNav .pn i svg{width:15px;height:15px}
+#pillNav .pn:hover{color:var(--ink)}
+#pillNav .pn.on{background:linear-gradient(90deg,var(--brand),var(--brand3));color:#fff;border-color:transparent}
+#pillNav .pn.on i{background:rgba(255,255,255,.16)}
+#pillNav .pn .nb{background:var(--accent);color:var(--onacc);font-size:11px;font-family:var(--fm);border-radius:99px;padding:1px 7px}
+
+/* ---------- الكروت ---------- */
+html[data-theme] .card,html[data-theme] .kpi,html[data-theme] .tbl-wrap,html[data-theme] .pbox,html[data-theme] .crm-p{background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:22px}
+html[data-theme] .card{padding:18px 20px}
+html[data-theme] .card.flush{padding:0}
+html[data-theme] .chead{border-bottom:1px solid var(--line2);padding:16px 20px}
+html[data-theme] .chead h2,html[data-theme] .chead h3,html[data-theme] .card>h2,html[data-theme] .card>h3{font-family:var(--fd);font-weight:500}
+html[data-theme] h2{font-family:var(--fd);font-weight:500}
+html[data-theme] .grid{gap:16px}
+html[data-theme] .kpi{padding:16px 20px;gap:6px}
+html[data-theme] .kpi span{color:var(--muted);font-weight:400}
+html[data-theme] .kpi b{font-family:var(--fd);font-weight:300;font-size:38px;line-height:1.1;font-variant-numeric:tabular-nums}
+html[data-theme] button.kpi:hover{border-color:var(--brand2)}
+
+/* ---------- الجداول: كل صف شريط مدور ---------- */
+html[data-theme] .tbl-wrap{padding:2px 12px 6px}
+html[data-theme] .card.flush .tbl-wrap,html[data-theme] .flush>.tbl-wrap{padding:2px 12px 6px;background:transparent;box-shadow:none;backdrop-filter:none;border:0}
+html[data-theme] .tbl-wrap>table{border-collapse:separate;border-spacing:0 7px}
+html[data-theme] .tbl-wrap th{background:transparent;border:0;color:var(--faint);font-weight:500;text-transform:none;letter-spacing:0;font-size:12.5px;padding:10px 14px 2px}
+html[data-theme] .tbl-wrap td{background:var(--bg2);border:0;padding:12px 14px}
+html[data-theme] .tbl-wrap td:first-child{border-radius:14px 0 0 14px}
+html[data-theme] .tbl-wrap td:last-child{border-radius:0 14px 14px 0}
+html[data-theme] .tbl-wrap td:only-child{border-radius:14px}
+html[data-theme] .tbl-wrap tr.clk:hover td{background:var(--tsoft)}
+html[data-theme] th{background:transparent;color:var(--faint)}
+html[data-theme] td{border-color:var(--line2)}
+html[data-theme] tr:hover td{background:inherit}
+html[data-theme] tr.clk:hover td{background:var(--hover)}
+
+/* ---------- الأزرار والفورم ---------- */
+html[data-theme] .btn{border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:500;padding:9px 18px}
+html[data-theme] .btn:hover{border-color:var(--brand2);background:var(--card)}
+html[data-theme] .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+html[data-theme] .btn.primary:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+html[data-theme] .btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+html[data-theme] .btn.ghost:hover{background:var(--hover);color:var(--ink)}
+html[data-theme] .btn.small{border-radius:999px;padding:6px 13px}
+html[data-theme] .btn.danger{color:var(--bad)}
+html[data-theme] .btn.out{background:var(--bad);border-color:var(--bad);color:#fff}
+html[data-theme] .btn.full{border-radius:999px}
+html[data-theme] input,html[data-theme] select,html[data-theme] textarea{border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+html[data-theme] input[type=checkbox],html[data-theme] input[type=radio]{accent-color:var(--brand2)}
+html[data-theme] label{color:var(--muted);font-size:12.5px}
+
+/* فلاتر وتابات */
+html[data-theme] .chips button,html[data-theme] .flt button{border-radius:999px;border:1px solid var(--line);background:var(--glass);color:var(--muted);padding:6px 14px}
+html[data-theme] .chips button.on,html[data-theme] .flt button.on{background:var(--tsoft);border-color:transparent;color:var(--tink);font-weight:600}
+
+/* الحالات: كبسولة بنقطة */
+html[data-theme] .pill{border-radius:999px;font-weight:500;padding:3px 10px}
+html[data-theme] .p-out{background:var(--bg2);color:var(--muted);border:1px solid var(--line2)}
+
+/* شريط التقدم */
+html[data-theme] .pbar{background:var(--line2);height:7px}
+html[data-theme] .pbar>i{background:var(--brand2)}
+
+/* التنبيهات والليستات جوه الكروت */
+html[data-theme] .al{border-bottom:1px solid var(--line2)}
+html[data-theme] .al:hover{background:var(--hover)}
+html[data-theme] .al.unread{background:var(--tsoft)}
+html[data-theme] .tm{border-bottom:1px solid var(--line2)}
+html[data-theme] .trow{border-bottom:1px solid var(--line2)}
+html[data-theme] .tb{border-radius:999px;font-weight:600}
+html[data-theme] .tb.play{background:var(--brand);border-color:var(--brand)}
+html[data-theme] .tstat{border-radius:999px}
+html[data-theme] .lnk,html[data-theme] .tnotes,html[data-theme] .pfsec{background:var(--bg2);border-color:var(--line);border-radius:14px}
+html[data-theme] .notice{background:var(--bg2);border-radius:14px}
+html[data-theme] .phead{border-top:0;box-shadow:var(--shadow),inset 0 3px 0 var(--accent)}
+html[data-theme] .pbox h4{color:var(--faint);font-weight:500}
+
+/* النوافذ */
+html[data-theme] .modal{background:rgba(10,26,24,.38);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+html[data-theme] .modal .card{background:var(--card);backdrop-filter:none;border-radius:28px;padding:26px;box-shadow:0 30px 80px rgba(10,26,24,.25)}
+html[data-theme] .toast{border-radius:999px;padding:11px 20px}
+
+/* الساعة */
+html[data-theme] .big-time{font-family:var(--fd);font-weight:300;font-size:56px;color:var(--ink)}
+html[data-theme] .clock .btn{border-radius:999px}
+
+/* صفحة الدخول */
+html[data-theme] .login-wrap{background:transparent}
+html[data-theme] .login{background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow)}
+html[data-theme] .login .logo{color:var(--ink);font-family:var(--fd)}
+
+/* موبايل: القايمة بتفضل درج من الجنب */
+@media (max-width:900px){
+  html[data-theme] #appView{padding:0;gap:0}
+  html[data-theme] #side{top:0;height:100%;border-radius:0 24px 24px 0;background:var(--card)}
+  html[data-theme] #top{position:sticky;background:var(--bg);padding:calc(10px + env(safe-area-inset-top)) 12px 10px}
+  html[data-theme] #menuBtn{border-radius:50%;background:var(--glass)}
+  #pillNav{padding:0 12px 10px;flex-wrap:nowrap;overflow-x:auto}
+  html[data-theme] #main{padding:6px 12px 40px}
+  html[data-theme] .kpi b{font-size:28px}
+  html[data-theme] .card{border-radius:18px}
+}
+
+/* القايمة: الأقسام بس، الصفحات في الصف اللي فوق */
+html[data-theme] #nav .ngrp .nsub{display:none!important}
+html[data-theme] #nav .nav.nghead .nchev{display:none}
+html[data-theme] #nav .ngrp .nav.nghead .ngb{display:inline-block;margin-right:0}
+html[data-theme] #nav .ngrp .nav.nghead.on{background:var(--brand);color:#fff;box-shadow:0 8px 20px rgba(18,63,58,.22);font-weight:500}
+@media (max-width:900px){html[data-theme] #nav .ngrp .nsub{display:flex!important}html[data-theme] #nav .nav.nghead .nchev{display:inline-block}}
+
+/* عناوين الجداول العادية (Board وغيره) */
+html[data-theme] th{text-transform:none;letter-spacing:0;font-weight:500;font-size:12.5px}
+
+/* البريفات: نفس الكروت والأزرار */
+html[data-theme] .bapp .wrap{max-width:1100px}
+html[data-theme] .bapp h1,html[data-theme] .bapp h2,html[data-theme] .bapp h3{font-family:var(--fd);font-weight:500}
+html[data-theme] .bapp .btn{border-radius:999px}
+html[data-theme] .bapp .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+html[data-theme] .bapp .ledger,html[data-theme] .bapp .note{background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:22px;padding:6px 12px}
+html[data-theme] .bapp .row{border-top:0;background:var(--bg2);border-radius:14px;margin:7px 0}
+html[data-theme] .bapp .row.head{background:transparent;color:var(--faint);font-weight:500;margin:0}
+html[data-theme] .bapp button.row:hover{background:var(--tsoft)}
+html[data-theme] .bapp .tools input{border-radius:999px}
