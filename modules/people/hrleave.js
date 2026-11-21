@@ -107,10 +107,10 @@ function renderAgents(){
   const q=S.agQ.trim().toLowerCase(), L=d.list.filter(x=>!q||(x.name+' '+x.job+' '+x.dept).toLowerCase().indexOf(q)>=0);
   const pay=d.canPay;
   $('main').innerHTML=`<div class="card" style="margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input id="agQ" type="search" placeholder="Search by name, job or department" value="${esc(S.agQ)}" style="flex:1 1 260px" aria-label="Search employees"><span class="muted" style="font-size:13px">${L.length} of ${d.list.length} · ${esc(agMonthLabel(d.month))}</span></div>
-    <div class="card flush"><div class="tbl-wrap"><table class="ag-tbl" style="min-width:${pay?980:760}px"><thead><tr><th>Employee</th><th>Leave days</th><th>Permissions</th><th>Balance left</th><th>Days worked</th><th>Hours</th><th>Rank</th>${pay?'<th>Bonus</th><th>Deductions</th><th>Net salary</th>':''}</tr></thead>
+    <div class="card flush"><div class="tbl-wrap"><table class="ag-tbl" style="min-width:${pay?1060:840}px"><thead><tr><th>Employee</th><th>Leave days</th><th>Permissions</th><th>Balance left</th><th>Days worked</th><th>Hours</th><th title="Clock-ins closed by the system at the end of the shift (or the overtime limit)">Closed at shift end</th><th>Rank</th>${pay?'<th>Bonus</th><th>Deductions</th><th>Net salary</th>':''}</tr></thead>
     <tbody>${L.map(x=>`<tr tabindex="0" data-u="${esc(x.u)}" onclick="agOpen('${esc(x.u)}')" onkeydown="if(event.key==='Enter')agOpen('${esc(x.u)}')">
       <td><div class="lv-who"><div class="av" data-u="${esc(x.u)}">${esc(initials(x.name))}</div><div class="lv-tx"><b>${bd(x.name)}</b><span class="muted">${esc(x.job||'')} · ${esc(x.dept)}</span></div></div></td>
-      <td>${x.leaveDays}</td><td>${x.permCount}${x.permHours?' · '+x.permHours+' h':''}</td><td>${x.balLeft} <span class="muted">/ ${x.balTotal}</span></td><td>${x.clocks?x.days:'—'}</td><td>${x.clocks?x.hours:'—'}</td>
+      <td>${x.leaveDays}</td><td>${x.permCount}${x.permHours?' · '+x.permHours+' h':''}</td><td>${x.balLeft} <span class="muted">/ ${x.balTotal}</span></td><td>${x.clocks?x.days:'—'}</td><td>${x.clocks?x.hours:'—'}</td><td>${x.clocks?(x.shiftOut?`<span class="pill p-prog">${x.shiftOut}</span>`:'0'):'—'}</td>
       <td>${x.rank?`<b>#${x.rank}</b> <span class="muted">· ${x.score}</span>`:'<span class="muted">·</span>'}</td>
       ${pay?`<td class="ag-plus">${x.pay&&x.pay.bonus?'+'+agMoney(x.pay.bonus):'0'}</td><td class="ag-minus">${x.pay&&x.pay.deductions?'−'+agMoney(x.pay.deductions):'0'}</td><td><b>${x.pay&&x.pay.net!=null?agMoney(x.pay.net,x.pay.currency):'<span class="muted">Not set</span>'}</b></td>`:''}</tr>`).join('')}</tbody></table></div></div>
     <p class="muted" style="font-size:12.5px">Rank comes from Scorecards. Net salary = base + bonuses − deductions for the month.</p>`;
@@ -118,8 +118,8 @@ function renderAgents(){
 }
 function agXl(){
   const d=S.agData; if(!d) return null; const pay=d.canPay;
-  const head=['Employee','Job','Department','Leave days','Leaves','Permissions','Permission hours','Overtime hours','Balance left','Annual balance','Days worked','Hours','Missed clock-outs','Score','Rank'].concat(pay?['Base salary','Bonus','Deductions','Net salary','Currency']:[]);
-  return {name:'agent-profiles-'+d.month,sheets:[{name:'Agents '+d.month,rows:[head].concat(d.list.map(x=>[x.name,x.job,x.dept,x.leaveDays,x.leaveCount,x.permCount,x.permHours,x.otHours,x.balLeft,x.balTotal,x.days,x.hours,x.missed,x.score==null?'':x.score,x.rank||''].concat(pay?[x.pay.base==null?'':x.pay.base,x.pay.bonus,x.pay.deductions,x.pay.net==null?'':x.pay.net,x.pay.currency]:[])))}]};
+  const head=['Employee','Job','Department','Leave days','Leaves','Permissions','Permission hours','Overtime hours','Balance left','Annual balance','Days worked','Hours','Missed clock-outs','Closed at shift end','Score','Rank'].concat(pay?['Base salary','Bonus','Deductions','Net salary','Currency']:[]);
+  return {name:'agent-profiles-'+d.month,sheets:[{name:'Agents '+d.month,rows:[head].concat(d.list.map(x=>[x.name,x.job,x.dept,x.leaveDays,x.leaveCount,x.permCount,x.permHours,x.otHours,x.balLeft,x.balTotal,x.days,x.hours,x.missed,x.shiftOut||0,x.score==null?'':x.score,x.rank||''].concat(pay?[x.pay.base==null?'':x.pay.base,x.pay.bonus,x.pay.deductions,x.pay.net==null?'':x.pay.net,x.pay.currency]:[])))}]};
 }
 
 /* ----- البروفايل نفسه ----- */
@@ -145,7 +145,7 @@ function agProfileHTML(r,drawer){
       ${K.axes.map(a=>`<div class="ag-ax"><span>${esc(a.name[0].toUpperCase()+a.name.slice(1))}</span><i><em style="width:${a.score==null?0:Math.max(0,Math.min(100,a.score))}%"></em></i><b>${a.score==null?'·':a.score}</b></div>`).join('')}`:'<p class="muted">No score for this month yet.</p>'}</div>`;
   const att=`<div class="card ag-card"><div class="chead"><h3>Attendance</h3></div><div class="ag-lines">
       <div><span>Days worked</span><b>${U&&s.clocks?s.days:'—'}</b></div><div><span>Work hours</span><b>${s.clocks?s.hours+' h':'—'}</b></div>
-      <div><span>Missed clock-outs</span><b>${s.clocks?s.missed:'—'}</b></div><div><span>Overtime</span><b>${s.otHours} h</b></div><div><span>Requests waiting</span><b>${s.pending}</b></div></div></div>`;
+      <div><span>Missed clock-outs</span><b>${s.clocks?s.missed:'—'}</b></div><div><span>Closed at shift end</span><b>${s.clocks?(s.shiftOut||0):'—'}</b></div><div><span>Overtime</span><b>${s.otHours} h</b></div><div><span>Requests waiting</span><b>${s.pending}</b></div></div></div>`;
   const reqs=`<div class="card ag-card"><div class="chead"><h3>Leaves &amp; permissions <span class="muted">· this month</span></h3></div>${r.requests.length?r.requests.map(q=>`<div class="ag-req"><div><b>${q.kind==='leave'?esc(q.typeLabel):q.kind==='overtime'?'Overtime':'Permission'}</b> <span class="muted">${lvWhen(q)}</span>${q.kind!=='overtime'?lvChain(q):''}</div><span class="pill ${(RQ_STATUS[q.status]||['',''])[1]}">${(RQ_STATUS[q.status]||[q.status])[0]}</span></div>`).join(''):'<p class="muted">Nothing this month.</p>'}</div>`;
   const hist=r.payHistory&&r.payHistory.length?`<div class="card ag-card"><div class="chead"><h3>Salary history <span class="muted">· every change is kept</span></h3></div><div class="lv-log" style="display:block">${r.payHistory.map(h=>`<div>${agTime(h.at)} · <b>${bd(h.by)}</b> · ${bd(h.what)}</div>`).join('')}</div></div>`:'';
   return `<div class="ag-prof">${head}${tiles}<div class="ag-grid">${pay}${score}</div><div class="ag-grid">${reqs}${att}</div>${hist}</div>`;
@@ -176,7 +176,7 @@ function viewAgent(opts){
 }
 function agpXl(){
   const r=S.agP; if(!r) return; const s=r.stats, P=r.pay;
-  const sheets=[{name:'Profile',rows:[['Field','Value'],['Name',r.user.name],['Job',r.user.job],['Department',r.user.dept],['Month',r.month],['Leave days',s.leaveDays],['Permissions',s.permCount],['Permission hours',s.permHours],['Overtime hours',s.otHours],['Annual balance left',s.balLeft],['Annual balance',s.balTotal],['Days worked',s.days],['Hours',s.hours],['Missed clock-outs',s.missed],['Score',s.score==null?'':s.score],['Rank',s.rank?s.rank+' of '+s.of:'']]
+  const sheets=[{name:'Profile',rows:[['Field','Value'],['Name',r.user.name],['Job',r.user.job],['Department',r.user.dept],['Month',r.month],['Leave days',s.leaveDays],['Permissions',s.permCount],['Permission hours',s.permHours],['Overtime hours',s.otHours],['Annual balance left',s.balLeft],['Annual balance',s.balTotal],['Days worked',s.days],['Hours',s.hours],['Missed clock-outs',s.missed],['Closed at shift end',s.shiftOut||0],['Score',s.score==null?'':s.score],['Rank',s.rank?s.rank+' of '+s.of:'']]
     .concat(P?[['Base salary',P.base==null?'':P.base],['Bonus',P.bonus],['Deductions',P.deductions],['Net salary',P.net==null?'':P.net],['Currency',P.currency]]:[])},
     {name:'Requests',rows:[['Type','From','To','Days','Hours','Status','Approvals']].concat(r.requests.map(q=>[q.kind==='leave'?q.typeLabel:q.kind,q.from,q.to,q.days,q.hours,q.status,q.approvals.map(a=>a.step+': '+a.by+' '+a.decision+' '+agTime(a.at)).join(' · ')]))}];
   if(P) sheets.push({name:'Salary lines',rows:[['Type','Amount','Reason','By','When','Status','Cancel note']].concat(P.items.map(x=>[x.kind,x.amount,x.reason,x.by,agTime(x.at),x.status,x.voidNote||'']))});

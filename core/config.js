@@ -13,7 +13,12 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LOADING = '<div class="loading">Loading...</div>';
 // علامة "خروج أوتوماتيك" جنب وقت الخروج
-const aoTag = a => a ? ' <span class="pill p-yel" style="font-size:11px" title="Clocked out automatically: the system was closed without clocking out">Auto</span>' : '';
+const aoTag = (a, why) => why === 'shift' ? ' <span class="pill p-prog" style="font-size:11px" title="Clocked out automatically: the shift hours were done">Shift end</span>'
+  : why === 'ot' ? ' <span class="pill p-yel" style="font-size:11px" title="Clocked out automatically: the overtime limit was reached">OT limit</span>'
+  : why === 'fin' ? ' <span class="pill p-prog" style="font-size:11px" title="Clocked out automatically: the finishing time ended">Finish time</span>'
+  : (a || why === 'auto') ? ' <span class="pill p-yel" style="font-size:11px" title="Clocked out automatically: the system was closed without clocking out">Auto</span>' : '';
+// نوع البصمة لو دخل تاني بعد ما الشيفت خلص
+const soKindTag = k => k === 'ot' ? ' <span class="pill p-yel" style="font-size:11px">⏱ Overtime</span>' : k === 'new' ? ' <span class="pill p-prog" style="font-size:11px">🔄 New shift</span>' : k === 'fin' ? ' <span class="pill p-prog" style="font-size:11px">✅ Finishing</span>' : '';
 // can / canAny في core/api.js: الصلاحيات بتتاخد من رد السيرفر بس
 // اللي بيبصم: كل الصفحات مقفولة لحد بصمة الدخول (ماعدا Time Clock)
 // صفحات مفتوحة حتى قبل البصمة: البصمة نفسها وطلبات الإجازة والإذن
