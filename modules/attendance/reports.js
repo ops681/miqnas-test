@@ -39,10 +39,10 @@ function renderToday(r,keep){
     <div class="tbl-wrap"><table>
       <tr><th>Name</th><th>Job</th><th>Status</th><th>In</th><th>Out</th><th>Sharing</th><th>Last screenshot</th><th>Stops</th><th>Hours</th></tr>
       ${L.map(x=>`<tr>
-        <td><b>${esc(x.name)}</b></td><td class="muted">${esc(x.job)}</td>
+        <td><button type="button" class="sl-name" title="سجل المشاركة" onclick="slOpen('${esc(x.username)}')">${esc(x.name)}</button></td><td class="muted">${esc(x.job)}</td>
         <td>${x.state==='open'?'<span class="pill p-bad">No clock-out</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>'+(x.sessions>1?`<div class="sub2">${x.sessions} sessions</div>`:''):x.state==='leave'?'<span class="pill" style="background:var(--bluebg);color:var(--blue)">On leave</span>':r.workday===false?'<span class="pill p-out">Day off</span>':'<span class="pill p-absent">Absent</span>'}</td>
         <td class="nw">${esc(x.inT)||'—'}</td><td class="nw">${esc(x.outT)||'—'}${aoTag(x.autoOut,x.outWhy)}</td><td>${esc(x.mode)||'—'}</td>
-        <td class="nw">${esc(x.lastShot)||'—'}</td><td>${x.stops?`<span class="pill p-bad">${x.stops}</span>`:'0'}</td><td>${x.hoursToday||0}</td></tr>`).join('')}
+        <td class="nw">${esc(x.lastShot)||'—'}</td><td>${x.stops?`<button type="button" class="pill p-bad sl-pill" title="سجل المشاركة" onclick="slOpen('${esc(x.username)}')">${x.stops}</button>`:'0'}</td><td>${x.hoursToday||0}</td></tr>`).join('')}
     </table></div>`;
     return;
   }
@@ -60,10 +60,10 @@ function renderToday(r,keep){
   <div class="tbl-wrap"><table>
     <tr><th>Name</th><th>Job</th><th>Status</th><th>In</th><th>Out</th><th>Sharing</th><th>Last screenshot</th><th>Stops</th><th>Hours today</th></tr>
     ${L.map(x=>{ const fr=(r.free||{})[x.username]; return `<tr>
-      <td><b>${esc(x.name)}</b>${r.canFree?` <button type="button" class="cf-b${fr?' on':''}" title="${fr?'بصمة بس: '+(fr==='today'?'النهارده بس':'دايماً'):'بصمة بس'}" aria-label="Clock only" onclick="cfMenu('${esc(x.username)}','${esc(x.name).replace(/'/g,'')}','${fr||''}')">⏱${fr?(fr==='today'?' النهارده':' دايماً'):''}</button>`:(fr?' <span class="cf-b on">⏱</span>':'')}</td><td class="muted">${esc(x.job)}</td>
+      <td><button type="button" class="sl-name" title="سجل المشاركة" onclick="slOpen('${esc(x.username)}')">${esc(x.name)}</button>${r.canFree?` <button type="button" class="cf-b${fr?' on':''}" title="${fr?'بصمة بس: '+(fr==='today'?'النهارده بس':'دايماً'):'بصمة بس'}" aria-label="Clock only" onclick="cfMenu('${esc(x.username)}','${esc(x.name).replace(/'/g,'')}','${fr||''}')">⏱${fr?(fr==='today'?' النهارده':' دايماً'):''}</button>`:(fr?' <span class="cf-b on">⏱</span>':'')}</td><td class="muted">${esc(x.job)}</td>
       <td>${x.staleOpen?`<span class="pill p-bad">Forgot clock-out</span><div class="sub2">Open since ${x.openSince?shortD(x.openSince):'an earlier day'}</div>`:x.alert?'<span class="pill p-bad">No screenshots</span>':x.state==='break'?`<span class="pill p-prog">On Break</span><div class="sub2" ${bdd(x.breakSince)}>${esc(x.breakSince)} · ${esc(x.breakReason)}</div>`:x.state==='in'?'<span class="pill p-in">Working</span>':x.state==='out'?'<span class="pill p-out">Clocked out</span>':x.state==='leave'?'<span class="pill" style="background:var(--bluebg);color:var(--blue)">On leave</span>':'<span class="pill p-absent">Absent</span>'}</td>
       <td class="nw">${x.staleOpen?'—':esc(x.inT)||'—'}${soKindTag(x.kind)}${x.kind==='ot'&&x.otReason?`<div class="sub2" dir="auto">${esc(x.otReason)}</div>`:''}</td><td class="nw">${esc(x.outT)||'—'}${aoTag(x.autoOut,x.outWhy)}</td><td>${esc(x.mode)||'—'}</td>
-      <td class="nw">${esc(x.lastShot)||'—'}</td><td>${x.stops?`<span class="pill p-bad">${x.stops}</span>`:'0'}</td><td>${x.hoursToday}</td></tr>`; }).join('')}
+      <td class="nw">${esc(x.lastShot)||'—'}</td><td>${x.stops?`<button type="button" class="pill p-bad sl-pill" title="سجل المشاركة" onclick="slOpen('${esc(x.username)}')">${x.stops}</button>`:'0'}</td><td>${x.hoursToday}</td></tr>`; }).join('')}
   </table></div>`;
 }
 /* ----- بصمة بس: الإدارة / HR بيفتحوها لموظف (النهارده بس أو دايماً) ----- */
@@ -185,8 +185,8 @@ function renderScreen(r,keep){
   <div class="card flush"><div class="tbl-wrap"><table style="min-width:1100px">
     <tr><th>Employee</th><th>Clocked</th><th>Sharing</th><th>Stops</th><th>Not shared</th><th style="min-width:220px">Timeline <span style="font-weight:400;text-transform:none">${String(Math.floor(lo/60)).padStart(2,'0')}:00 – ${String(Math.floor(hi/60)).padStart(2,'0')}:00</span></th><th>Gaps without screenshots</th><th>Screenshots</th><th>Day</th><th></th></tr>
     ${r.rows.map(x=>{ const h=H[x.health];
-      if(x.absent) return `<tr><td><b>${esc(x.name)}</b><div class="sub2">${esc(x.job)}</div></td><td colspan="7" class="muted">Didn't clock in</td><td><span class="pill ${h[1]}">${h[0]}</span></td><td></td></tr>`;
-      return `<tr><td><b>${esc(x.name)}</b><div class="sub2">${esc(x.job)}</div></td><td style="white-space:nowrap">${esc(x.clock)}</td><td>${esc(x.modes.join(' → '))||'—'}</td>
+      if(x.absent) return `<tr><td><button type="button" class="sl-name" title="سجل المشاركة" onclick="slOpen('${esc(x.u)}')">${esc(x.name)}</button><div class="sub2">${esc(x.job)}</div></td><td colspan="7" class="muted">Didn't clock in</td><td><span class="pill ${h[1]}">${h[0]}</span></td><td></td></tr>`;
+      return `<tr><td><button type="button" class="sl-name" title="سجل المشاركة" onclick="slOpen('${esc(x.u)}')">${esc(x.name)}</button><div class="sub2">${esc(x.job)}</div></td><td style="white-space:nowrap">${esc(x.clock)}</td><td>${esc(x.modes.join(' → '))||'—'}</td>
       <td><b style="color:${x.stops?'var(--warn)':'var(--ink)'}">${x.stops}</b></td><td>${x.off} min</td>
       <td><div class="tl">${x.segs.map(s=>`<i class="${s.k}" style="left:${(s.s-lo)/span*100}%;width:${Math.max(.4,(s.e-s.s)/span*100)}%"></i>`).join('')}</div></td>
       <td style="font-size:13px">${x.gaps.length?esc(x.gaps.join(', ')):'—'}</td>

@@ -985,3 +985,37 @@ textarea.ml{field-sizing:content;min-height:42px;max-height:260px;resize:vertica
 .so-opt.off{opacity:.55;cursor:not-allowed}
 .so-opt.off:hover{border-color:var(--line)}
 .so-open{border-color:var(--blue);background:var(--bluebg)}
+/* سجل المشاركة لكل موظف (Attendance → اسم الموظف) */
+.modal .card.sl-card{max-width:860px}
+.sl-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.sl-head h2{margin:0}
+.sl-m{width:auto}
+.sl-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}
+.sl-kpis div{border:1px solid var(--line);border-radius:14px;padding:8px 12px}
+.sl-kpis span{display:block;font-size:12px;color:var(--muted)}
+.sl-kpis b{font-size:18px}
+.sl-days{display:flex;flex-direction:column;gap:6px}
+.sl-day{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.sl-day.flag{border-color:var(--badbg)}
+.sl-day.absent{opacity:.75}
+.sl-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;padding:10px 12px;background:none;border:0;color:inherit;font:inherit;text-align:start;cursor:pointer}
+.sl-day.absent .sl-row{cursor:default}
+button.sl-row:hover{background:var(--line2,rgba(0,0,0,.03))}
+.sl-d{font-weight:700;min-width:150px}
+.sl-s{color:var(--muted);font-size:13px;flex:1;min-width:120px}
+.sl-h{font-weight:700;font-size:13px}
+.sl-c{color:var(--muted)}
+.sl-in{padding:0 12px 12px;border-top:1px solid var(--line)}
+.sl-meta{font-size:12.5px;color:var(--muted);padding:8px 0}
+.sl-ev{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.sl-ev li{display:grid;grid-template-columns:86px 26px 1fr;gap:6px;align-items:start;padding:7px 8px;border-radius:10px}
+.sl-ev li.bad{background:var(--badbg)}
+.sl-ev li.warn{background:var(--warnbg)}
+.sl-t{font-weight:700;font-size:13px;direction:ltr;text-align:end}
+.sl-t small{display:block;font-weight:400;color:var(--muted)}
+.sl-x>b{display:block;font-size:13.5px}
+.sl-x>small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+@media (max-width:600px){.sl-d{min-width:0;width:100%}.sl-ev li{grid-template-columns:70px 22px 1fr}}
+.sl-name{background:none;border:0;padding:0;font:inherit;font-weight:700;color:inherit;cursor:pointer;text-decoration:underline dotted;text-underline-offset:4px}
+.sl-name:hover{color:var(--brand)}
+.sl-pill{border:0;cursor:pointer;font-family:inherit}
