@@ -115,7 +115,7 @@ function gtStRet(sid){
 function gtApv(){
   const t=S.gtCur, L=S.cache.gt||{}, P=(L.people||[]).filter(p=>p.u!==t.owner&&p.u!==t.createdBy), cur=t.extraApprovers||[], lock=!t.can.manage;
   kpiModal('Approves delivery',`<div class="muted" style="font-size:13px;margin-bottom:8px">${esc(t.createdByName)} دايمًا بيوافق. اختار ناس زيادة يروحلهم التسليم كمان (موافقة واحد كفاية).</div>
-    <input class="gt-ps" placeholder="Search" oninput="gtPsF(this)"><div class="gt-pick" style="max-height:260px">${P.map(p=>`<label class="check"><input type="checkbox" data-ga="${esc(p.u)}"${cur.indexOf(p.u)>=0?' checked':''}${lock&&cur.indexOf(p.u)>=0?' disabled':''}><span>${esc(p.name)}${p.job?` <small class="muted">· ${esc(p.job)}</small>`:''}</span></label>`).join('')}</div>`,()=>{
+    <input class="gt-ps" dir="auto" placeholder="Search" oninput="gtPsF(this)"><div class="gt-pick" style="max-height:260px">${P.map(p=>`<label class="check"><input type="checkbox" data-ga="${esc(p.u)}"${cur.indexOf(p.u)>=0?' checked':''}${lock&&cur.indexOf(p.u)>=0?' disabled':''}><span>${esc(p.name)}${p.job?` <small class="muted">· ${esc(p.job)}</small>`:''}</span></label>`).join('')}</div>`,()=>{
     const list=[...document.querySelectorAll('[data-ga]:checked')].map(x=>x.dataset.ga);
     gtDo('approvers',false,false,{list});
   });
@@ -158,11 +158,11 @@ async function gtDo(act,withNote,needNote,extra){
 const GT_ST_QUICK=['Wireframe','UI','Analysis','Content','Development','Testing'];
 // قايمة ناس بـ checkboxes وبحث
 function gtPickHTML(key,list,sel,lockU){
-  return `<input class="gt-ps" placeholder="Search" oninput="gtPsF(this)" aria-label="Search people"><div class="gt-pick">${list.map(p=>`<label class="check"><input type="checkbox" data-${key}="${esc(p.u)}"${sel.indexOf(p.u)>=0?' checked':''} onchange="gtCnt()"><span>${esc(p.name)}${p.job?` <small class="muted">· ${esc(p.job)}</small>`:''}</span></label>`).join('')}</div>`;
+  return `<input class="gt-ps" dir="auto" placeholder="Search" oninput="gtPsF(this)" aria-label="Search people"><div class="gt-pick">${list.map(p=>`<label class="check"><input type="checkbox" data-${key}="${esc(p.u)}"${sel.indexOf(p.u)>=0?' checked':''} onchange="gtCnt()"><span>${esc(p.name)}${p.job?` <small class="muted">· ${esc(p.job)}</small>`:''}</span></label>`).join('')}</div>`;
 }
 function gtCnt(){ [['gc','gtCc'],['gv','gtCr'],['gw','gtCw']].forEach(([k,id])=>{ const el=$(id); if(el) el.textContent=document.querySelectorAll('[data-'+k+']:checked').length; }); }
 function gtStRows(){ const box=$('gtStL'); if(!box) return; const st=S.gtEditSt||[];
-  box.innerHTML=st.length?st.map((x,i)=>`<div class="gt-str"><span class="gt-st-n">${i+1}</span><input value="${esc(x.name)}" maxlength="60" placeholder="Stage name" oninput="S.gtEditSt[${i}].name=this.value"${x.locked?' disabled title="Already sent or approved"':''}>
+  box.innerHTML=st.length?st.map((x,i)=>`<div class="gt-str"><span class="gt-st-n">${i+1}</span><input dir="auto" value="${esc(x.name)}" maxlength="60" placeholder="Stage name" oninput="S.gtEditSt[${i}].name=this.value"${x.locked?' disabled title="Already sent or approved"':''}>
     <button class="iconbtn" type="button" onclick="gtStMv(${i},-1)" aria-label="Move up"${i?'':' disabled'}>↑</button><button class="iconbtn" type="button" onclick="gtStRm(${i})" aria-label="Remove"${x.locked?' disabled':''}>✕</button></div>`).join('')
     :'<div class="muted" style="font-size:13px">No stages: the task is delivered once.</div>';
   const c=$('gtCs'); if(c) c.textContent=st.length; }
@@ -173,7 +173,8 @@ async function gtEdit(id,pre){
   let L=S.cache.gt; if(!L){ try{ L=await gtReload(); }catch(e){ alert(e.message); return; } }
   const t=id? gtFind(id) : {title:'',desc:'',owner:S.user.username,contributors:[],extraApprovers:[],watchers:[],stages:[],priority:'Medium',due:'',deps:[],createdBy:S.user.username};
   const P=L.people, me=S.user.username, creator=t.createdBy||me;
-  const owners=L.canAssign? P : P.filter(p=>p.u===me);
+  // أي حد يدّي لأي حد، ما عدا الـ C-level (بس الـ C-level يدّوا لبعض). السيرفر بيبعت مين ينفع.
+  const AS=L.assignable||P.map(p=>p.u), owners=P.filter(p=>AS.indexOf(p.u)>=0||p.u===t.owner);
   const opt=(list,val,blank)=>(blank?`<option value="">${blank}</option>`:'')+list.map(p=>`<option value="${esc(p.u)}"${p.u===val?' selected':''}>${esc(p.name)}${p.job?' · '+esc(p.job):''}</option>`).join('');
   const cont=(t.contributors||[]).map(x=>x.u||x), apv=(t.extraApprovers||[]).slice(), wat=(t.watchers||[]).map(x=>x.u||x);
   const deps=(t.deps||[]).map(d=>d.id||d);
@@ -188,16 +189,16 @@ async function gtEdit(id,pre){
   const sec=(title,body)=>`<div class="gt-sec"><div class="gt-sec-h">${title}</div>${body}</div>`;
   $('modalRoot').innerHTML=`<div class="modal"><div class="card gt-form" style="max-width:860px">
     <h2>${id?'Edit task':'New task'}</h2>
-    ${sec('Task',`<label for="gtT">Title</label><input id="gtT" maxlength="200" value="${esc(t.title)}" placeholder="What needs to be done">
-      <label for="gtD">Details</label><textarea id="gtD" rows="3" maxlength="3000" placeholder="Optional">${esc(t.desc)}</textarea>
+    ${sec('Task',`<label for="gtT">Title</label><input id="gtT" dir="auto" maxlength="200" value="${esc(t.title)}" placeholder="What needs to be done">
+      <label for="gtD">Details</label><textarea id="gtD" dir="auto" rows="3" maxlength="3000" placeholder="Optional">${esc(t.desc)}</textarea>
       ${pjSel}
       <div class="row"><div><label for="gtP">Priority</label><select id="gtP">${['Low','Medium','High','Urgent'].map(p=>`<option${p===t.priority?' selected':''}>${p}</option>`).join('')}</select></div>
         <div><label for="gtDue">Deadline</label><input id="gtDue" type="date" value="${esc(t.due)}"></div></div>`)}
     ${sec('People',`<div class="row"><div><label for="gtO">Assigned to</label><select id="gtO">${opt(owners,t.owner)}</select><div class="gt-hint">Who does the work</div></div>
-        <div><label>Approves delivery</label><div class="gt-fixed">✓ ${esc(crName)} <small class="muted">· always</small></div><div class="gt-hint">The delivery goes to them for approval. One approval is enough.</div></div></div>
+        <div><label>Approves delivery</label><div class="gt-fixed" id="gtFx"></div><div class="gt-hint" id="gtFxH"></div></div></div>
       <details class="gt-dt"${apv.length?' open':''}><summary>+ More people who approve delivery (<span id="gtCr">${apv.length}</span>)</summary>${gtPickHTML('gv',P.filter(p=>p.u!==creator),apv)}</details>
       <details class="gt-dt"${wat.length?' open':''}><summary>👁 Watchers (<span id="gtCw">${wat.length}</span>) <small class="muted">· optional: can see the task and comment, nothing else</small></summary>${gtPickHTML('gw',P,wat)}</details>
-      ${L.canAssign?`<details class="gt-dt"${cont.length?' open':''}><summary>🤝 People helping (<span id="gtCc">${cont.length}</span>)</summary>${gtPickHTML('gc',P,cont)}</details>`:''}`)}
+      <details class="gt-dt"${cont.length?' open':''}><summary>🤝 People helping (<span id="gtCc">${cont.length}</span>)</summary>${gtPickHTML('gc',P.filter(p=>AS.indexOf(p.u)>=0||cont.indexOf(p.u)>=0),cont)}</details>`)}
     ${sec('Delivery',`<details class="gt-dt"${S.gtEditSt.length?' open':''}><summary>Stages (<span id="gtCs">${S.gtEditSt.length}</span>) <small class="muted">· optional: deliver the task step by step, each step gets approved</small></summary>
         <div id="gtStL" style="margin-top:8px"></div>
         <div class="gt-stq">${GT_ST_QUICK.map(n=>`<button type="button" class="chip" onclick="gtStAdd('${n}')">+ ${n}</button>`).join('')}<button type="button" class="chip" onclick="gtStAdd()">+ Other…</button></div></details>
@@ -207,6 +208,11 @@ async function gtEdit(id,pre){
     <div class="mfoot"><span class="spacer"></span><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="gtSaveB" onclick="gtSave('${id?esc(id):''}')">${id?'Save':'Create task'}</button></div>
   </div></div>`;
   gtStRows();
+  // لو التاسك لنفسك: مفيش حد ثابت بيوافق (ممكن تزود ناس)
+  const fx=()=>{ const self=$('gtO').value===creator;
+    $('gtFx').innerHTML=self?'<span class="muted">No one: it\'s your own task</span>':`✓ ${esc(crName)} <small class="muted">· always</small>`;
+    $('gtFxH').textContent=self?'Add people below if you want someone to approve it.':'The delivery goes to them for approval. One approval is enough.'; };
+  $('gtO').onchange=fx; fx();
   setTimeout(()=>$('gtT').focus(),50);
 }
 async function gtSave(id){
