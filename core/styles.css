@@ -851,6 +851,33 @@ textarea.ml{field-sizing:content;min-height:42px;max-height:260px;resize:vertica
 .gt-pf{width:auto;max-width:240px;padding:6px 10px;border-radius:99px;font-size:13.5px}
 .gt-pj{color:var(--brand2)}
 .pguest .tnadd,.pguest .thelp .tnbtn,.pguest .tn-del{display:none!important}
+.gt-stc{color:var(--brand2);font-weight:600}
+/* نافذة التاسك: أجزاء + اختيار الناس + المراحل */
+.gt-form h2{margin-bottom:6px}
+.gt-sec{border:1px solid var(--line2);border-radius:14px;padding:4px 16px 14px;margin-top:12px}
+.gt-sec-h{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 0 -4px}
+.gt-hint{font-size:12.5px;color:var(--muted);margin-top:4px}
+.gt-fixed{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border:1px dashed var(--line);border-radius:12px;font-weight:600}
+.gt-dt{margin-top:12px}
+.gt-dt>summary{cursor:pointer;font-weight:600}
+.gt-ps{margin-top:8px;padding:7px 12px;font-size:13.5px}
+.gt-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:2px 12px;max-height:180px;overflow:auto;margin-top:6px}
+.gt-pick .check{margin-top:6px;font-size:13.5px}
+.gt-str{display:flex;gap:8px;align-items:center;margin-top:6px}
+.gt-str input{flex:1}
+.gt-st-n{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:99px;background:var(--line2);font-size:12px;font-weight:700}
+.gt-stq{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.gt-stq .chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:4px 12px;font-size:13px;cursor:pointer}
+.gt-stq .chip:hover{border-color:var(--brand2);color:var(--brand2)}
+.gt-stages{margin-bottom:14px}
+.gt-st{border:1px solid var(--line2);border-radius:12px;padding:10px 12px;margin-top:8px}
+.gt-st.review{border-color:var(--amb);background:var(--yelbg)}
+.gt-st.approved{opacity:.85}
+.gt-st.approved .gt-st-n{background:var(--okbg);color:var(--ok)}
+.gt-st-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.gt-st-r{margin-top:8px;font-size:13px;color:var(--bad)}
+.gt-st-r b{color:inherit}
+.gt-watch{background:var(--bg);border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:13.5px}
 
 /* بصمة بس */
 .cf-b{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:1px 8px;font-size:12px;cursor:pointer;color:var(--muted);margin-inline-start:4px;vertical-align:middle}
