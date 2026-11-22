@@ -84,7 +84,7 @@ function stopStream(){
 }
 async function onShareEnded(){
   stopStream();
-  try{ await callOrQueue('shareEvent',{event:'stopped'}); }catch(e){}
+  try{ await callOrQueue('shareEvent',{event:'stopped',reason:'button'}); }catch(e){}   // داس Stop sharing (أو المشاركة اتقفلت من المتصفح)
   showAlarm(false);
 }
 // "السيستم مكانش شايفك من الساعة ...": لو آخر مرة شافه من 3 دقايق أو أكتر
@@ -99,7 +99,7 @@ function showAlarm(afterReload){
   if(cfFree()) return; // بصمة بس: مفيش مشاركة شاشة
   if(!S.status||!S.status.clockedIn) return;
   if(S.status.onBreak) return; // وقت البريك مش لازم مشاركة
-  if(afterReload && !S.reloadLogged){ S.reloadLogged=true; callOrQueue('shareEvent',{event:'stopped'}).catch(()=>{}); }
+  if(afterReload && !S.reloadLogged){ S.reloadLogged=true; callOrQueue('shareEvent',{event:'stopped',reason:'reload'}).catch(()=>{}); }
   document.title='⚠ المشاركة واقفة';
   $('modalRoot').innerHTML=`<div class="alarm"><div class="card" dir="rtl">
     <h2>مشاركة الشاشة واقفة</h2>
