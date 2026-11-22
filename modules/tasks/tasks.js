@@ -43,6 +43,7 @@ function gtOpen(id){
   call('gtGet',{id}).then(gtShow).catch(e=>alert(e.message));
 }
 function gtShow(t){
+  t.approvers=t.approvers||[]; t.watchers=t.watchers||[]; t.stages=t.stages||[]; t.extraApprovers=t.extraApprovers||[];
   S.gtCur=t;
   const c=t.can, btn=[];
   if(c.work && t.status==='To Do') btn.push(`<button class="btn" onclick="gtDo('start')"${t.blocked?' disabled title="Waiting on other tasks"':''}>Start</button>`);
