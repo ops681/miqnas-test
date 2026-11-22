@@ -18,7 +18,7 @@ function viewClock(){
       • السيستم بياخد سكرين شوت كل ${S.cfg.shotMinutes} دقايق لحد ما تبصم خروج.<br>
       • خلي الصفحة دي مفتوحة طول الشغل، ولو قفلتها أو وقفت المشاركة هيتسجل.<br>
       ${S.cfg.soOn?`• أول ما ساعات شيفتك تخلص البصمة هتقفل لوحدها. لو لسه شغال اعمل بصمة دخول تاني واختار: أوفر تايم، شيفت جديد، أو بكمّل شغل.<br>`:''}
-      ${S.cfg.aoOn?`• لو قفلت السيستم ومشيت من غير بصمة خروج، هتتعملك بصمة خروج <b>أوتوماتيك</b> بعد ${S.cfg.aoMin} دقيقة، بوقت آخر مرة كنت موجود فيها.<br>`:''}
+      ${S.cfg.aoOn?`• لو السيستم مبقاش شايفك (المشاركة وقفت أو قفلت السيستم) لمدة ${S.cfg.aoMin} دقيقة، الإدارة بيجيلها <b>تنبيه</b>. البصمة بتفضل مفتوحة، فمتنساش تبصم خروج لما تخلص.<br>`:''}
       • استخدم <b>كروم</b> أو <b>إيدج</b> على الكمبيوتر.
     </div>`}
   </div>
@@ -87,6 +87,13 @@ async function onShareEnded(){
   try{ await callOrQueue('shareEvent',{event:'stopped'}); }catch(e){}
   showAlarm(false);
 }
+// "السيستم مكانش شايفك من الساعة ...": لو آخر مرة شافه من 3 دقايق أو أكتر
+function aoSeenLine(){
+  const st=S.status||{}, ls=Number(st.lastSeen)||0; if(!ls) return '';
+  const gap=Date.now()-(Number(st._off)||0)-ls;
+  if(gap<3*6e4) return '';
+  return `<p style="font-weight:600">السيستم مكانش شايفك من الساعة ${esc(st.lastSeenT||'')} (${coDur(gap)}).</p>`;
+}
 function showAlarm(afterReload){
   if(VA_TAB) return; // View as: مفيش مشاركة شاشة
   if(cfFree()) return; // بصمة بس: مفيش مشاركة شاشة
@@ -97,7 +104,7 @@ function showAlarm(afterReload){
   $('modalRoot').innerHTML=`<div class="alarm"><div class="card" dir="rtl">
     <h2>مشاركة الشاشة واقفة</h2>
     <p>${afterReload?'الصفحة اتقفلت أو اتعملها ريفريش، فالمشاركة وقفت.':'المشاركة وقفت.'} انت لسه عامل بصمة دخول، ولازم ترجّع المشاركة عشان الشغل يتحسب.</p>
-    <p class="muted" style="font-size:13px">ده متسجل عند الإدارة.</p>
+    ${aoSeenLine()}<p class="muted" style="font-size:13px">ده متسجل عند الإدارة.</p>
     <div class="err" id="aerr"></div>
     <div class="mfoot" style="justify-content:center">
       <button class="btn primary" id="resumeBtn">رجّع المشاركة</button>

@@ -67,8 +67,8 @@ function coNotify(left){
 function coAsk(){ try{ if(!VA_TAB && S.cfg && ((S.cfg.coOn && S.cfg.coNotify) || (S.cfg.aoOn && S.cfg.aoWarn)) && 'Notification' in window && Notification.permission==='default') Notification.requestPermission().catch(()=>{}); }catch(e){} }
 setInterval(coTick, 15000);
 
-/* ============ تحذير قبل الخروج الأوتوماتيك ============ */
-// السيرفر بيعمل خروج أوتوماتيك لو مفيش من الموظف حاجة (صور / السيستم قدامه) لمدة aoMin دقيقة.
+/* ============ تحذير قبل تنبيه الإدارة "السيستم مش شايفه" ============ */
+// السيرفر بيبعت تنبيه للإدارة لو مفيش من الموظف حاجة (صور / السيستم قدامه) لمدة aoMin دقيقة. البصمة بتفضل مفتوحة (من 2026-11-22).
 // لو مشاركة الشاشة وقفت والسيستم مش قدامه (تاب تاني أو برنامج تاني)، بيجيله إشعار من المتصفح قبلها بـ aoWarnMin دقيقة، ومرة كمان قبلها بدقيقتين.
 S.aoSeen=Date.now();
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ S.aoSeen=Date.now(); if(/^⚠️/.test(document.title)) document.title='Miqnas ERP'; } });
@@ -86,7 +86,7 @@ function aoWarnTick(){
   try{
     if(!('Notification' in window) || Notification.permission!=='granted') return;
     const n=new Notification(S.sharing?'⚠️ السيستم مش شايفك':'⚠️ مشاركة الشاشة واقفة',{
-      body:`هيتعملك خروج أوتوماتيك كمان ${coDur(left)} لو مارجعتش. افتح Miqnas ERP${S.sharing?'':' وشارك الشاشة تاني'}.`,
+      body:`الإدارة هيجيلها تنبيه إنك وقفت مشاركة الشاشة كمان ${coDur(left)} لو مارجعتش. افتح Miqnas ERP${S.sharing?'':' وشارك الشاشة تاني'}.`,
       tag:'mq-autoout', renotify:true, requireInteraction:true, icon:(S.brand&&S.brand.logo)||undefined });
     n.onclick=()=>{ try{ window.focus(); n.close(); }catch(e){} };
   }catch(e){}
