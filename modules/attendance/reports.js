@@ -11,7 +11,8 @@ function attDayBar(d){
   return `<div class="att-day"><button class="btn small ghost" title="Previous day" onclick="attShift(-1)">‹</button>
     <input type="date" id="attDate" value="${v}" max="${today}" onchange="attGo(this.value)">
     <button class="btn small ghost" title="Next day" onclick="attShift(1)" ${v>=today?'disabled':''}>›</button>
-    ${d&&d!==today?'<button class="btn small" onclick="attGo(\'\')">Today</button>':''}</div>`;
+    ${d&&d!==today?'<button class="btn small" onclick="attGo(\'\')">Today</button>':''}
+    <button class="btn small" title="Download attendance for a month or any date range" onclick="atrOpen()">⬇ Excel لفترة</button></div>`;
 }
 function attShift(n){ const cur=S.attDay||tdISO(new Date()); const x=new Date(cur+'T12:00:00'); x.setDate(x.getDate()+n); attGo(tdISO(x)); }
 function attGo(d){
@@ -84,7 +85,7 @@ function cfMenu(un,name,cur){
 let monthlyData=null;
 function viewMonthly(){
   const m=new Date().toISOString().slice(0,7);
-  setTop('Monthly Report','Attendance, leave and workload per employee', `<input type="month" id="mSel" value="${m}" style="width:auto">`);
+  setTop('Monthly Report','Attendance, leave and workload per employee', `<input type="month" id="mSel" value="${m}" style="width:auto"> <button class="btn small" title="Download attendance for a month or any date range" onclick="atrOpen()">⬇ Excel لفترة</button>`);
   if(!S.mrF) S.mrF={dept:'',q:'',sort:'hours',dir:-1};
   $('main').innerHTML=`<div id="mBody">${LOADING}</div>`;
   $('mSel').onchange=loadMonthly;
