@@ -1,5 +1,5 @@
 {
- "v": "2026-11-22.4",
+ "v": "2026-11-23.1",
  "css": [
   "core/styles.css",
   "modules/briefs/briefs.css",
@@ -28,6 +28,7 @@
   "modules/attendance/clock.js",
   "modules/attendance/reports.js",
   "modules/attendance/sharelog.js",
+  "modules/attendance/attrange.js",
   "modules/attendance/locations.js",
   "modules/people/employees.js",
   "modules/people/devices.js",
