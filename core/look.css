@@ -462,3 +462,18 @@ html[data-theme] .td-row.done .td-tx span{text-decoration-color:var(--muted);tex
   .ag-grid{grid-template-columns:1fr}
   .ag-drawer{padding:16px 16px 40px}
 }
+/* HR code (2026-11-25) */
+.ag-chips .hrc-chip{color:var(--ink);display:inline-flex;align-items:center;gap:4px}
+.hrc-chip b{font-weight:600;letter-spacing:.3px}
+.hrc-ed{background:none;border:0;cursor:pointer;padding:0 2px;font-size:12px;line-height:1}
+.hrc-chip input{width:110px;padding:2px 8px;font-size:12px;margin:0;height:auto;text-transform:uppercase}
+.hrc-tag{font-weight:600;color:var(--brand2);letter-spacing:.3px}
+.modal .card.hrc-imp{max-width:900px}
+.hrc-sum{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 8px}
+.hrc-tbl{min-width:620px}
+.hrc-tbl td:first-child{white-space:nowrap}
+.hrc-tbl td,.hrc-tbl th{padding:8px 10px}
+.hrc-tbl select{width:100%}
+.hrc-tbl select{margin:0;min-width:200px}
+.hrc-tbl tr.hrc-miss td{background:color-mix(in srgb,var(--warn,#d9a400) 10%,transparent)}
+.hrc-tbl tr.hrc-dup td{background:color-mix(in srgb,var(--bad,#d33) 10%,transparent)}

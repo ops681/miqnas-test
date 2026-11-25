@@ -57,22 +57,23 @@ const xlToday=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Africa/Cairo'
 const XL_VIEWS={
   people:()=>{ const d=S.cache.people; if(!d) return null; const ST={in:'In',break:'On break',out:'Clocked out',absent:'Not in',leave:'On leave',stale:'Forgot to clock out',noclock:'Does not clock in'};
     return {name:'people-dashboard-'+(d.today||xlToday()),sheets:[
-      {name:'People',rows:[['Name','Job','Department','State','In','Out','Hours today','Leave']].concat((d.people||[]).map(p=>[p.name,p.job,p.deptName,ST[p.state]||p.state,p.inT,p.outT,Number(p.hours)||0,p.leave]))},
+      {name:'People',rows:[['HR code','Name','Job','Department','State','In','Out','Hours today','Leave']].concat((d.people||[]).map(p=>[hrcOf(p.u),p.name,p.job,p.deptName,ST[p.state]||p.state,p.inT,p.outT,Number(p.hours)||0,p.leave]))},
       {name:'Alerts',rows:[['Type','Alert','Detail']].concat((d.alerts||[]).map(a=>[a.tag,a.title,a.detail]))},
-      {name:'On leave today',rows:[['Name','Type','From','To','Days']].concat((d.onLeave||[]).map(r=>[r.name,r.typeLabel,r.from,r.to,r.days]))},
-      {name:'Upcoming leave',rows:[['Name','Type','From','To','Days']].concat((d.upcoming||[]).map(r=>[r.name,r.typeLabel,r.from,r.to,r.days]))}]}; },
+      {name:'On leave today',rows:[['HR code','Name','Type','From','To','Days']].concat((d.onLeave||[]).map(r=>[hrcOf(r.u),r.name,r.typeLabel,r.from,r.to,r.days]))},
+      {name:'Upcoming leave',rows:[['HR code','Name','Type','From','To','Days']].concat((d.upcoming||[]).map(r=>[hrcOf(r.u),r.name,r.typeLabel,r.from,r.to,r.days]))}]}; },
   kpis:()=>{ const B=S.kpiB; if(!B||!B.list) return null; const ax=['delivery','quality','attendance','compliance'].concat((B.cols||[]).map(c=>c.id)), nm=a=>((B.cols||[]).find(c=>c.id===a)||{}).name||a[0].toUpperCase()+a.slice(1);
-    return {name:'scorecards-'+B.month,sheets:[{name:'Scorecards '+B.month,rows:[['Rank','Name','Job','Department','Score'].concat(ax.map(nm),['Load'])].concat(B.list.slice().sort((a,b)=>(b.total==null?-1:b.total)-(a.total==null?-1:a.total)).map((x,i)=>[i+1,x.name,x.job,x.deptName,x.total==null?'':x.total].concat(ax.map(a=>{ const v=(x.axes||{})[a]; return v==null?'':v==='pending'?'waiting':v; }),[x.load?(x.load.max?x.load.projects+'/'+x.load.max:(x.load.projects||'')):''])))}]}; },
+    return {name:'scorecards-'+B.month,sheets:[{name:'Scorecards '+B.month,rows:[['Rank','HR code','Name','Job','Department','Score'].concat(ax.map(nm),['Load'])].concat(B.list.slice().sort((a,b)=>(b.total==null?-1:b.total)-(a.total==null?-1:a.total)).map((x,i)=>[i+1,hrcOf(x.u),x.name,x.job,x.deptName,x.total==null?'':x.total].concat(ax.map(a=>{ const v=(x.axes||{})[a]; return v==null?'':v==='pending'?'waiting':v; }),[x.load?(x.load.max?x.load.projects+'/'+x.load.max:(x.load.projects||'')):''])))}]}; },
   monthly:()=>{ if(typeof monthlyData==='undefined'||!monthlyData) return null; const L=typeof mrRows==='function'?mrRows(monthlyData):monthlyData.rows;
-    return {name:'monthly-report-'+monthlyData.month,sheets:[{name:'Monthly '+monthlyData.month,rows:[['Name','Department','Job','Days present','Total hours','Avg per day','Leave days','Permission hours','Overtime hours','Missed clock-outs','Sharing stops','Screenshots','Active projects']].concat(L.map(x=>[x.name,x.deptName||'',x.job,x.days,x.hours,x.avg,x.leaveDays||0,x.permHours||0,x.otHours||0,x.missed,x.stops,x.shots,x.projects!=null?x.projects:'']))}]}; },
+    return {name:'monthly-report-'+monthlyData.month,sheets:[{name:'Monthly '+monthlyData.month,rows:[['HR code','Name','Department','Job','Days present','Total hours','Avg per day','Leave days','Permission hours','Overtime hours','Missed clock-outs','Sharing stops','Screenshots','Active projects']].concat(L.map(x=>[hrcOf(x.username||x.u),x.name,x.deptName||'',x.job,x.days,x.hours,x.avg,x.leaveDays||0,x.permHours||0,x.otHours||0,x.missed,x.stops,x.shots,x.projects!=null?x.projects:'']))}]}; },
   users:()=>{ const U=S.cache.users; if(!U) return null; const T={full:'Full-time',part:'Part-time'};
-    return {name:'employees-'+xlToday(),sheets:[{name:'Employees',rows:[['Name','Username','Job','Department','Role','Seats','Clocks in','Type','Work mode','Team leader','Shift (h)','Last login','Status']].concat(U.map(u=>[u.name,u.username,u.job,u.dept,u.roleName,(u.seats||[]).join(', '),u.clocks?'Yes':'No',T[u.empType]||u.empType,u.workMode,u.teamLeader,u.shift,u.lastLogin?String(u.lastLogin):'',u.active?'Active':'Archived']))}]}; },
+    return {name:'employees-'+xlToday(),sheets:[{name:'Employees',rows:[['HR code','Name','Username','Job','Department','Role','Seats','Clocks in','Type','Work mode','Team leader','Shift (h)','Last login','Status']].concat(U.map(u=>[u.hrCode||'',u.name,u.username,u.job,u.dept,u.roleName,(u.seats||[]).join(', '),u.clocks?'Yes':'No',T[u.empType]||u.empType,u.workMode,u.teamLeader,u.shift,u.lastLogin?String(u.lastLogin):'',u.active?'Active':'Archived']))}]}; },
   leaves:()=>typeof lvXl==='function'?lvXl():null,
   agents:()=>typeof agXl==='function'?agXl():null
 };
 const XL_HR=['people','teamact','today','monthly','screen','kpis','users','devices','locations','leaves','agents'];
-function xlExportView(){
+async function xlExportView(){
   const v=S.view, f=XL_VIEWS[v];
+  try{ await hrcLoad(); }catch(e){}
   let x=null; try{ x=f?f():null; }catch(e){ x=null; }
   if(!x){
     const T=[...$('main').querySelectorAll('table')].filter(t=>t.offsetParent!==null||t.closest('.tbl-wrap'));
