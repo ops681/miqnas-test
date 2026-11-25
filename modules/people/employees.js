@@ -3,13 +3,13 @@
 const hasP=(u,p)=>(u.perms||[]).indexOf(p)>=0;
 function loadOrg(){ return S.cache.org ? Promise.resolve(S.cache.org) : call('orgGet').then(o=>{ S.cache.org=o; return o; }); }
 function viewUsers(){
-  setTop('Employees','Add, edit or archive employees', `<button class="btn primary" onclick="editUser()">+ New Employee</button>`);
+  setTop('Employees','Add, edit or archive employees', `<button class="btn" onclick="hrcImport()" title="Upload the HR sheet of employee codes">⬆ Import HR codes</button> <button class="btn primary" onclick="editUser()">+ New Employee</button>`);
   swr('users','users',{},renderUsers);
 }
 function renderUsers(U,keep){
   const act=U.filter(u=>u.active), arch=U.filter(u=>!u.active);
   const row=u=>{ const lock=u.canManage===false; const me=u.username===S.user.username;
-    return `<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="av" data-u="${esc(u.username)}">${esc(initials(u.name))}</div><div><b>${esc(u.name)}</b><div class="sub2">${esc(u.username)}</div></div></div></td>
+    return `<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="av" data-u="${esc(u.username)}">${esc(initials(u.name))}</div><div><b>${esc(u.name)}</b><div class="sub2">${esc(u.username)}${u.hrCode?` · <span class="hrc-tag" title="HR code">${esc(u.hrCode)}</span>`:''}</div></div></div></td>
     <td>${esc(u.roleName||u.role)}${u.founder?' <span class="pill p-yel" style="font-size:10.5px">Founder</span>':u.clevel?' <span class="pill p-prog" style="font-size:10.5px">C-level</span>':''}</td><td class="muted">${esc(u.job)}<div class="sub2">${esc([u.empType==='part'?'Part-time':'Full-time',({remote:'Remote',onsite:'Onsite',hybrid:'Hybrid'})[u.workMode]||'',(u.lines||[]).join(' + ')].filter(Boolean).join(' · '))}</div></td><td>${u.founder?'<span class="muted" style="font-size:12px">Founder</span>':u.clocks?'✓':'—'}</td>
     <td>${!hasP(u,'briefs.access_all')?(u.seeAccess?'✓':'—'):'<span class="muted" style="font-size:12px">Always</span>'}</td>
     <td class="muted" style="font-size:13px">${esc(u.lastLogin)||'—'}</td>
@@ -35,6 +35,7 @@ async function editUser(un){
   $('modalRoot').innerHTML=`<div class="modal"><div class="card">
     <h2>${un?'Edit Employee':'New Employee'}</h2>
     <label for="fN">Name</label><input id="fN" value="${esc(u.name)}">
+    <label for="fH">HR code <span class="muted" style="font-weight:400;font-size:12px">· the employee's code at HR, e.g. EMP-004 (shows in every Excel export)</span></label><input id="fH" value="${esc(u.hrCode||'')}" placeholder="EMP-000" maxlength="30" autocapitalize="characters" spellcheck="false">
     <label for="fU">Username</label><input id="fU" value="${esc(u.username)}" ${un?'disabled':''} placeholder="e.g. ahmed.ali" autocapitalize="none" spellcheck="false">
     ${un?'':`<label for="fP">Password</label><input id="fP" placeholder="6 characters or more" autocomplete="off" spellcheck="false">`}
     <label for="fR">Role</label><select id="fR">${roles.map(r=>`<option value="${r[0]}" ${u.role===r[0]?'selected':''}>${r[1]}</option>`).join('')}</select>
@@ -55,12 +56,13 @@ async function editUser(un){
   if(typeof pickify==='function') pickify($('fL'), tlList.map(x=>({u:x.username,name:x.name,job:x.job,dept:x.dept||''})));
   $('fS').onclick=async()=>{
     $('fE').textContent=''; $('fS').disabled=true;
-    const data={username:$('fU').value.trim().toLowerCase(),name:$('fN').value,role:$('fR').value,job:$('fJ').value,clocks:$('fC').checked,seeAccess:$('fX').checked,
+    const data={username:$('fU').value.trim().toLowerCase(),name:$('fN').value,role:$('fR').value,job:$('fJ').value,clocks:$('fC').checked,seeAccess:$('fX').checked,hrCode:$('fH').value.trim(),
       profile:{teamLeader:$('fL').value,lines:[...document.querySelectorAll('.fLn:checked')].map(x=>x.value),empType:$('fT').value,workMode:$('fW').value}};
     if(!data.profile.lines.length){ $('fE').textContent='اختار Line واحد على الأقل'; $('fS').disabled=false; return; }
     if(!un) data.password=$('fP').value;
     try{
       await call('saveUser',{isNew:!un,user:data});
+      if(typeof hrcForget==='function') hrcForget();
       if(!un){ showCreds(data.name,data.username,data.password); } else { closeModal(); toast('اتحفظ ✓'); }
       refreshUsers();
     }catch(e){ $('fE').textContent=e.message; $('fS').disabled=false; }

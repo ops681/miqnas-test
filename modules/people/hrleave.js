@@ -84,11 +84,11 @@ async function lvDecide(id,decision){
 }
 function lvXl(){
   const d=S.lvData; if(!d) return null;
-  const row=r=>{ const ok=r.approvals.filter(a=>a.decision==='approved'); return [r.name,r.job,r.kind==='leave'?r.typeLabel:'Permission',r.from,r.to,r.kind==='leave'?r.days:'',r.kind==='permission'?(r.timeFrom+'–'+r.timeTo):'',r.kind==='permission'?r.hours:'',r.reason,(RQ_STATUS[r.status]||[r.status])[0],r.flow.join(' → '),r.status==='pending'?r.step:'',agTime(r.createdAt)].concat(r.flow.map((st,i)=>ok[i]?ok[i].by+' · '+agTime(ok[i].at):'')); };
+  const row=r=>{ const ok=r.approvals.filter(a=>a.decision==='approved'); return [hrcOf(r.u),r.name,r.job,r.kind==='leave'?r.typeLabel:'Permission',r.from,r.to,r.kind==='leave'?r.days:'',r.kind==='permission'?(r.timeFrom+'–'+r.timeTo):'',r.kind==='permission'?r.hours:'',r.reason,(RQ_STATUS[r.status]||[r.status])[0],r.flow.join(' → '),r.status==='pending'?r.step:'',agTime(r.createdAt)].concat(r.flow.map((st,i)=>ok[i]?ok[i].by+' · '+agTime(ok[i].at):'')); };
   const maxF=Math.max(1,...d.list.concat(d.pending).map(r=>r.flow.length));
-  const head=['Employee','Job','Type','From','To','Days','Time','Hours','Reason','Status','Approval chain','Waiting for','Requested'].concat(Array.from({length:maxF},(_,i)=>'Step '+(i+1)));
-  const log=[['Request','Employee','When','Who','Step','Decision','Note']];
-  d.list.forEach(r=>{ log.push([r.id,r.name,agTime(r.createdAt),r.name,'','created','']); r.approvals.forEach(a=>log.push([r.id,r.name,agTime(a.at),a.by,a.step,a.decision,a.note||''])); });
+  const head=['HR code','Employee','Job','Type','From','To','Days','Time','Hours','Reason','Status','Approval chain','Waiting for','Requested'].concat(Array.from({length:maxF},(_,i)=>'Step '+(i+1)));
+  const log=[['Request','HR code','Employee','When','Who','Step','Decision','Note']];
+  d.list.forEach(r=>{ log.push([r.id,hrcOf(r.u),r.name,agTime(r.createdAt),r.name,'','created','']); r.approvals.forEach(a=>log.push([r.id,hrcOf(r.u),r.name,agTime(a.at),a.by,a.step,a.decision,a.note||''])); });
   return {name:'leaves-permissions-'+d.month,sheets:[{name:'Requests '+d.month,rows:[head].concat(d.list.map(row))},{name:'Waiting now',rows:[head].concat(d.pending.map(row))},{name:'History',rows:log}]};
 }
 
@@ -118,8 +118,8 @@ function renderAgents(){
 }
 function agXl(){
   const d=S.agData; if(!d) return null; const pay=d.canPay;
-  const head=['Employee','Job','Department','Leave days','Leaves','Permissions','Permission hours','Overtime hours','Balance left','Annual balance','Days worked','Hours','Missed clock-outs','Closed at shift end','Score','Rank'].concat(pay?['Base salary','Bonus','Deductions','Net salary','Currency']:[]);
-  return {name:'agent-profiles-'+d.month,sheets:[{name:'Agents '+d.month,rows:[head].concat(d.list.map(x=>[x.name,x.job,x.dept,x.leaveDays,x.leaveCount,x.permCount,x.permHours,x.otHours,x.balLeft,x.balTotal,x.days,x.hours,x.missed,x.shiftOut||0,x.score==null?'':x.score,x.rank||''].concat(pay?[x.pay.base==null?'':x.pay.base,x.pay.bonus,x.pay.deductions,x.pay.net==null?'':x.pay.net,x.pay.currency]:[])))}]};
+  const head=['HR code','Employee','Job','Department','Leave days','Leaves','Permissions','Permission hours','Overtime hours','Balance left','Annual balance','Days worked','Hours','Missed clock-outs','Closed at shift end','Score','Rank'].concat(pay?['Base salary','Bonus','Deductions','Net salary','Currency']:[]);
+  return {name:'agent-profiles-'+d.month,sheets:[{name:'Agents '+d.month,rows:[head].concat(d.list.map(x=>[x.code||'',x.name,x.job,x.dept,x.leaveDays,x.leaveCount,x.permCount,x.permHours,x.otHours,x.balLeft,x.balTotal,x.days,x.hours,x.missed,x.shiftOut||0,x.score==null?'':x.score,x.rank||''].concat(pay?[x.pay.base==null?'':x.pay.base,x.pay.bonus,x.pay.deductions,x.pay.net==null?'':x.pay.net,x.pay.currency]:[])))}]};
 }
 
 /* ----- البروفايل نفسه ----- */
@@ -127,7 +127,7 @@ function agProfileHTML(r,drawer){
   const U=r.user, s=r.stats, P=r.pay, K=r.kpi;
   const col=x=>x==null?'var(--muted)':x>=80?'var(--ok)':x>=65?'var(--warn)':'var(--bad)';
   const head=`<div class="ag-head"><div class="lv-who"><div class="av ag-av" data-u="${esc(U.u)}">${esc(initials(U.name))}</div><div class="lv-tx"><h2 style="margin:0">${bd(U.name)}</h2><span class="muted">${esc(U.job||'')} · ${esc(U.dept)}</span>
-      <div class="ag-chips"><span>${esc(AG_TYPE[U.empType]||U.empType)}</span><span>${esc(AG_MODE[U.workMode]||U.workMode)}</span><span>Shift ${U.shift} h</span>${U.teamLeader?`<span>Team Leader: ${bd(U.teamLeader)}</span>`:''}</div></div></div>
+      <div class="ag-chips">${hrcChip(U.u,U.code,r.canEditCode)}<span>${esc(AG_TYPE[U.empType]||U.empType)}</span><span>${esc(AG_MODE[U.workMode]||U.workMode)}</span><span>Shift ${U.shift} h</span>${U.teamLeader?`<span>Team Leader: ${bd(U.teamLeader)}</span>`:''}</div></div></div>
     <div class="ag-tools">${agMonthSel('agpMonth',r.months,r.month)}<button class="btn small" onclick="agpXl()">⬇ Export Excel</button>${drawer?'<button class="iconbtn" onclick="closeModal()" aria-label="Close">✕</button>':''}</div></div>`;
   const tiles=`<div class="grid kpis" style="margin:0">
       <div class="kpi"><span>Leave days</span><b>${s.leaveDays}</b><small>${s.leaveCount} approved this month</small></div>
@@ -176,7 +176,7 @@ function viewAgent(opts){
 }
 function agpXl(){
   const r=S.agP; if(!r) return; const s=r.stats, P=r.pay;
-  const sheets=[{name:'Profile',rows:[['Field','Value'],['Name',r.user.name],['Job',r.user.job],['Department',r.user.dept],['Month',r.month],['Leave days',s.leaveDays],['Permissions',s.permCount],['Permission hours',s.permHours],['Overtime hours',s.otHours],['Annual balance left',s.balLeft],['Annual balance',s.balTotal],['Days worked',s.days],['Hours',s.hours],['Missed clock-outs',s.missed],['Closed at shift end',s.shiftOut||0],['Score',s.score==null?'':s.score],['Rank',s.rank?s.rank+' of '+s.of:'']]
+  const sheets=[{name:'Profile',rows:[['Field','Value'],['HR code',r.user.code||''],['Name',r.user.name],['Job',r.user.job],['Department',r.user.dept],['Month',r.month],['Leave days',s.leaveDays],['Permissions',s.permCount],['Permission hours',s.permHours],['Overtime hours',s.otHours],['Annual balance left',s.balLeft],['Annual balance',s.balTotal],['Days worked',s.days],['Hours',s.hours],['Missed clock-outs',s.missed],['Closed at shift end',s.shiftOut||0],['Score',s.score==null?'':s.score],['Rank',s.rank?s.rank+' of '+s.of:'']]
     .concat(P?[['Base salary',P.base==null?'':P.base],['Bonus',P.bonus],['Deductions',P.deductions],['Net salary',P.net==null?'':P.net],['Currency',P.currency]]:[])},
     {name:'Requests',rows:[['Type','From','To','Days','Hours','Status','Approvals']].concat(r.requests.map(q=>[q.kind==='leave'?q.typeLabel:q.kind,q.from,q.to,q.days,q.hours,q.status,q.approvals.map(a=>a.step+': '+a.by+' '+a.decision+' '+agTime(a.at)).join(' · ')]))}];
   if(P) sheets.push({name:'Salary lines',rows:[['Type','Amount','Reason','By','When','Status','Cancel note']].concat(P.items.map(x=>[x.kind,x.amount,x.reason,x.by,agTime(x.at),x.status,x.voidNote||'']))});
