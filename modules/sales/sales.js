@@ -28,6 +28,7 @@ function viewSxHome(){
   swr('sxh','salesHome',{},sxHomeRender);
 }
 function sxHomeRender(H){
+  if(H.scr) return sxScrHome(H);
   const P=H.per[S.sx.per]||H.per.today, T=H.target, M=H.per.month, F=sxF()||{};
   const per=[['today','Today'],['week','This week'],['month','This month'],['quarter','This quarter']];
   const revPct=T.rev?Math.round(M.revenue/T.rev*100):null, qPct=T.qual?Math.round(M.qualified/T.qual*100):null;
@@ -60,6 +61,41 @@ function sxHomeRender(H){
     </div>
     <div class="card flush"><div class="chead"><h2>Upcoming meetings</h2><button class="btn small ghost" onclick="go('slm')">All</button></div>
       ${H.upcoming.length?H.upcoming.map(sxMtRow).join(''):`<div class="empty"><b>No meetings coming up</b>Book one from your queue.</div>`}</div>
+  </div>`;
+}
+
+/* ----- Sales Home بتاعة الـ Data Scraper: الداتا اللي رفعها ونتيجتها ----- */
+function sxScrHome(H){
+  const X=H.scr, P=X.per[S.sx.per]||X.per.today, M=X.per.month, T=H.target;
+  const per=[['today','Today'],['week','This week'],['month','This month'],['quarter','This quarter']];
+  const pct=T.data?Math.round(M.approved/T.data*100):null;
+  const hello=pct!=null?`You're at <b>${pct}%</b> of your approved-data target this month.`:`${sxN(M.approved)} of your leads were approved this month.`;
+  const gaps=[];
+  if(T.data&&M.approved<T.data) gaps.push(`<div class="sx-gap"><b>${sxN(T.data-M.approved)}</b><span>approved leads left to hit your monthly target</span></div>`);
+  if(X.stock.days!=null&&X.stock.days<5) gaps.push(`<div class="sx-gap"><b>${X.stock.days} ${X.stock.days===1?"day":"days"}</b><span>of data left for the team (${sxN(X.stock.pool)} leads, they use ${sxN(X.stock.daily)} a day)</span></div>`);
+  if(X.returned) gaps.push(`<div class="sx-gap"><b>${X.returned}</b><span>${X.returned===1?'batch was':'batches were'} returned to you for fixing</span></div>`);
+  $('main').innerHTML=`
+  <div class="sx-hello"><div><h2>Hi ${esc((H.name||'').split(' ')[0])} 👋</h2><p>${hello}</p></div>
+    <div class="sx-hello-a"><button class="btn primary" onclick="S.sx.dataTab='upload';go('sld')">⬆ Upload data</button><button class="btn" onclick="S.sx.dataTab='batches';go('sld')">My batches${X.waiting?` <em class="muted" style="font-style:normal;color:inherit;opacity:.8">· ${X.waiting} in review</em>`:''}</button></div></div>
+  ${gaps.length?`<div class="sx-gaps">${gaps.join('')}</div>`:''}
+  <div class="chips" style="margin:6px 0 14px">${per.map(x=>`<button class="${S.sx.per===x[0]?'on':''}" onclick="S.sx.per='${x[0]}';sxHomeRender(S.cache.sxh)">${x[1]}</button>`).join('')}</div>
+  <div class="grid kpis">
+    ${sxK('Uploaded',sxN(P.uploaded),P.batches+' batches')}
+    ${sxK('Approved',sxN(P.approved),P.rejected?P.rejected+' rejected':'','var(--ok)')}
+    ${sxK('Flagged by checks',P.flagRate+'%','duplicates, wrong numbers, missing',P.flagRate>20?'var(--bad)':'')}
+    ${sxK('Valid contacts',P.validRate+'%','not marked bad data by the team')}
+    ${sxK('Calls on your data',sxN(P.worked),'')}
+    ${sxK('Meetings from your data',sxN(P.meetings),P.qualified+' qualified')}
+    ${sxK('Deals from your data',sxN(P.deals),'shared result with sales')}
+    ${sxK('Revenue from your data',sxMoney(P.revenue,H.currency),'shared result with sales','var(--brand2)')}
+  </div>
+  <div class="sx-2col">
+    <div class="card"><h3 style="margin:0 0 12px">Targets</h3>
+      ${sxBar(M.approved,T.data,'Approved leads this month')}
+      ${!T.data?'<div class="muted">No target yet. The Sales Manager sets it in Sales Settings.</div>':''}
+      <div class="muted" style="margin-top:10px;font-size:12.5px">Data stock for the team: <b>${sxN(X.stock.pool)}</b> leads${X.stock.days!=null?' · about <b>'+X.stock.days+'</b> days':''}</div></div>
+    <div class="card flush"><div class="chead"><h2>My data tasks</h2><button class="btn small ghost" onclick="S.sx.dataTab='tasks';go('sld')">All</button></div>
+      ${X.tasks.length?X.tasks.map(t=>`<div class="al" style="cursor:default"><span class="tx"><b dir="auto">${bd(t.title)}</b><span>${t.qty?t.got+' / '+t.qty+' approved · ':''}${esc([t.sector,t.platform,t.city].filter(Boolean).join(' · '))}${t.due?' · due '+fmtD(t.due):''} · from ${esc(t.byName)}</span>${t.qty?`<div class="sx-track" style="margin-top:6px;max-width:320px"><i style="width:${Math.min(100,Math.round(t.got/t.qty*100))}%"></i></div>`:''}</span></div>`).join(''):`<div class="empty"><b>No open data tasks</b>Tasks from the Sales Manager show up here.</div>`}</div>
   </div>`;
 }
 
@@ -588,7 +624,7 @@ function sxSetRender(R){
   const ta=(k,l)=>`<div><label for="ls_${k}">${l} <span class="muted" style="font-weight:400;font-size:12px">· one per line</span></label><textarea id="ls_${k}" rows="6" dir="auto"${dis}>${esc((C[k]||[]).join('\n'))}</textarea></div>`;
   $('main').innerHTML=`
   <div class="card"><h3 style="margin-top:0">Team & targets</h3><p class="muted" style="margin-top:0">Everyone here can open the Sales pages. Daily company leads = X (from the company), self = Y (they find), follow-ups counted on their own. Calls per day can be anything you set.</p>
-    <div class="tbl-wrap"><table id="sxTeam" style="min-width:1250px"><tr><th>Person</th><th>Role</th><th>On</th><th>Calls / day</th><th>Company leads / day</th><th>Self leads / day</th><th>Follow-ups / day</th><th>Meetings / week</th><th>Qualified / month</th><th>Deals / month</th><th>Revenue / month</th><th>Only sectors</th><th>Only platforms</th><th></th></tr>
+    <div class="tbl-wrap"><table id="sxTeam" style="min-width:1380px"><tr><th>Person</th><th>Role</th><th>On</th><th>Approved data / month</th><th>Calls / day</th><th>Company leads / day</th><th>Self leads / day</th><th>Follow-ups / day</th><th>Meetings / week</th><th>Qualified / month</th><th>Deals / month</th><th>Revenue / month</th><th>Only sectors</th><th>Only platforms</th><th></th></tr>
     ${C.team.map((t,i)=>sxTeamRow(t,i,R,dis)).join('')}</table></div>
     ${ed?`<button class="btn small" style="margin-top:8px" onclick="sxTeamAdd()">+ Add person</button>`:''}</div>
   <div class="card"><h3 style="margin-top:0">Queue rules</h3><div class="row">
@@ -608,7 +644,7 @@ function sxTeamRow(t,i,R,dis){
   R=R||S.cache.sxs; dis=dis||'';
   const n=(k)=>`<td><input type="number" min="0" class="tm_${k}" value="${Number(t[k])||0}" style="width:84px"${dis}></td>`;
   return `<tr class="sxTm"><td><select class="tm_u" style="min-width:170px"${dis}>${sxOpts(R.people,t.u,'Pick')}</select></td><td><select class="tm_kind" style="min-width:150px"${dis}>${Object.keys(R.kinds).map(k=>`<option value="${k}"${t.kind===k?' selected':''}>${esc(R.kinds[k])}</option>`).join('')}</select></td><td><input type="checkbox" class="tm_on"${t.on!==false?' checked':''}${dis}></td>
-    ${['calls','co','self','fu','mtg','qual','deals','rev'].map(n).join('')}<td><input class="tm_sectors" value="${esc((t.sectors||[]).join(', '))}" placeholder="all" style="width:130px"${dis}></td><td><input class="tm_platforms" value="${esc((t.platforms||[]).join(', '))}" placeholder="all" style="width:110px"${dis}></td>
+    ${['data','calls','co','self','fu','mtg','qual','deals','rev'].map(n).join('')}<td><input class="tm_sectors" value="${esc((t.sectors||[]).join(', '))}" placeholder="all" style="width:130px"${dis}></td><td><input class="tm_platforms" value="${esc((t.platforms||[]).join(', '))}" placeholder="all" style="width:110px"${dis}></td>
     <td>${dis?'':`<button class="btn small ghost" onclick="this.closest('tr').remove()" aria-label="Remove">✕</button>`}</td></tr>`;
 }
 function sxTeamAdd(){ $('sxTeam').insertAdjacentHTML('beforeend',sxTeamRow({u:'',kind:'tele',on:true},0)); }
@@ -625,7 +661,7 @@ function sxStgDel(i){ const L=sxStgRead(); L.splice(i,1); $('sxStg').innerHTML=s
 function sxStgAdd(){ const L=sxStgRead(); L.splice(Math.max(0,L.length-1),0,{n:'New stage',p:50,g:[]}); $('sxStg').innerHTML=sxStgHtml(L); }
 async function sxSetSave(){
   const v=id=>$(id).value, lines=k=>$('ls_'+k).value.split('\n').map(x=>x.trim()).filter(Boolean), csv=s=>String(s||'').split(',').map(x=>x.trim()).filter(Boolean);
-  const team=[...document.querySelectorAll('.sxTm')].map(tr=>{ const q=c=>tr.querySelector('.tm_'+c); const o={u:q('u').value,kind:q('kind').value,on:q('on').checked,sectors:csv(q('sectors').value),platforms:csv(q('platforms').value)}; ['calls','co','self','fu','mtg','qual','deals','rev'].forEach(k=>{ o[k]=Number(q(k).value)||0; }); return o; }).filter(t=>t.u);
+  const team=[...document.querySelectorAll('.sxTm')].map(tr=>{ const q=c=>tr.querySelector('.tm_'+c); const o={u:q('u').value,kind:q('kind').value,on:q('on').checked,sectors:csv(q('sectors').value),platforms:csv(q('platforms').value)}; ['data','calls','co','self','fu','mtg','qual','deals','rev'].forEach(k=>{ o[k]=Number(q(k).value)||0; }); return o; }).filter(t=>t.u);
   const results=[...document.querySelectorAll('#sxRes tr[data-k]')].map(tr=>({k:tr.dataset.k,l:tr.querySelector('.rsL').value.trim(),act:tr.querySelector('.rsA').value,on:tr.querySelector('.rsO').checked,f:[...tr.querySelectorAll('.rsF:checked')].map(x=>x.value)}));
   const cfg={team,results,stages:sxStgRead(),retry_h:v('cfR'),max_tries:v('cfM'),cool_days:v('cfCo'),own_days:v('cfO'),skip_max:v('cfSk'),meet_min:v('cfMm'),currency:v('cfCur'),auto_dist:$('cfAD').checked};
   ['sectors','platforms','cities','services','sources','skip_reasons','lost_reasons','reject_reasons','qual_criteria'].forEach(k=>{ cfg[k]=lines(k); });
