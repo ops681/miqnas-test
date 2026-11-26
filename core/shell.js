@@ -59,7 +59,13 @@ function navFor(u){
   if(can('executive.view')) add('exec','Executive','crown','Leadership');
   if(canAny(['commercial.metrics.manage','executive.view'])) add('pulse','Commercial Pulse','trend','Leadership');
   if(can('crm.view')) add('crm','Clients CRM','crm','Leadership');
-  if(canAny(['executive.view','commercial.metrics.manage'])) add('sales','Sales CRM','chart','Business Lines');
+  const SXF=srvFlag('sales');
+  if(SXF){ add('slh','Sales Home','chart','Sales');
+    if(SXF.work&&SXF.kind!=='scraper') { add('slq','My Queue','tasks','Sales'); add('slp','My Pipeline','trend','Sales'); }
+    add('slm','Sales Meetings','meet','Sales');
+    if(SXF.data||SXF.view) add('sld','Data Center','folder','Sales');
+    if(SXF.view) add('slc','Command Center','dash','Sales');
+    if(SXF.mgr||SXF.view) add('sls','Sales Settings','gear','Sales'); }
   if(canAny(['executive.view','system.admin'])) add('line2','Line 2','trend','Business Lines');
   if(canAny(['attendance.view_all','leave.approve_hr'])) add('people','People Dashboard','dash','People');
   if(srvFlag('hrView')){ add('leaves','Leaves & Permissions','cal','People'); add('agents','Agent Profiles','users','People'); }
@@ -83,7 +89,8 @@ const NAV_G=[
   // الشركاء: صفحة الشركاء + صفحة لكل شريك (Zid Stores، وأي شريك جديد يتضاف هنا)
   ['partners','Partners','link',['partners','zstores']],
   ['lead','Leadership','crown',['board','exec','pulse','crm']],
-  ['lines','Business Lines','trend',['sales','line2']],
+  ['sales','Sales','chart',['slh','slq','slp','slm','sld','slc','sls']],
+  ['lines','Business Lines','trend',['line2']],
   ['hr','HR','users',['people','leaves','agents','teamact','today','monthly','screen','kpis','users','devices','locations']],
   ['sys','System','gear',['org','settings','health']]];
 function navOpen(){ try{ return JSON.parse(load('erp_navg')||'{}')||{}; }catch(e){ return {}; } }
@@ -175,7 +182,7 @@ function go(v,opts){
   window.scrollTo(0,0);
   if(gated() && FREE_VIEWS.indexOf(v)<0){ S.lockShown=true; viewLocked(v); return; }
   S.lockShown=false;
-  const map={teamact:viewTeamAct,dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,clientrep:()=>viewClientRep(opts),partners:viewPartners,zstores:()=>viewZStores(opts),knowledge:()=>viewKnowledge(opts),finance:()=>viewFinance(opts),board:()=>viewBoard(opts),people:viewPeople,kpis:viewKpis,leaves:()=>viewLeaves(opts),agents:()=>viewAgents(opts),agent:()=>viewAgent(opts),sales:()=>viewSoon('sales'),line2:()=>viewSoon('line2')};
+  const map={teamact:viewTeamAct,dash:viewDash,clock:viewClock,mytasks:viewMyTasks,projects:viewProjects,briefs:()=>viewBriefs(opts),today:viewToday,monthly:viewMonthly,screen:viewScreen,users:viewUsers,settings:viewSettings,blockers:viewBlockers,org:viewOrg,devices:viewDevices,health:viewHealth,desk:viewDesk,locations:viewLocations,tasks:()=>viewTasks(opts),requests:()=>viewRequests(opts),meetings:()=>viewMeetings(opts),exec:viewExec,pulse:viewPulse,crm:viewCrm,clientrep:()=>viewClientRep(opts),partners:viewPartners,zstores:()=>viewZStores(opts),knowledge:()=>viewKnowledge(opts),finance:()=>viewFinance(opts),board:()=>viewBoard(opts),people:viewPeople,kpis:viewKpis,leaves:()=>viewLeaves(opts),agents:()=>viewAgents(opts),agent:()=>viewAgent(opts),sales:viewSxHome,slh:viewSxHome,slq:viewSxQueue,slp:viewSxPipe,slm:()=>viewSxMeet(opts),sld:viewSxData,slc:viewSxCmd,sls:viewSxSet,line2:()=>viewSoon('line2')};
   (map[v]||viewDash)();
 }
 function viewLocked(v){
@@ -299,7 +306,7 @@ function goAlert(i){
 }
 function goTo(g){
   if(!g) return;
-  if((g.view==='tasks'||g.view==='meetings') && g.id){ go(g.view,{id:g.id}); return; }
+  if((g.view==='tasks'||g.view==='meetings'||g.view==='slm') && g.id){ go(g.view,{id:g.id}); return; }
   if(g.view==='requests'){ go('requests',{tab:g.tab}); return; }
   if(g.view==='clientrep'){ go('clientrep',{month:g.month}); return; }
   if(g.view==='knowledge'){ go('knowledge',{tab:g.tab,id:g.id}); return; }
