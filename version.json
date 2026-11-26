@@ -1,8 +1,9 @@
 {
- "v": "2026-11-25.1",
+ "v": "2026-11-26.1",
  "css": [
   "core/styles.css",
   "modules/briefs/briefs.css",
+  "modules/sales/sales.css",
   "core/dark.css",
   "core/look.css"
  ],
@@ -56,6 +57,7 @@
   "modules/kpi/kpi.js",
   "modules/people/hrleave.js",
   "modules/people/hrcodes.js",
+  "modules/sales/sales.js",
   "core/start.js"
  ]
 }
