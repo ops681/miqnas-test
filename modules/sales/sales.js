@@ -622,23 +622,41 @@ function sxSetRender(R){
   S.sx.set=JSON.parse(JSON.stringify(C));
   const num=(id,l,v,h)=>`<div><label for="${id}">${l}${h?` <span class="muted" style="font-weight:400;font-size:12px">· ${h}</span>`:''}</label><input id="${id}" type="number" min="0" value="${v}"${dis}></div>`;
   const ta=(k,l)=>`<div><label for="ls_${k}">${l} <span class="muted" style="font-weight:400;font-size:12px">· one per line</span></label><textarea id="ls_${k}" rows="6" dir="auto"${dis}>${esc((C[k]||[]).join('\n'))}</textarea></div>`;
-  $('main').innerHTML=`
-  <div class="card"><h3 style="margin-top:0">Team & targets</h3><p class="muted" style="margin-top:0">Everyone here can open the Sales pages. Daily company leads = X (from the company), self = Y (they find), follow-ups counted on their own. Calls per day can be anything you set.</p>
-    <div class="tbl-wrap"><table id="sxTeam" style="min-width:1380px"><tr><th>Person</th><th>Role</th><th>On</th><th>Approved data / month</th><th>Calls / day</th><th>Company leads / day</th><th>Self leads / day</th><th>Follow-ups / day</th><th>Meetings / week</th><th>Qualified / month</th><th>Deals / month</th><th>Revenue / month</th><th>Only sectors</th><th>Only platforms</th><th></th></tr>
+  const on=sxSecNow();
+  const card=(k,t,body,hint)=>`<div class="card sx-sc${sxColGet()[k]?' sx-shut':''}" data-s="${k==="mlists"||k==="reasons"?"lists":k}" data-c="${k}"><button type="button" class="sx-ch" onclick="sxColTg('${k}')" aria-expanded="${sxColGet()[k]?'false':'true'}"><h3>${t}</h3><span class="sx-chv" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></span></button><div class="sx-cb">${hint?`<p class="muted" style="margin-top:0">${hint}</p>`:''}${body}</div></div>`;
+  $('main').innerHTML=`<div class="set-wrap"><nav class="set-nav" aria-label="Sales settings sections">${SX_SECS.map(x=>`<button type="button" data-k="${x[0]}" class="${x[0]===on?'on':''}" onclick="sxSecGo('${x[0]}')"><span>${x[2]}</span>${esc(x[1])}</button>`).join('')}</nav>
+  <div id="sxSetBody" data-on="${on}">
+  ${card('team','Team & targets',`<div class="tbl-wrap"><table id="sxTeam" style="min-width:1380px"><tr><th>Person</th><th>Role</th><th>On</th><th>Approved data / month</th><th>Calls / day</th><th>Company leads / day</th><th>Self leads / day</th><th>Follow-ups / day</th><th>Meetings / week</th><th>Qualified / month</th><th>Deals / month</th><th>Revenue / month</th><th>Only sectors</th><th>Only platforms</th><th></th></tr>
     ${C.team.map((t,i)=>sxTeamRow(t,i,R,dis)).join('')}</table></div>
-    ${ed?`<button class="btn small" style="margin-top:8px" onclick="sxTeamAdd()">+ Add person</button>`:''}</div>
-  <div class="card"><h3 style="margin-top:0">Queue rules</h3><div class="row">
+    ${ed?`<button class="btn small" style="margin-top:8px" onclick="sxTeamAdd()">+ Add person</button>`:''}`,'Everyone here can open the Sales pages. Daily company leads = X (from the company), self = Y (they find), follow-ups counted on their own. Calls per day can be anything you set.')}
+  ${card('queue','Queue rules',`<div class="row">
     ${num('cfR','Retry after (hours)',C.retry_h,'no answer / busy')}${num('cfM','Tries before back to pool',C.max_tries)}${num('cfCo','Cool-off (days)',C.cool_days,'before it comes back')}${num('cfO','Neglected after (days)',C.own_days,'no activity')}${num('cfSk','Max skips / day',C.skip_max)}${num('cfMm','Meeting length (min)',C.meet_min)}</div>
-    <div class="row"><div><label for="cfCur">Currency</label><select id="cfCur"${dis}>${sxOpts(['SAR','EGP','USD'],C.currency)}</select></div><div style="flex:3"><label class="check" style="margin-top:28px"><input type="checkbox" id="cfAD"${C.auto_dist?' checked':''}${dis}>Distribute automatically every working day at 8 AM</label></div></div></div>
-  <div class="card"><h3 style="margin-top:0">Call results</h3><p class="muted" style="margin-top:0">The buttons the team sees after each call. What each one does is fixed; the name, fields and on/off are yours.</p>
-    <div class="tbl-wrap"><table id="sxRes" style="min-width:900px"><tr><th>Name</th><th>What it does</th><th>Asks for</th><th>On</th></tr>
+    <div class="row"><div><label for="cfCur">Currency</label><select id="cfCur"${dis}>${sxOpts(['SAR','EGP','USD'],C.currency)}</select></div><div style="flex:3"><label class="check" style="margin-top:28px"><input type="checkbox" id="cfAD"${C.auto_dist?' checked':''}${dis}>Distribute automatically every working day at 8 AM</label></div></div>`)}
+  ${card('res','Call results',`<div class="tbl-wrap"><table id="sxRes" style="min-width:900px"><tr><th>Name</th><th>What it does</th><th>Asks for</th><th>On</th></tr>
     ${C.results.map((r,i)=>`<tr data-k="${esc(r.k)}"><td><input class="rsL" value="${esc(r.l)}"${dis}></td><td><select class="rsA" style="min-width:200px"${dis}>${Object.keys(R.acts).map(a=>`<option value="${a}"${r.act===a?' selected':''}>${esc(R.acts[a])}</option>`).join('')}</select></td>
-      <td>${Object.keys(R.fields).map(f=>`<label class="check" style="display:inline-flex;margin-right:8px"><input type="checkbox" class="rsF" value="${f}"${(r.f||[]).indexOf(f)>=0?' checked':''}${dis}>${esc(R.fields[f])}</label>`).join('')}</td><td><input type="checkbox" class="rsO"${r.on!==false?' checked':''}${dis}></td></tr>`).join('')}</table></div></div>
-  <div class="card"><h3 style="margin-top:0">Pipeline stages & gates</h3><p class="muted" style="margin-top:0">A deal can only move to a stage when everything that stage (and the ones before it) needs is filled in. The last stage must be Closed-Won. Closed-Lost, On Hold and Nurturing are always there.</p>
-    <div id="sxStg">${sxStgHtml(C.stages,R,dis)}</div>${ed?`<button class="btn small" style="margin-top:8px" onclick="sxStgAdd()">+ Add stage</button>`:''}</div>
-  <div class="card"><h3 style="margin-top:0">Lists</h3><div class="sx-lists">
-    ${ta('sectors','Sectors')}${ta('platforms','Platforms')}${ta('cities','Cities')}${ta('services','Services / service lines')}${ta('sources','Income sources')}${ta('skip_reasons','Skip reasons')}${ta('lost_reasons','Lost reasons')}${ta('reject_reasons','Meeting reject reasons')}${ta('qual_criteria','Qualified meeting criteria')}</div></div>
-  ${ed?`<div class="sx-save"><div class="err sx-e" id="cfE"></div><button class="btn primary" id="cfB" onclick="sxSetSave()">Save Sales settings</button></div>`:'<div class="muted">Only the Sales Manager can change these.</div>'}`;
+      <td>${Object.keys(R.fields).map(f=>`<label class="check" style="display:inline-flex;margin-right:8px"><input type="checkbox" class="rsF" value="${f}"${(r.f||[]).indexOf(f)>=0?' checked':''}${dis}>${esc(R.fields[f])}</label>`).join('')}</td><td><input type="checkbox" class="rsO"${r.on!==false?' checked':''}${dis}></td></tr>`).join('')}</table></div>`,'The buttons the team sees after each call. What each one does is fixed; the name, fields and on/off are yours.')}
+  ${card('stg','Pipeline stages & gates',`<div id="sxStg">${sxStgHtml(C.stages,R,dis)}</div>${ed?`<button class="btn small" style="margin-top:8px" onclick="sxStgAdd()">+ Add stage</button>`:''}`,'A deal can only move to a stage when everything that stage (and the ones before it) needs is filled in. The last stage must be Closed-Won. Closed-Lost, On Hold and Nurturing are always there.')}
+  ${card('mlists','Merchant lists',`<div class="sx-lists">${ta('sectors','Sectors')}${ta('platforms','Platforms')}${ta('cities','Cities')}${ta('services','Services / service lines')}${ta('sources','Income sources')}</div>`,'The choices in the merchant, upload and deal forms.')}
+  ${card('reasons','Reasons & criteria',`<div class="sx-lists">${ta('skip_reasons','Skip reasons')}${ta('lost_reasons','Lost reasons')}${ta('reject_reasons','Meeting reject reasons')}${ta('qual_criteria','Qualified meeting criteria')}</div>`)}
+  ${ed?`<div class="sx-save set-bar" id="sxBar"><span id="sxDirty"></span><div class="err sx-e" id="cfE" style="flex:1"></div><button class="btn primary" id="cfB" onclick="sxSetSave()">Save Sales settings</button></div>`:'<div class="muted">Only the Sales Manager can change these.</div>'}</div></div>`;
+  const body=$('sxSetBody');
+  if(ed) ['input','change'].forEach(ev=>body.addEventListener(ev,e=>{ const c=e.target.closest('[data-s]'); if(!c) return; const b=document.querySelector(`.set-nav button[data-k="${c.dataset.s}"]`); if(b) b.classList.add('dirty'); $('sxBar').classList.add('dirty'); $('sxDirty').textContent='Unsaved changes'; }));
+}
+/* Sales Settings sections + collapsible cards: same look as main Settings */
+const SX_SECS=[['team','Team & targets','👥'],['queue','Queue rules','⏱'],['res','Call results','📞'],['stg','Pipeline stages','📈'],['lists','Lists','📋']];
+function sxSecNow(){ const k=load('erp_sxsec'); return SX_SECS.some(x=>x[0]===k)?k:'team'; }
+function sxSecGo(k){
+  store('erp_sxsec',k);
+  const b=$('sxSetBody'); if(!b) return; b.dataset.on=k;
+  document.querySelectorAll('.set-nav button').forEach(x=>x.classList.toggle('on',x.dataset.k===k));
+  const ab=document.querySelector('.set-nav button.on'); if(ab&&ab.scrollIntoView&&window.innerWidth<=900) ab.scrollIntoView({inline:'center',block:'nearest'});
+  window.scrollTo({top:0});
+}
+function sxColGet(){ try{ return JSON.parse(load('erp_sxcol')||'{}')||{}; }catch(e){ return {}; } }
+function sxColTg(k){
+  const M=sxColGet(); M[k]=!M[k]; if(!M[k]) delete M[k]; store('erp_sxcol',JSON.stringify(M));
+  const c=document.querySelector(`.sx-sc[data-c="${k}"]`); if(!c) return;
+  c.classList.toggle('sx-shut',!!M[k]); c.querySelector('.sx-ch').setAttribute('aria-expanded',M[k]?'false':'true');
 }
 function sxTeamRow(t,i,R,dis){
   R=R||S.cache.sxs; dis=dis||'';
